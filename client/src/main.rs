@@ -10,9 +10,9 @@ use solana_sdk::{
     native_token::LAMPORTS_PER_SOL,
     signature::Keypair,
     signer::Signer,
-    sysvar,
     transaction::Transaction,
 };
+use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use stark::{
     felt::Felt, stark_proof::VerifyPublicInput, swiftness::stark::types::cast_struct_to_slice,
 };
@@ -210,7 +210,7 @@ async fn main() -> client::Result<()> {
         vec![
             AccountMeta::new(stack_account.pubkey(), true),
             AccountMeta::new(payer.pubkey(), false),
-            AccountMeta::new(sysvar::instructions::ID, false),
+            AccountMeta::new(SYSTEM_PROGRAM_ID, false),
         ],
     );
 
