@@ -8,9 +8,9 @@ use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
     native_token::LAMPORTS_PER_SOL,
-    pubkey::Pubkey,
     signature::Keypair,
     signer::Signer,
+    sysvar,
     transaction::Transaction,
 };
 use stark::{
@@ -210,10 +210,7 @@ async fn main() -> client::Result<()> {
         vec![
             AccountMeta::new(stack_account.pubkey(), true),
             AccountMeta::new(payer.pubkey(), false),
-            AccountMeta::new(
-                Pubkey::from_str_const("Sysvar1nstructions1111111111111111111111111"),
-                false,
-            ),
+            AccountMeta::new(sysvar::instructions::ID, false),
         ],
     );
 
