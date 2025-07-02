@@ -9,7 +9,8 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use stark::{
-    felt::Felt, stark_proof::VerifyPublicInput, swiftness::stark::types::cast_struct_to_slice,
+    felt::Felt, stark_proof::verify_public_input::VerifyPublicInput,
+    swiftness::stark::types::cast_struct_to_slice,
 };
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::AccountCast;
