@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use client::{initialize_client, interact_with_program_instructions, send_and_confirm_transactions, setup_payer, setup_program, ClientError, Config};
+use client::{
+    initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
+    setup_payer, setup_program, ClientError, Config,
+};
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
@@ -27,7 +30,7 @@ async fn main() -> client::Result<()> {
     let config = Config::parse_args();
     let client = initialize_client(&config).await?;
     let payer = if let Some(ref payer_keypair) = config.payer_keypair {
-        Keypair::from_base58_string(&payer_keypair)
+        Keypair::from_base58_string(payer_keypair)
     } else {
         setup_payer(&client, &config).await?
     };
