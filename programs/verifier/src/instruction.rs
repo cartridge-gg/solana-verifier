@@ -23,4 +23,10 @@ pub enum VerifierInstruction {
     /// Accounts expected:
     /// 0. `[writable]` The verifier account
     Execute(u32),
+
+    /// Closes the verifier account
+    ///
+    /// Accounts expected:
+    /// 0. `[writable]` The verifier account
+    Close,
 }

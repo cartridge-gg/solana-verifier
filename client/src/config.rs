@@ -10,6 +10,10 @@ pub struct Config {
     #[clap(long, default_value = "http://localhost:8899")]
     pub rpc_url: String,
 
+    /// Payer keypair
+    #[clap(long, help = "Payer keypair in base58 format")]
+    pub payer_keypair: Option<String>,
+
     /// RPC timeout in seconds
     #[clap(long, default_value = "30")]
     pub rpc_timeout_secs: u64,

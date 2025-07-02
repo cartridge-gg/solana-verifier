@@ -1,9 +1,11 @@
-use std::{path::Path, time::Duration};
+use std::path::Path;
 
-use client::{initialize_client, setup_program, ClientError, Config};
+use client::{initialize_client, interact_with_program_instructions, send_and_confirm_transactions, setup_payer, setup_program, ClientError, Config};
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
+    native_token::LAMPORTS_PER_SOL,
+    pubkey::Pubkey,
     signature::Keypair,
     signer::Signer,
     transaction::Transaction,
@@ -24,7 +26,11 @@ pub const CHUNK_SIZE: usize = 1000;
 async fn main() -> client::Result<()> {
     let config = Config::parse_args();
     let client = initialize_client(&config).await?;
-    let payer = Keypair::from_base58_string("<YOUR_PAYER_KEYPAIR_HERE>");
+    let payer = if let Some(ref payer_keypair) = config.payer_keypair {
+        Keypair::from_base58_string(&payer_keypair)
+    } else {
+        setup_payer(&client, &config).await?
+    };
     println!("Using payer: {}", payer.pubkey());
 
     let program_path = Path::new("target/deploy/verifier.so");
@@ -132,25 +138,33 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let verify_public_input_tx = Transaction::new_signed_with_payer(
+    let signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
         &[verify_public_input_ix],
-        Some(&payer.pubkey()),
-        &[&payer],
-        client.get_latest_blockhash().await?,
-    );
-    let verify_public_input_signature: solana_sdk::signature::Signature = client
-        .send_and_confirm_transaction(&verify_public_input_tx)
-        .await?;
-    println!("Verify public input: {verify_public_input_signature:?}");
+    )
+    .await?;
+    println!("Verify public input: {signature}");
 
     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
 
-    let mut steps = 0;
-    loop {
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+
+    println!("Simulation steps: {simulation_steps}");
+
+    let mut transactions = Vec::new();
+    for i in 0..simulation_steps {
         // Execute the task
         let execute_ix = Instruction::new_with_borsh(
             program_id,
-            &VerifierInstruction::Execute(steps as u32),
+            &VerifierInstruction::Execute(i as u32),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
 
@@ -160,35 +174,9 @@ async fn main() -> client::Result<()> {
             &[&payer],
             client.get_latest_blockhash().await?,
         );
-        let mut retries = 0;
-        loop {
-            let execute_signature = client.send_and_confirm_transaction(&execute_tx).await;
-            if execute_signature.is_ok() {
-                println!("Verification TX: {:?}", execute_signature.unwrap());
-                break;
-            }
-            println!("Retrying... {retries}");
-            println!("Error: {execute_signature:?}");
-            tokio::time::sleep(Duration::from_millis(100)).await;
-            retries += 1;
-            if retries > 10 {
-                break;
-            }
-        }
-
-        steps += 1;
-        println!("step: {steps}");
-        // Check stack state
-        let account_data = client
-            .get_account_data(&stack_account.pubkey())
-            .await
-            .map_err(ClientError::SolanaClientError)?;
-        let stack = BidirectionalStackAccount::cast(&account_data);
-        if stack.is_empty_back() {
-            println!("\nExecution complete after {steps} steps");
-            break;
-        }
+        transactions.push(execute_tx.clone());
     }
+    send_and_confirm_transactions(&client, &transactions).await?;
 
     // Read and display the result
     let mut account_data = client
@@ -206,6 +194,41 @@ async fn main() -> client::Result<()> {
     println!("Stack back index: {}", stack.back_index);
 
     println!("\nHash Public Inputs successfully executed on Solana!");
+
+    println!("Closing account");
+
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
+    println!("Balance: {balance_sol} SOL");
+
+    let close_account_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::Close,
+        vec![
+            AccountMeta::new(stack_account.pubkey(), true),
+            AccountMeta::new(payer.pubkey(), false),
+            AccountMeta::new(
+                Pubkey::from_str_const("Sysvar1nstructions1111111111111111111111111"),
+                false,
+            ),
+        ],
+    );
+
+    let close_account_tx = Transaction::new_signed_with_payer(
+        &[close_account_ix],
+        Some(&payer.pubkey()),
+        &[&stack_account, &payer],
+        client.get_latest_blockhash().await?,
+    );
+    let close_account_signature = client
+        .send_and_confirm_transaction(&close_account_tx)
+        .await?;
+
+    println!("Account closed successfully: {close_account_signature}");
+
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
+    println!("Balance: {balance_sol} SOL after closing");
 
     Ok(())
 }
