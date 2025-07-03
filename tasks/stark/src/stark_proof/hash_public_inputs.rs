@@ -35,6 +35,8 @@ impl Executable for HashPublicInputs {
         match self.step {
             HashPublicInputsStep::Init => {
                 self.step = HashPublicInputsStep::ProgramHash;
+                println!("______");
+                println!("HashPublicInputsStep::Init");
                 vec![PoseidonHashMany::new(self.program_input_length).to_vec_with_type_tag()]
             }
             HashPublicInputsStep::ProgramHash => {
@@ -45,6 +47,7 @@ impl Executable for HashPublicInputs {
                 stack.pop_front();
                 self.program_hash = program_hash;
                 self.step = HashPublicInputsStep::OutputHash;
+                println!("HashPublicInputsStep::ProgramHash");
                 vec![PoseidonHashMany::new(self.output_input_length).to_vec_with_type_tag()]
             }
             HashPublicInputsStep::OutputHash => {
@@ -57,10 +60,13 @@ impl Executable for HashPublicInputs {
                 stack.push_front(&output_hash.to_bytes_be()).unwrap();
                 stack.push_front(&self.program_hash.to_bytes_be()).unwrap();
 
+                println!("HashPublicInputsStep::OutputHash");
                 self.step = HashPublicInputsStep::Done;
                 vec![]
             }
             HashPublicInputsStep::Done => {
+                println!("HashPublicInputsStep::Done");
+                println!("______");
                 vec![]
             }
         }

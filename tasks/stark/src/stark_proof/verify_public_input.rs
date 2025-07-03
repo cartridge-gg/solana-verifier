@@ -113,6 +113,8 @@ impl Executable for VerifyPublicInput {
                 self.program_end = program_len;
                 self.program_len = program_len;
 
+                println!("______");
+                println!("VerifyPublicInputStep::Init");
                 self.step = VerifyPublicInputStep::Output;
                 vec![]
             }
@@ -135,6 +137,8 @@ impl Executable for VerifyPublicInput {
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+
+                println!("VerifyPublicInputStep::Output");
                 self.step = VerifyPublicInputStep::Program;
                 vec![]
             }
@@ -146,6 +150,7 @@ impl Executable for VerifyPublicInput {
                 }
 
                 stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
+                //program start was never set
                 for i in (self.program_start..self.program_end).rev() {
                     let proof_reference: &mut [u8] = stack.get_proof_reference();
                     let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
@@ -157,11 +162,14 @@ impl Executable for VerifyPublicInput {
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
 
+                println!("VerifyPublicInputStep::Program");
                 self.step = VerifyPublicInputStep::Done;
 
                 vec![HashPublicInputs::new(self.program_len, self.output_len).to_vec_with_type_tag()]
             }
             VerifyPublicInputStep::Done => {
+                println!("VerifyPublicInputStep::Done");
+                println!("______");
                 vec![]
             }
         }

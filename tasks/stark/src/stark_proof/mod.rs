@@ -1,6 +1,9 @@
 use crate::felt::Felt;
 
+pub mod get_hash;
 pub mod hash_public_inputs;
+pub mod stark_commit;
+pub mod stark_verify;
 pub mod validate_public_input;
 pub mod verify;
 pub mod verify_public_input;
