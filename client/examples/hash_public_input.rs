@@ -12,7 +12,8 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::{
-    felt::Felt, stark_proof::HashPublicInputs, swiftness::stark::types::cast_struct_to_slice,
+    felt::Felt, stark_proof::hash_public_inputs::HashPublicInputs,
+    swiftness::stark::types::cast_struct_to_slice,
 };
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
