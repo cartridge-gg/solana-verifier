@@ -56,47 +56,30 @@ impl Executable for GetHash {
                 vec![]
             }
             GetHashStep::HashData => {
-                // Push main page data for hashing (address and value pairs)
-                //+3 because we add zero and 2*main_page_len and 2*main_page_len
-                let inputs_len = self.main_page_len * 2 + 3;
-                let zero_count = inputs_len.div_ceil(2) * 2 - inputs_len;
-                for _ in 0..zero_count {
-                    stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-                }
+                // Prepare main page data for hashing
+                let mut main_page_data = Vec::new();
 
-                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
+                main_page_data.push(Felt::ZERO);
 
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-
-                for i in (0..self.main_page_len).rev() {
+                for i in 0..self.main_page_len {
                     let proof_reference: &mut [u8] = stack.get_proof_reference();
                     let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
                     let memory = proof.public_input.main_page.0.as_slice();
                     let address = memory[i].address;
                     let value = memory[i].value;
-
-                    stack.push_front(&address.to_bytes_be()).unwrap();
-                    stack.push_front(&value.to_bytes_be()).unwrap();
-
-                    // main_page_hash = pedersen_hash(&main_page_hash, &memory.address);
-                    // main_page_hash = pedersen_hash(&main_page_hash, &memory.value);
+                    main_page_data.push(address);
+                    main_page_data.push(value);
                 }
-                stack
-                    .push_front(&(Felt::TWO * Felt::from(self.main_page_len)).to_bytes_be())
-                    .unwrap();
 
-                // Add padding (3 zeros)
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                // Add the length information
+                main_page_data.push(Felt::TWO * Felt::from(self.main_page_len));
 
-                // main_page_hash =
-                //     pedersen_hash(&main_page_hash, &(FELT_2 * Felt::from(self.main_page.len())));
+                // Use PoseidonHashMany::push_input to properly prepare the stack
+                PoseidonHashMany::push_input(&main_page_data, stack);
 
+                println!("GetHashStep::HashData");
                 self.step = GetHashStep::MainPageHash;
-                //+2 because we add zero and 2*main_page_len
-                let poseidon_len = self.main_page_len * 2 + 2;
-                vec![PoseidonHashMany::new(poseidon_len).to_vec_with_type_tag()]
+                vec![PoseidonHashMany::new(main_page_data.len()).to_vec_with_type_tag()]
             }
             GetHashStep::MainPageHash => {
                 // Get the main page hash from the stack
@@ -149,19 +132,20 @@ impl Executable for GetHash {
                 );
                 self.hash_data = hash_data;
 
+                // Use PoseidonHashMany::push_input to properly prepare the stack
+                PoseidonHashMany::push_input(&self.hash_data, stack);
+
                 println!("GetHashStep::MainPageHash");
                 self.step = GetHashStep::Program;
-                vec![]
+                println!("______");
+                println!("hash_data: {:?}", self.hash_data);
+                println!("______");
+                vec![PoseidonHashMany::new(self.hash_data.len()).to_vec_with_type_tag()]
             }
             GetHashStep::Program => {
-                // Push all hash_data elements to stack for final hashing
-                for felt in self.hash_data.iter().rev() {
-                    stack.push_front(&felt.to_bytes_be()).unwrap();
-                }
-
                 println!("GetHashStep::Program");
                 self.step = GetHashStep::Done;
-                vec![PoseidonHashMany::new(self.hash_data.len()).to_vec_with_type_tag()]
+                vec![]
             }
             GetHashStep::Done => {
                 println!("GetHashStep::Done");
