@@ -5,6 +5,8 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    rent::Rent,
+    sysvar::Sysvar,
 };
 use utils::{AccountCast, BidirectionalStack};
 
@@ -111,6 +113,31 @@ impl Processor {
         msg!("Proof part set successfully");
         Ok(())
     }
+
+    // src: https://github.com/solana-developers/program-examples/blob/main/basics/close-account/native/program/src/instructions/close_user.rs
+    pub fn close(accounts: &[AccountInfo]) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
+        let target_account = next_account_info(accounts_iter)?;
+        let payer = next_account_info(accounts_iter)?;
+        let system_program = next_account_info(accounts_iter)?;
+
+        let account_span = 0usize;
+        let lamports_required = (Rent::get()?).minimum_balance(account_span);
+
+        let diff = target_account.lamports() - lamports_required;
+
+        // Send the rent back to the payer
+        **target_account.lamports.borrow_mut() -= diff;
+        **payer.lamports.borrow_mut() += diff;
+
+        // Realloc the account to zero
+        target_account.resize(account_span)?;
+
+        // Assign the account to the System Program
+        target_account.assign(system_program.key);
+
+        Ok(())
+    }
 }
 
 /// Instruction processor
@@ -136,5 +163,7 @@ pub fn process_instruction(
             Processor::process_push_data(accounts, data_payload)
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
+
+        VerifierInstruction::Close => Processor::close(accounts),
     }
 }
