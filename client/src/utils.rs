@@ -10,6 +10,7 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     bpf_loader_upgradeable::UpgradeableLoaderState,
     commitment_config::CommitmentConfig,
+    compute_budget::ComputeBudgetInstruction,
     signature::{Keypair, Signature, Signer},
     transaction::Transaction,
 };
@@ -510,10 +511,10 @@ pub async fn write_program_to_buffer(
         );
 
         // Send transaction without waiting for confirmation
-        client.send_transaction(&write_tx).await.map_err(|e| {
+        let signature = client.send_transaction(&write_tx).await.map_err(|e| {
             ClientError::TransactionError(format!("Failed to send chunk at offset {offset}: {e}"))
         })?;
-
+        println!("Chunk at offset {offset} sent: {signature}");
         offset = chunk_end;
     }
 
@@ -633,6 +634,44 @@ pub async fn send_and_confirm_transactions(
         match result {
             Ok(signature) => println!("Transaction confirmed: {signature:?}"),
             Err(e) => println!("Transaction NOT confirmed (timeout): {e:?}"),
+        }
+    }
+    Ok(())
+}
+
+pub async fn send_and_confirm_with_limit(
+    client: &RpcClient,
+    instructions: &[Instruction],
+    payer: &Keypair,
+    limit: u32,
+) -> Result<()> {
+    const BATCH_SIZE: usize = 20;
+    for (i, chunk) in instructions.chunks(BATCH_SIZE).enumerate() {
+        let futures = chunk.iter().map(|instruction| {
+            let client = &client;
+            async move {
+                // the size is of this instruction is always
+                // the same or smaller as we have const chunk size
+                let limit = ComputeBudgetInstruction::set_compute_unit_limit(limit);
+                let tx = Transaction::new_signed_with_payer(
+                    &[instruction.clone(), limit],
+                    Some(&payer.pubkey()),
+                    &[&payer],
+                    client.get_latest_blockhash().await.unwrap(),
+                );
+
+                let confirmed = client.send_and_confirm_transaction(&tx).await;
+                (tx.clone(), confirmed)
+            }
+        });
+
+        let results = join_all(futures).await;
+        println!("Chunk confirmed: {}", i);
+        for (_, result) in results {
+            match result {
+                Ok(_) => (),
+                Err(e) => println!("Transaction NOT confirmed (timeout): {e:?}"),
+            }
         }
     }
     Ok(())
