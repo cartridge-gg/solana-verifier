@@ -656,7 +656,7 @@ pub async fn send_and_confirm_with_limit(
         });
 
         let results = join_all(futures).await;
-        info!(chunk_index:% = i, total_chunks:% = (instructions.len() / BATCH_SIZE); "Chunk confirmed");
+        info!(chunk_index:% = i+1, total_chunks:% = (instructions.len().div_ceil(BATCH_SIZE)); "Chunk confirmed");
         for (_, result) in results {
             match result {
                 Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
