@@ -200,7 +200,9 @@ pub async fn setup_program(
         let program_id = program_keypair.pubkey();
         info!(program_id:% = program_id; "Deploying new program");
 
-        deploy_program(client, payer, &program_keypair, &program_data, config).await?;
+        let signature =
+            deploy_program(client, payer, &program_keypair, &program_data, config).await?;
+        info!(signature:% = signature; "Program deployed successfully");
 
         // Ensure keypairs directory exists
         if !config.keypairs_dir.exists() {
