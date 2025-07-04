@@ -9,7 +9,7 @@ use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use verifier::instruction::VerifierInstruction;
 
 use crate::{initialize_client, setup_payer, Config, Result};
-
+use log::info;
 #[allow(clippy::result_large_err)]
 pub async fn retrive_funds(config: &Config) -> Result<()> {
     let client = initialize_client(config).await?;
@@ -18,19 +18,19 @@ pub async fn retrive_funds(config: &Config) -> Result<()> {
     } else {
         setup_payer(&client, config).await?
     };
-    println!("Using payer: {}", payer.pubkey());
+    info!(public_key:% = payer.pubkey(); "Using payer");
 
     let program_keypair = Keypair::read_from_file("keypairs/verifier-keypair.json").unwrap();
     let program_id = program_keypair.pubkey();
 
-    println!("Using program ID: {program_id}");
+    info!(program_id:% = program_id; "Using program");
     let stack_account = Keypair::read_from_file("keypairs/stack-account-keypair.json").unwrap();
 
-    println!("Closing account");
+    info!("Closing account");
 
     let balance = client.get_balance(&payer.pubkey()).await?;
     let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
-    println!("Balance: {balance_sol} SOL");
+    info!(balance_sol:% = balance_sol; "Balance");
 
     let close_account_ix = Instruction::new_with_borsh(
         program_id,
@@ -52,11 +52,11 @@ pub async fn retrive_funds(config: &Config) -> Result<()> {
         .send_and_confirm_transaction(&close_account_tx)
         .await?;
 
-    println!("Account closed successfully: {close_account_signature}");
+    info!(signature:% = close_account_signature; "Account closed successfully");
 
     let balance = client.get_balance(&payer.pubkey()).await?;
     let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
-    println!("Balance: {balance_sol} SOL after closing");
+    info!(balance_sol:% = balance_sol; "Balance after closing");
 
     Ok(())
 }

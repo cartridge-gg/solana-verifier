@@ -21,6 +21,7 @@ enum Subcommands {
 #[tokio::main]
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
+    env_logger::Builder::from_default_env().init();
     let cli = Cli::parse();
     match cli.command {
         Subcommands::Verify(config) => verify::verify(&config).await?,

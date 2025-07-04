@@ -8,6 +8,7 @@ use solana_sdk::{
 use verifier::state::BidirectionalStackAccount;
 
 use crate::{initialize_client, setup_payer, setup_program, Config, Result};
+use log::info;
 
 pub async fn deploy(config: &Config) -> Result<()> {
     let client = initialize_client(config).await?;
@@ -16,11 +17,11 @@ pub async fn deploy(config: &Config) -> Result<()> {
     } else {
         setup_payer(&client, config).await?
     };
-    println!("Using payer: {}", payer.pubkey());
+    info!(public_key:% = payer.pubkey(); "Using payer");
 
     let program_path = Path::new("target/deploy/verifier.so");
     let program_id = setup_program(&client, &payer, config, program_path).await?;
-    println!("Using program ID: {program_id}");
+    info!(program_id:% = program_id; "Using program");
 
     let stack_account = Keypair::new();
     write_keypair_file(
@@ -28,10 +29,10 @@ pub async fn deploy(config: &Config) -> Result<()> {
         config.keypairs_dir.join("stack-account-keypair.json"),
     )
     .unwrap();
-    println!("Creating new account: {}", stack_account.pubkey());
+    info!(public_key:% = stack_account.pubkey(); "Creating new account");
 
     let space = size_of::<BidirectionalStackAccount>();
-    println!("Account space: {space} bytes");
+    info!(size_in_bytes:% = space; "Account space");
 
     let create_account_ix = solana_system_interface::instruction::create_account(
         &payer.pubkey(),
@@ -52,6 +53,6 @@ pub async fn deploy(config: &Config) -> Result<()> {
         .send_and_confirm_transaction(&create_account_tx)
         .await?;
 
-    println!("Account created successfully: {signature}");
+    info!(signature:% = signature; "Account created successfully");
     Ok(())
 }
