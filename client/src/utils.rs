@@ -18,10 +18,10 @@ use solana_sdk::{
 use std::{fs, path::Path, thread::sleep};
 
 use crate::{ClientError, Config, Result};
-
+use log::{error, info, trace, warn};
 /// Initialize the Solana RPC client and verify connection
 pub async fn initialize_client(config: &Config) -> Result<RpcClient> {
-    println!("Using RPC URL: {}", config.rpc_url);
+    info!(rpc_url:% = config.rpc_url;"Using RPC URL");
 
     let client = RpcClient::new_with_timeout_and_commitment(
         config.rpc_url.clone(),
@@ -34,9 +34,8 @@ pub async fn initialize_client(config: &Config) -> Result<RpcClient> {
         .get_version()
         .await
         .map(|version| {
-            println!(
-                "Connected to Solana validator version: {}",
-                version.solana_core
+            info!(solana_version:% = version.solana_core;
+                "Connected to Solana"
             );
             client
         })
@@ -53,7 +52,7 @@ pub async fn setup_payer(client: &RpcClient, config: &Config) -> Result<Keypair>
 
     match read_keypair_file(&payer_keypair_path) {
         Ok(keypair) => {
-            println!("Using existing payer keypair");
+            info!(public_key:% = keypair.pubkey(); "Using existing payer");
             Ok(keypair)
         }
         Err(_) => {
@@ -66,7 +65,7 @@ pub async fn setup_payer(client: &RpcClient, config: &Config) -> Result<Keypair>
 
             write_keypair_file(&keypair, &payer_keypair_path)?;
 
-            println!("Created new payer keypair: {}", keypair.pubkey());
+            info!(public_key:% = keypair.pubkey(); "Created new payer");
 
             // Fund the account with airdrops
             request_and_confirm_airdrop(client, &keypair, config.airdrop_amount, config).await?;
@@ -79,11 +78,8 @@ pub async fn setup_payer(client: &RpcClient, config: &Config) -> Result<Keypair>
             )
             .await?;
 
-            println!(
-                "Airdropped {} SOL to payer",
-                (config.airdrop_amount * (1 + config.additional_airdrop_multiplier)) as f64
-                    / 1_000_000_000.0
-            );
+            info!(amount:% = (config.airdrop_amount * (1 + config.additional_airdrop_multiplier)) as f64
+                    / 1_000_000_000.0; "Airdropped SOL to payer");
 
             Ok(keypair)
         }
@@ -102,7 +98,7 @@ pub async fn request_and_confirm_airdrop(
     } else {
         "Additional airdrop"
     };
-    println!("{message} requested, waiting for confirmation...");
+    trace!("{message} requested, waiting for confirmation...");
 
     let sig = client
         .request_airdrop(&keypair.pubkey(), amount)
@@ -118,7 +114,7 @@ pub async fn request_and_confirm_airdrop(
 
     confirm_transaction_with_retries(client, &sig, config.transaction_retry_count, config).await?;
 
-    println!("{message} confirmed!");
+    trace!("{message} confirmed!");
     Ok(())
 }
 
@@ -141,7 +137,7 @@ pub async fn confirm_transaction_with_retries(
                 )));
             }
             Err(err) if attempt < retries => {
-                println!("Confirmation attempt {attempt}/{retries} failed: {err}");
+                warn!(attempt:% = attempt,retries:% = retries, error:% = err; "Confirmation attempt failed");
                 sleep(config.retry_sleep_duration());
             }
             Err(err) => {
@@ -167,7 +163,7 @@ pub async fn setup_program(
     // Read the program binary
 
     let program_data = fs::read(program_path).map_err(ClientError::IoError)?;
-    println!("Program binary size: {} bytes", program_data.len());
+    info!(size_in_bytes:% = program_data.len(); "Program binary");
 
     // Extract program name from path for the keypair filename
     let program_name = program_path
@@ -187,13 +183,14 @@ pub async fn setup_program(
         // Check if the program is already deployed
         match client.get_account(&program_id).await {
             Ok(_) => {
-                println!("Program already deployed at ID: {program_id}");
+                info!(program_id:% = program_id; "Program already deployed");
                 Ok(program_id)
             }
             Err(_) => {
-                println!("Deploying program with ID: {program_id}");
-                deploy_program(client, payer, &program_keypair, &program_data, config).await?;
-                println!("Program deployed successfully!");
+                info!(program_id:% = program_id; "Deploying program");
+                let signature =
+                    deploy_program(client, payer, &program_keypair, &program_data, config).await?;
+                info!(signature:% = signature; "Program deployed successfully");
                 Ok(program_id)
             }
         }
@@ -201,9 +198,11 @@ pub async fn setup_program(
         // Create a new program deployment
         let program_keypair = Keypair::new();
         let program_id = program_keypair.pubkey();
-        println!("Deploying new program with ID: {program_id}");
+        info!(program_id:% = program_id; "Deploying new program");
 
-        deploy_program(client, payer, &program_keypair, &program_data, config).await?;
+        let signature =
+            deploy_program(client, payer, &program_keypair, &program_data, config).await?;
+        info!(signature:% = signature; "Program deployed successfully");
 
         // Ensure keypairs directory exists
         if !config.keypairs_dir.exists() {
@@ -212,7 +211,7 @@ pub async fn setup_program(
 
         write_keypair_file(&program_keypair, &program_keypair_path)?;
 
-        println!("Program deployed successfully!");
+        info!("Program deployed successfully!");
         Ok(program_id)
     }
 }
@@ -232,11 +231,11 @@ pub async fn setup_account(
 
     if account_keypair_path.exists() {
         let account_keypair = read_keypair_file(&account_keypair_path)?;
-        println!("Using existing account: {}", account_keypair.pubkey());
+        info!(public_key:% = account_keypair.pubkey(); "Using existing account");
         Ok(account_keypair)
     } else {
         let account_keypair = Keypair::new();
-        println!("Creating account: {}", account_keypair.pubkey());
+        info!(public_key:% = account_keypair.pubkey(); "Creating account");
 
         // Calculate the space needed for the account
         let rent = client
@@ -274,7 +273,7 @@ pub async fn setup_account(
                     "Failed to send and confirm account creation transaction: {e}"
                 ))
             })?;
-        println!("Created account: {create_sig}");
+        info!(signature:% = create_sig; "Created account");
 
         // Ensure keypairs directory exists
         if !config.keypairs_dir.exists() {
@@ -320,7 +319,8 @@ pub async fn send_instruction(
         .map_err(|e| {
             ClientError::TransactionError(format!("Failed to send and confirm transaction: {e}"))
         })?;
-    println!("Transaction signature: {signature}");
+
+    info!(signature:% = signature; "Transaction sent");
 
     Ok(signature)
 }
@@ -366,7 +366,8 @@ pub async fn interact_with_program_instructions(
         .map_err(|e| {
             ClientError::TransactionError(format!("Failed to send and confirm transaction: {e}"))
         })?;
-    println!("Transaction signature: {signature}");
+
+    info!(signature:% = signature; "Transaction sent");
 
     Ok(signature)
 }
@@ -378,16 +379,14 @@ pub async fn deploy_program(
     program_keypair: &Keypair,
     program_data: &[u8],
     config: &Config,
-) -> Result<()> {
-    println!("Deploying program...");
-
+) -> Result<Signature> {
     // Calculate the buffer size needed
     let program_len = program_data.len();
-    println!("Program size: {program_len} bytes");
+    info!(size_in_bytes:% = program_len; "Program size");
 
     // Create a buffer account
     let buffer_keypair = Keypair::new();
-    println!("Creating buffer account: {}", buffer_keypair.pubkey());
+    info!(public_key:% = buffer_keypair.pubkey(); "Creating buffer account");
 
     // Calculate rent for the buffer
     let buffer_data_len = program_len;
@@ -428,7 +427,7 @@ pub async fn deploy_program(
         .map_err(|e| {
             ClientError::TransactionError(format!("Failed to create buffer account: {e}"))
         })?;
-    println!("Buffer account created: {signature}");
+    info!(signature:% = signature; "Buffer account created");
 
     // Write program data to the buffer account in chunks
     write_program_to_buffer(client, payer, &buffer_keypair, program_data, config).await?;
@@ -471,9 +470,8 @@ pub async fn deploy_program(
         .send_and_confirm_transaction(&deploy_tx)
         .await
         .map_err(|e| ClientError::TransactionError(format!("Failed to deploy program: {e}")))?;
-    println!("Program deployed: {signature}");
 
-    Ok(())
+    Ok(signature)
 }
 
 /// Write program data to buffer in chunks
@@ -514,12 +512,12 @@ pub async fn write_program_to_buffer(
         let signature = client.send_transaction(&write_tx).await.map_err(|e| {
             ClientError::TransactionError(format!("Failed to send chunk at offset {offset}: {e}"))
         })?;
-        println!("Chunk at offset {offset} sent: {signature}");
+        trace!(offset:% = offset, signature:% = signature; "Chunk sent");
         offset = chunk_end;
     }
 
     // Now verify the buffer data
-    println!("Verifying buffer data...");
+    info!("Verifying buffer data...");
 
     // Retry verification with exponential backoff
     let mut retry_count = 0;
@@ -528,26 +526,22 @@ pub async fn write_program_to_buffer(
 
     while !verified && retry_count < max_retries {
         if retry_count > 0 {
-            println!(
-                "Retrying verification attempt {}/{}...",
-                retry_count + 1,
-                max_retries
-            );
+            info!(attempt:% = retry_count + 1, retries:% = max_retries; "Retrying verification attempt");
             sleep(config.retry_sleep_duration());
         }
 
         match verify_buffer_data(client, buffer_keypair, program_data).await {
             Ok(true) => {
                 verified = true;
-                println!("Buffer data verified successfully!");
+                info!("Buffer data verified successfully!");
             }
             Ok(false) => {
                 retry_count += 1;
-                println!("Buffer data verification failed, data mismatch.");
+                warn!("Buffer data verification failed, data mismatch.");
             }
             Err(e) => {
                 retry_count += 1;
-                println!("Buffer data verification error: {e}");
+                error!("Buffer data verification error: {}", e);
             }
         }
     }
@@ -579,10 +573,9 @@ async fn verify_buffer_data(
 
     // Make sure the account data is long enough
     if account_data.len() < data_offset + expected_data.len() {
-        println!(
-            "Buffer account data too short: {} vs expected at least {}",
-            account_data.len(),
-            data_offset + expected_data.len()
+        warn!(
+            account_data_len:% = account_data.len(),
+            expected_min_len:% = data_offset + expected_data.len(); "Buffer account data too short"
         );
         return Ok(false);
     }
@@ -592,7 +585,6 @@ async fn verify_buffer_data(
 
     // Verify the content matches
     if buffer_data != expected_data {
-        println!("Buffer data content mismatch");
         return Ok(false);
     }
 
@@ -632,8 +624,8 @@ pub async fn send_and_confirm_transactions(
     let results = join_all(futures).await;
     for (_, result) in results {
         match result {
-            Ok(signature) => println!("Transaction confirmed: {signature:?}"),
-            Err(e) => println!("Transaction NOT confirmed (timeout): {e:?}"),
+            Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
+            Err(e) => warn!(error:% = e; "Transaction NOT confirmed (timeout)"),
         }
     }
     Ok(())
@@ -666,11 +658,11 @@ pub async fn send_and_confirm_with_limit(
         });
 
         let results = join_all(futures).await;
-        println!("Chunk confirmed: {}", i);
+        info!(chunk_index:% = i+1, total_chunks:% = (instructions.len().div_ceil(BATCH_SIZE)); "Chunk confirmed");
         for (_, result) in results {
             match result {
-                Ok(_) => (),
-                Err(e) => println!("Transaction NOT confirmed (timeout): {e:?}"),
+                Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
+                Err(e) => warn!(error:% = e; "Transaction NOT confirmed (timeout)"),
             }
         }
     }

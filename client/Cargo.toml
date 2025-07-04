@@ -24,3 +24,5 @@ arithmetic.workspace = true
 stark.workspace = true
 tokio = "1.44.2"
 futures = "0.3.31"
+env_logger = {version = "0.11.6",features = ["unstable-kv"]}
+log = {version = "0.4.22",features = ["kv"]}

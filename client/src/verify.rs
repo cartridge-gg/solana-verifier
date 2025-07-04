@@ -3,6 +3,7 @@ use crate::{
     setup_payer, ClientError,
 };
 use crate::{read_keypair_file, Config, Result};
+use log::info;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::Keypair,
@@ -26,14 +27,14 @@ pub async fn verify(config: &Config) -> Result<()> {
     } else {
         setup_payer(&client, config).await?
     };
-    println!("Using payer: {}", payer.pubkey());
+    info!(public_key:% = payer.pubkey(); "Using payer");
 
     let program_keypair = read_keypair_file("keypairs/verifier-keypair.json").unwrap();
     let program_id = program_keypair.pubkey();
-    println!("Using program ID: {program_id}");
+    info!(program_id:% = program_id; "Using program");
 
     let stack_account = read_keypair_file("keypairs/stack-account-keypair.json").unwrap();
-    println!("Using stack account: {}", stack_account.pubkey());
+    info!(public_key:% = stack_account.pubkey(); "Using stack account");
 
     let time = std::time::Instant::now();
     let mut input: [u64; 2] = [0, 65536];
@@ -58,7 +59,7 @@ pub async fn verify(config: &Config) -> Result<()> {
     let mut proof_verifier = proof.transform_to();
     let proof_bytes = cast_struct_to_slice(&mut proof_verifier);
 
-    println!("Proof bytes in kb: {:?}", proof_bytes.len() / 1024);
+    info!(size_in_bytes:% = proof_bytes.len() / 1024; "Proof bytes in kb");
     let mut proof_set_instructions = proof_bytes
         .chunks(CHUNK_SIZE)
         .enumerate()
@@ -71,9 +72,9 @@ pub async fn verify(config: &Config) -> Result<()> {
         })
         .collect::<Vec<_>>();
     proof_set_instructions.extend(stack_set_instructions);
-    println!("Instructions number: {:?}", proof_set_instructions.len());
+    info!(instructions_number:% = proof_set_instructions.len(); "Instructions number");
     send_and_confirm_with_limit(&client, &proof_set_instructions, &payer, 1_000).await?;
-    println!("Time taken to set proof: {:?}", time.elapsed());
+    info!(time_in_seconds:% = time.elapsed().as_secs(); "Time taken to set proof");
     let time2 = std::time::Instant::now();
     let task = VerifyPublicInput::new();
 
@@ -91,7 +92,7 @@ pub async fn verify(config: &Config) -> Result<()> {
         &[verify_public_input_ix],
     )
     .await?;
-    println!("Verify public input: {signature}");
+    info!(signature:% = signature; "Verify public input");
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -100,7 +101,7 @@ pub async fn verify(config: &Config) -> Result<()> {
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
     let simulation_steps = stack.simulate();
 
-    println!("Simulation steps: {simulation_steps}");
+    info!(simulation_steps:% = simulation_steps; "Simulation steps");
 
     let mut instructions = vec![];
     for i in 0..simulation_steps {
@@ -115,7 +116,7 @@ pub async fn verify(config: &Config) -> Result<()> {
 
     send_and_confirm_with_limit(&client, &instructions, &payer, 500_000).await?;
 
-    println!("Time taken to execute: {:?}", time2.elapsed());
+    info!(time_in_seconds:% = time2.elapsed().as_secs(); "Time taken to execute");
     // Read and display the result
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -126,11 +127,11 @@ pub async fn verify(config: &Config) -> Result<()> {
     stack.pop_front();
     let result_output_hash = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-    println!("\nProgram Hash: {result_program_hash:?}");
-    println!("Output Hash: {result_output_hash:?}");
-    println!("Stack front index: {}", stack.front_index);
-    println!("Stack back index: {}", stack.back_index);
+    info!(result_program_hash:% = result_program_hash; "Program Hash");
+    info!(result_output_hash:% = result_output_hash; "Output Hash");
+    info!(front_index:% = stack.front_index; "Stack front index");
+    info!(back_index:% = stack.back_index; "Stack back index");
 
-    println!("\nHash Public Inputs successfully executed on Solana!");
+    info!("Hash Public Inputs successfully executed on Solana!");
     Ok(())
 }
