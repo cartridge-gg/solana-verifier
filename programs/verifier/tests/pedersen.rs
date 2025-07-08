@@ -7,6 +7,8 @@ use verifier::state::BidirectionalStackAccount;
 #[test]
 fn pedersen_hash() {
     let mut stack = BidirectionalStackAccount::default();
+    println!("stack.front_index at start: {}", stack.front_index);
+    println!("stack.back_index at start: {}", stack.back_index);
 
     let input = include_str!("../../../example_proof/saya.json");
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
@@ -35,9 +37,15 @@ fn pedersen_hash() {
     let expected = Felt::from_hex_unchecked(
         "030e480bed5fe53fa909cc0f8c4d99b8f9f2c016be4c41e13a4848797979c662",
     );
+    stack.pop_front();
+
+    println!("stack.front_index: {}", stack.front_index);
+    println!("stack.back_index: {}", stack.back_index);
 
     assert_eq!(
         result, expected,
         "Pedersen hash result doesn't match expected value"
     );
+    assert_eq!(stack.front_index, 0);
+    assert_eq!(stack.back_index, 65536);
 }

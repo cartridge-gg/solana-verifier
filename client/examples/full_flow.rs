@@ -14,7 +14,7 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use stark::{
     felt::Felt,
-    stark_proof::VerifyPublicInput,
+    stark_proof::verify_public_input::VerifyPublicInput,
     swiftness::stark::types::{cast_struct_to_slice, StarkProof},
 };
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};

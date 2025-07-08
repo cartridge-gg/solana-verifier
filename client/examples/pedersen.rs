@@ -102,8 +102,8 @@ async fn main() -> client::Result<()> {
     );
 
     // Create inputs for Pedersen hash
-    let x = Felt::from_hex("0x1").unwrap();
-    let y = Felt::from_hex("0x2").unwrap();
+    let x = Felt::from_hex("03d937c035c878245caf64531a5756109c53068da139362728feb561405371cb").unwrap();
+    let y = Felt::from_hex("0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a").unwrap();
 
     println!("Input values:");
     println!("  x: {}", x);
@@ -196,16 +196,20 @@ async fn main() -> client::Result<()> {
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
     let result_bytes = stack.borrow_front();
     let result = Felt::from_bytes_be_slice(result_bytes);
-    stack.pop_front();
+    stack.pop_front(); // Pop the result to properly empty the stack
     println!("\nPedersen hash result: {result}");
     println!("Stack front index: {}", stack.front_index);
     println!("Stack back index: {}", stack.back_index);
 
     // The expected output should match the result we got
-    let expected_result = Felt::from_hex("0x49ee3eba8c1600700ee1b87eb599f16716b0b1022947733551fde4050ca6804").unwrap();
+    let expected_result = Felt::from_hex("030e480bed5fe53fa909cc0f8c4d99b8f9f2c016be4c41e13a4848797979c662").unwrap();
 
     assert_eq!(result, expected_result);
     println!("\nPedersen hash successfully executed on Solana!");
+    
+    // Verify stack is properly empty
+    assert_eq!(stack.front_index, 0, "Stack front_index should be 0 after operation");
+    assert_eq!(stack.back_index, 65536, "Stack back_index should be 65536 after operation");
 
     Ok(())
 } 
