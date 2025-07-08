@@ -1,11 +1,11 @@
 mod public_input;
 
+use crate::public_input::get;
+use stark::felt::Felt;
 use stark::stark_proof::get_hash::GetHash;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
-use stark::felt::Felt;
-use crate::public_input::get;
 
 #[test]
 fn get_hash() {

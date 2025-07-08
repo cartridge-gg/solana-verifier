@@ -90,12 +90,11 @@ impl PoseidonHash {
 
 impl Executable for PoseidonHash {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-
         let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
         stack.pop_front();
         let y = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
         stack.pop_front();
-        
+
         // Update state with inputs
         self.state[0] = x;
         self.state[1] = y;

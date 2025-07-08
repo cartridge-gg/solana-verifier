@@ -1,9 +1,9 @@
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 use crate::felt::Felt;
-use lambdaworks_math::{
-    elliptic_curve::short_weierstrass::{curves::stark_curve::StarkCurve, point::ShortWeierstrassProjectivePoint},
-};
 use crate::pedersen::constants::{points_p1, points_p2, points_p3, points_p4, shift_point};
+use lambdaworks_math::elliptic_curve::short_weierstrass::{
+    curves::stark_curve::StarkCurve, point::ShortWeierstrassProjectivePoint,
+};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 pub mod constants;
 
@@ -32,18 +32,22 @@ impl PedersenHash {
         // Push the inputs to the stack
         stack.push_front(&x.to_bytes_be()).unwrap();
         stack.push_front(&y.to_bytes_be()).unwrap();
-    
     }
 
     #[inline(always)]
-    fn lookup_and_accumulate(acc: &mut ShortWeierstrassProjectivePoint<StarkCurve>, bits: &[bool], prep: &[ShortWeierstrassProjectivePoint<StarkCurve>]) {
+    fn lookup_and_accumulate(
+        acc: &mut ShortWeierstrassProjectivePoint<StarkCurve>,
+        bits: &[bool],
+        prep: &[ShortWeierstrassProjectivePoint<StarkCurve>],
+    ) {
         bits.chunks(PedersenHash::CURVE_CONST_BITS)
             .enumerate()
             .for_each(|(i, v)| {
                 let offset = bools_to_usize_le(v);
                 if offset > 0 {
                     // Table lookup at 'offset-1' in table for chunk 'i'
-                    *acc = acc.operate_with_affine(&prep[i * PedersenHash::TABLE_SIZE + offset - 1]);
+                    *acc =
+                        acc.operate_with_affine(&prep[i * PedersenHash::TABLE_SIZE + offset - 1]);
                 }
             })
     }
@@ -69,7 +73,7 @@ impl Executable for PedersenHash {
         stack.pop_front();
         println!("x: {:?}", x);
         println!("y: {:?}", y);
-        
+
         let x = x.to_bits_le();
         let y = y.to_bits_le();
         let mut acc = shift_point();
@@ -83,7 +87,7 @@ impl Executable for PedersenHash {
 
         // Push result back to stack
         stack.push_front(&result.to_bytes_be()).unwrap();
-        
+
         self.phase = PerdersenPhase::Finished;
         vec![]
     }
@@ -92,4 +96,3 @@ impl Executable for PedersenHash {
         self.phase == PerdersenPhase::Finished
     }
 }
-

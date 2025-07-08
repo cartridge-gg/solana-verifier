@@ -1,5 +1,5 @@
-use stark::{felt::Felt, pedersen::PedersenHash};
 use stark::stark_proof::validate_public_input::ValidatePublicInput;
+use stark::{felt::Felt, pedersen::PedersenHash};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
@@ -16,7 +16,15 @@ fn pedersen_hash() {
 
     stack.proof = proof_verifier;
 
-    PedersenHash::push_input(Felt::from_hex_unchecked("03d937c035c878245caf64531a5756109c53068da139362728feb561405371cb"), Felt::from_hex_unchecked("0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a"), &mut stack);
+    PedersenHash::push_input(
+        Felt::from_hex_unchecked(
+            "03d937c035c878245caf64531a5756109c53068da139362728feb561405371cb",
+        ),
+        Felt::from_hex_unchecked(
+            "0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a",
+        ),
+        &mut stack,
+    );
     stack.push_task(PedersenHash::new());
     while !stack.is_empty_back() {
         stack.execute();
@@ -25,8 +33,11 @@ fn pedersen_hash() {
     println!("result: {:?}", result);
 
     let expected = Felt::from_hex_unchecked(
-        "030e480bed5fe53fa909cc0f8c4d99b8f9f2c016be4c41e13a4848797979c662"
+        "030e480bed5fe53fa909cc0f8c4d99b8f9f2c016be4c41e13a4848797979c662",
     );
 
-    assert_eq!(result, expected, "Pedersen hash result doesn't match expected value");
+    assert_eq!(
+        result, expected,
+        "Pedersen hash result doesn't match expected value"
+    );
 }
