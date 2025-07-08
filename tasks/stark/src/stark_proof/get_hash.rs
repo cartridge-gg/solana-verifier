@@ -21,24 +21,26 @@ pub struct GetHash {
     main_page_hash: Felt,
     hash_data: Vec<Felt>,
     main_page_len: usize,
+    n_verifier_friendly_commitment_layers: Felt,
 }
 
 impl_type_identifiable!(GetHash);
 
 impl GetHash {
-    pub fn new() -> Self {
+    pub fn new(n_verifier_friendly_commitment_layers: Felt) -> Self {
         Self {
             step: GetHashStep::Init,
             main_page_hash: Felt::ZERO,
             hash_data: Vec::new(),
             main_page_len: 0,
+            n_verifier_friendly_commitment_layers,
         }
     }
 }
 
 impl Default for GetHash {
     fn default() -> Self {
-        Self::new()
+        Self::new(Felt::ZERO)
     }
 }
 
@@ -77,6 +79,8 @@ impl Executable for GetHash {
                 // Use PoseidonHashMany::push_input to properly prepare the stack
                 PoseidonHashMany::push_input(&main_page_data, stack);
 
+                // Ensure the stack is empty! at front and back
+
                 println!("GetHashStep::HashData");
                 self.step = GetHashStep::MainPageHash;
                 vec![PoseidonHashMany::new(main_page_data.len()).to_vec_with_type_tag()]
@@ -95,6 +99,7 @@ impl Executable for GetHash {
 
                 // Build hash_data vector for final hashing
                 let mut hash_data = vec![
+                    self.n_verifier_friendly_commitment_layers,
                     public_input.log_n_steps,
                     public_input.range_check_min,
                     public_input.range_check_max,
@@ -144,6 +149,10 @@ impl Executable for GetHash {
             }
             GetHashStep::Program => {
                 println!("GetHashStep::Program");
+                let bytes = stack.borrow_front();
+                let get_hash_result = Felt::from_bytes_be_slice(bytes);
+                println!("get_hash_result: {:?}", get_hash_result);
+
                 self.step = GetHashStep::Done;
                 vec![]
             }

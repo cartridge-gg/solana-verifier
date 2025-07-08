@@ -70,3 +70,43 @@ impl Executable for PoseidonHashMany {
         self.counter >= self.input_length
     }
 }
+
+#[repr(C)]
+pub struct PoseidonHash {
+    state: [Felt; 3],
+    counter: usize,
+}
+
+impl_type_identifiable!(PoseidonHash);
+
+impl PoseidonHash {
+    pub fn new() -> Self {
+        Self {
+            state: [Felt::ZERO, Felt::ZERO, Felt::TWO],
+            counter: 0,
+        }
+    }
+}
+
+impl Executable for PoseidonHash {
+    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+
+        let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+        let y = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+        
+        // Update state with inputs
+        self.state[0] = x;
+        self.state[1] = y;
+        self.state[2] = Felt::TWO;
+
+        // Apply Hades permutation to the state
+        self.counter += 1;
+        vec![HadesPermutation::new(self.state).to_vec_with_type_tag()]
+    }
+
+    fn is_finished(&mut self) -> bool {
+        self.counter >= 1
+    }
+}

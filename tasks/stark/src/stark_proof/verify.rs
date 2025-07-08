@@ -54,7 +54,7 @@ impl Executable for Verify {
             VerifyStep::GetHash => {
                 self.step = VerifyStep::StarkCommit;
                 println!("___GetHash___");
-                vec![GetHash::new().to_vec_with_type_tag()]
+                vec![GetHash::new(Felt::ZERO).to_vec_with_type_tag()]
             }
             VerifyStep::StarkCommit => {
                 self.step = VerifyStep::StarkVerify;
