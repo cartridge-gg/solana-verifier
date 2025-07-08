@@ -186,7 +186,7 @@ async fn main() -> client::Result<()> {
         .map_err(ClientError::SolanaClientError)?;
 
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate();
+    let simulation_steps = stack.simulate() + 1u128;
     println!("Steps in simulation: {simulation_steps}");
     // Execute until task is complete
     let mut transactions = Vec::new();
@@ -211,10 +211,20 @@ async fn main() -> client::Result<()> {
         .await
         .map_err(ClientError::SolanaClientError)?;
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    println!("Stack front index: {}", stack.front_index);
+    println!("Stack back index: {}", stack.back_index);
     let result_bytes = stack.borrow_front();
+    println!("Result bytes: {:?}", result_bytes);
     let result = Felt::from_bytes_be_slice(result_bytes);
+    println!("result: {result}");
     stack.pop_front();
+    let result2_bytes = stack.borrow_front();
+    let result2 = Felt::from_bytes_be_slice(result2_bytes);
+    println!("result2: {result2}");
     stack.pop_front();
+    let result3_bytes = stack.borrow_front();
+    let result3 = Felt::from_bytes_be_slice(result3_bytes);
+    println!("result3: {result3}");
     stack.pop_front();
     println!("\nPoseidon hash result: {result}");
     println!("Stack front index: {}", stack.front_index);

@@ -39,13 +39,13 @@ impl Executable for ValidatePublicInput {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             ValidatePublicInputStep::Init => {
-                let proof_reference: &mut [u8] = stack.get_proof_reference();
-                let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
-                let public_input = &proof.public_input;
-                let stark_domains = StarkDomains::new(
-                    proof.config.log_trace_domain_size,
-                    proof.config.log_n_cosets,
-                );
+                // let proof_reference: &mut [u8] = stack.get_proof_reference();
+                // let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
+                // let public_input = &proof.public_input;
+                // let stark_domains = StarkDomains::new(
+                //     proof.config.log_trace_domain_size,
+                //     proof.config.log_n_cosets,
+                // );
 
                 println!("ValidatePublicInputStep::Init");
                 self.step = ValidatePublicInputStep::Output;
