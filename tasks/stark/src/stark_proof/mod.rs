@@ -6,6 +6,12 @@ use crate::{
     swiftness::stark::types::{cast_slice_to_struct, StarkProof},
 };
 
+pub mod get_hash;
+pub mod stark_commit;
+pub mod stark_verify;
+pub mod validate_public_input;
+pub mod verify;
+
 // Constants for validation
 pub const MAX_LOG_N_STEPS: Felt = Felt::from_hex_unchecked("0x50");
 pub const MAX_RANGE_CHECK: Felt = Felt::from_hex_unchecked("0xffff");

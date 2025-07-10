@@ -71,8 +71,6 @@ impl Executable for PedersenHash {
                 stack.pop_front();
                 let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
                 stack.pop_front();
-                println!("x: {:?}", x);
-                println!("y: {:?}", y);
                 let x = x.to_bits_le();
                 let y = y.to_bits_le();
                 self.x = x;
@@ -112,13 +110,8 @@ impl Executable for PedersenHash {
                     ShortWeierstrassProjectivePoint::<StarkCurve>::new([x.0, y.0, z.0]).unwrap();
 
                 let result = *self.acc.to_affine().x();
-                let result_bytes = result.to_bytes_be();
-                let result_felt = Felt::from_bytes_be(&result_bytes);
-                println!("result: {:?}", result_felt);
-
                 stack.push_front(&result.to_bytes_be()).unwrap();
 
-                println!("Pedersen hash finished");
                 self.phase = PerdersenPhase::Finished;
                 vec![]
             }
