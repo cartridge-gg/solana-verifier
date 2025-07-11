@@ -1,26 +1,30 @@
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 use crate::{
-    felt::Felt,
-    poseidon::PoseidonHashMany,
-    swiftness::stark::types::{cast_slice_to_struct, StarkProof},
+    felt::Felt, pedersen::PedersenHash, poseidon::PoseidonHashMany, swiftness::stark::types::{cast_slice_to_struct, StarkProof}
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GetHashStep {
     Init,
-    HashData,
+    PedersenHashingAddress,
+    WaitForPedersenAddress,
+    PedersenHashingValue,
+    WaitForPedersenValue,
     MainPageHash,
     Program,
     Done,
 }
+
 #[repr(C)]
 pub struct GetHash {
     step: GetHashStep,
     main_page_hash: Felt,
     hash_data: Vec<Felt>,
     main_page_len: usize,
+    current_memory_index: usize,
     n_verifier_friendly_commitment_layers: Felt,
+    accumulated_hash: Felt,
 }
 
 impl_type_identifiable!(GetHash);
@@ -32,7 +36,9 @@ impl GetHash {
             main_page_hash: Felt::ZERO,
             hash_data: Vec::new(),
             main_page_len: 0,
+            current_memory_index: 0,
             n_verifier_friendly_commitment_layers,
+            accumulated_hash: Felt::ZERO,
         }
     }
 }
@@ -50,43 +56,68 @@ impl Executable for GetHash {
                 let proof_reference: &mut [u8] = stack.get_proof_reference();
                 let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
                 self.main_page_len = proof.public_input.main_page.0.len();
+                self.current_memory_index = 0;
+                self.accumulated_hash = Felt::ZERO;
 
-                self.step = GetHashStep::HashData;
-                vec![]
-            }
-            GetHashStep::HashData => {
-                // Prepare main page data for hashing
-                let mut main_page_data = Vec::new();
-
-                main_page_data.push(Felt::ZERO);
-
-                for i in 0..self.main_page_len {
-                    let proof_reference: &mut [u8] = stack.get_proof_reference();
-                    let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
-                    let memory = proof.public_input.main_page.0.as_slice();
-                    let address = memory[i].address;
-                    let value = memory[i].value;
-                    main_page_data.push(address);
-                    main_page_data.push(value);
+                if self.main_page_len == 0 {
+                    // If no main page data, go directly to final pedersen hash
+                    self.step = GetHashStep::MainPageHash;
+                    return self.execute_final_pedersen_hash(stack);
                 }
 
-                // Add the length information
-                main_page_data.push(Felt::TWO * Felt::from(self.main_page_len));
+                self.step = GetHashStep::PedersenHashingAddress;
+                self.execute_pedersen_for_current_address(stack)
+            }
+            GetHashStep::PedersenHashingAddress => {
+                self.execute_pedersen_for_current_address(stack)
+            }
+            GetHashStep::WaitForPedersenAddress => {
+                // Get the result from the address hash
+                let bytes = stack.borrow_front();
+                let pedersen_result = Felt::from_bytes_be_slice(bytes);
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
 
-                // Use PoseidonHashMany::push_input to properly prepare the stack
-                PoseidonHashMany::push_input(&main_page_data, stack);
+                self.accumulated_hash = pedersen_result;
+                
+                // Now hash with the value
+                self.step = GetHashStep::PedersenHashingValue;
+                self.execute_pedersen_for_current_value(stack)
+            }
+            GetHashStep::PedersenHashingValue => {
+                self.execute_pedersen_for_current_value(stack)
+            }
+            GetHashStep::WaitForPedersenValue => {
+                // Get the result from the value hash
+                let bytes = stack.borrow_front();
+                let pedersen_result = Felt::from_bytes_be_slice(bytes);
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
 
-                self.step = GetHashStep::MainPageHash;
-                vec![PoseidonHashMany::new(main_page_data.len()).to_vec_with_type_tag()]
+                self.accumulated_hash = pedersen_result;
+                self.current_memory_index += 1;
+
+                if self.current_memory_index < self.main_page_len {
+                    // Continue with next memory entry (start with address)
+                    self.step = GetHashStep::PedersenHashingAddress;
+                    self.execute_pedersen_for_current_address(stack)
+                } else {
+                    // All memory entries processed, do final hash with length
+                    self.step = GetHashStep::MainPageHash;
+                    self.execute_final_pedersen_hash(stack)
+                }
             }
             GetHashStep::MainPageHash => {
-                // Get the main page hash from the stack
+                // Get the final main page hash result
                 let bytes = stack.borrow_front();
                 self.main_page_hash = Felt::from_bytes_be_slice(bytes);
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
 
+                // Now prepare the final hash data
                 let proof_reference: &mut [u8] = stack.get_proof_reference();
                 let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
                 let public_input = &proof.public_input;
@@ -129,6 +160,7 @@ impl Executable for GetHash {
                         .iter()
                         .flat_map(|h| vec![h.start_address, h.size, h.hash]),
                 );
+                
                 self.hash_data = hash_data;
 
                 // Use PoseidonHashMany::push_input to properly prepare the stack
@@ -138,10 +170,10 @@ impl Executable for GetHash {
                 vec![PoseidonHashMany::new(self.hash_data.len()).to_vec_with_type_tag()]
             }
             GetHashStep::Program => {
-                // let bytes = stack.borrow_front();
-                // let get_hash_result = Felt::from_bytes_be_slice(bytes);
-                // println!("get_hash_result: {:?}", get_hash_result);
-
+                let bytes = stack.borrow_front();
+                let poseidon_result = Felt::from_bytes_be_slice(bytes);
+                println!("GetHash result: {:?}", poseidon_result);
+                
                 self.step = GetHashStep::Done;
                 vec![]
             }
@@ -153,5 +185,43 @@ impl Executable for GetHash {
 
     fn is_finished(&mut self) -> bool {
         self.step == GetHashStep::Done
+    }
+}
+
+impl GetHash {
+    #[inline(always)]
+    fn execute_pedersen_for_current_address<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+        let proof_reference: &mut [u8] = stack.get_proof_reference();
+        let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
+        let memory = proof.public_input.main_page.0.as_slice();
+        
+        let address = memory[self.current_memory_index].address;
+        
+        PedersenHash::push_input(self.accumulated_hash, address, stack);
+        
+        self.step = GetHashStep::WaitForPedersenAddress;
+        vec![PedersenHash::new().to_vec_with_type_tag()]
+    }
+    #[inline(always)]
+    fn execute_pedersen_for_current_value<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+        let proof_reference: &mut [u8] = stack.get_proof_reference();
+        let proof: &StarkProof = cast_slice_to_struct::<StarkProof>(proof_reference);
+        let memory = proof.public_input.main_page.0.as_slice();
+        
+        let value = memory[self.current_memory_index].value;
+
+        PedersenHash::push_input(self.accumulated_hash, value, stack);
+        
+        self.step = GetHashStep::WaitForPedersenValue;
+        vec![PedersenHash::new().to_vec_with_type_tag()]
+    }
+    #[inline(always)]
+    fn execute_final_pedersen_hash<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+        // Final hash with the length multiplier
+        let length_multiplier = Felt::TWO * Felt::from(self.main_page_len);
+        
+        PedersenHash::push_input(self.accumulated_hash,length_multiplier, stack);
+        
+        vec![PedersenHash::new().to_vec_with_type_tag()]
     }
 }

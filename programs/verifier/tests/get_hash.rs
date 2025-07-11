@@ -3,6 +3,9 @@ use stark::stark_proof::get_hash::GetHash;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
+use crate::public_input::get;
+
+mod public_input;
 
 #[test]
 fn get_hash() {
@@ -12,10 +15,10 @@ fn get_hash() {
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
     let proof = StarkProofParser::try_from(proof_json).unwrap();
 
-    let proof_verifier = proof.transform_to();
+    let mut proof_verifier = proof.transform_to();
 
     // Replace the public_input with the one from get()
-    // proof_verifier.public_input = get();
+    proof_verifier.public_input = get();
 
     stack.proof = proof_verifier;
 
@@ -24,8 +27,9 @@ fn get_hash() {
         stack.execute();
     }
 
-    // let expected = Felt::from_hex_unchecked(
-    //     "0x2175311c4b644202c7f37b3bd7f19ef26cd8d7085f71cd03cf20ec82897f0e2",
-    // );
-    // assert_eq!(Felt::from_bytes_be_slice(stack.borrow_front()), expected);
+    let expected = Felt::from_hex_unchecked(
+        "0x78995ef92826448325c224646b2904b3ede3d36fdf35c3d12839c2bbff6d2e7",
+    );
+    assert_eq!(Felt::from_bytes_be_slice(stack.borrow_front()), expected);
+    println!("Result: {:?}", Felt::from_bytes_be_slice(stack.borrow_front()));
 }
