@@ -1,5 +1,9 @@
+pub mod consts;
+pub mod diluted;
 pub mod domains;
 pub mod dynamic;
+pub mod periodic_columns;
 pub mod public_memory;
+pub mod recursive_with_poseidon;
 pub mod trace;
 pub mod types;

@@ -70,3 +70,57 @@ impl Executable for PoseidonHashMany {
         self.counter >= self.input_length
     }
 }
+
+#[repr(C)]
+pub struct PoseidonHash {
+    state: [Felt; 3],
+    phase: PoseidonPhase,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PoseidonPhase {
+    Init,
+    Done,
+}
+
+impl_type_identifiable!(PoseidonHash);
+
+impl PoseidonHash {
+    pub fn new(x: Felt, y: Felt) -> Self {
+        Self {
+            state: [x, y, Felt::TWO],
+            phase: PoseidonPhase::Init,
+        }
+    }
+}
+
+impl Executable for PoseidonHash {
+    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+        let s1 = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+
+        let s2 = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+
+        let s3 = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+
+        let v1 = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+
+        let v2 = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+        stack.pop_front();
+
+        self.state[0] = s1 + v1;
+        self.state[1] = s2 + v2;
+        self.state[2] = s3;
+
+        self.phase = PoseidonPhase::Done;
+
+        vec![HadesPermutation::new(self.state).to_vec_with_type_tag()]
+    }
+
+    fn is_finished(&mut self) -> bool {
+        self.phase == PoseidonPhase::Done
+    }
+}

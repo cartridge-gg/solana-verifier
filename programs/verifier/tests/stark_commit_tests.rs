@@ -1,0 +1,105 @@
+use stark::felt::Felt;
+use stark::stark_proof::stark_commit::helpers::PowersArray as HelpersArray;
+use stark::stark_proof::stark_commit::{
+    GenerateInteractionElements, VectorCommit, VectorCommitProcessor,
+};
+use utils::{BidirectionalStack, Scheduler};
+use verifier::state::BidirectionalStackAccount;
+
+#[test]
+fn test_powers_array() {
+    let mut stack = BidirectionalStackAccount::default();
+
+    // Test PowersArray generating [1, alpha, alpha^2] where alpha = 2
+    let alpha = Felt::from(2);
+    let initial = Felt::ONE;
+    let count = 3;
+
+    // Push inputs: (initial, alpha)
+    stack.push_front(&initial.to_bytes_be()).unwrap();
+    stack.push_front(&alpha.to_bytes_be()).unwrap();
+
+    let powers_task = HelpersArray::new(count);
+    stack.push_task(powers_task);
+
+    // Execute until completion
+    let mut steps = 0;
+    while !stack.is_empty_back() {
+        println!(
+            "Step {}, stack size: {}",
+            steps,
+            stack.back_index - stack.front_index
+        );
+        stack.execute();
+        steps += 1;
+        if steps > 50 {
+            break;
+        } // Safety
+    }
+
+    println!("Final stack size: {}", stack.back_index - stack.front_index);
+
+    // Verify results: read all values and print them
+    let mut results = Vec::new();
+    while stack.front_index < stack.back_index {
+        let value = Felt::from_bytes_be_slice(stack.borrow_front());
+        println!("Stack value: {:?}", value);
+        results.push(value);
+        stack.pop_front();
+    }
+
+    assert_eq!(results.len(), 3, "Should have 3 results");
+    let (result0, result1, result2) = (results[0], results[1], results[2]);
+
+    assert_eq!(result0, Felt::ONE, "Powers[0] should be 1");
+    assert_eq!(result1, Felt::from(2), "Powers[1] should be 2");
+    assert_eq!(result2, Felt::from(4), "Powers[2] should be 4");
+    assert!(steps > 0, "Should have executed at least one step");
+}
+
+#[test]
+fn test_generate_interaction_elements() {
+    let mut stack = BidirectionalStackAccount::default();
+
+    // Setup transcript state
+    let digest = Felt::from_hex("0x123").unwrap();
+    let counter = Felt::ZERO;
+    let elements_count = 2;
+
+    // Push transcript state (counter, digest)
+    stack.push_front(&counter.to_bytes_be()).unwrap();
+    stack.push_front(&digest.to_bytes_be()).unwrap();
+
+    let interaction_task = GenerateInteractionElements::new(elements_count);
+    stack.push_task(interaction_task);
+
+    // Execute until completion
+    let mut steps = 0;
+    while !stack.is_empty_back() {
+        stack.execute();
+        steps += 1;
+        if steps > 200 {
+            break;
+        } // Safety - more steps needed for multiple elements
+    }
+
+    // Should have: [final_counter, final_digest, element1, element0]
+    let final_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let final_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    // Should have generated 2 elements
+    let _element1 = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let _element0 = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    assert_eq!(
+        final_counter,
+        Felt::from(elements_count),
+        "Counter should be incremented by element count"
+    );
+    assert_eq!(final_digest, digest, "Digest should be preserved");
+    assert!(steps > 0, "Should have executed at least one step");
+}
