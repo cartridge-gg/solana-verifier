@@ -21,8 +21,10 @@ impl Executable for TableCommit {
         let proof: &StarkProof = stack.get_proof_reference();
 
         let composition_commitment = proof.unsent_commitment.composition;
-        stack.push_front(&composition_commitment.to_bytes_be()).unwrap();
-        
+        stack
+            .push_front(&composition_commitment.to_bytes_be())
+            .unwrap();
+
         self.processed = true;
         vec![VectorCommit::new().to_vec_with_type_tag()]
     }
