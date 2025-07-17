@@ -1,7 +1,7 @@
 use stark::felt::Felt;
 use stark::stark_proof::stark_commit::helpers::PowersArray as HelpersArray;
 use stark::stark_proof::stark_commit::{
-    GenerateInteractionElements, VectorCommit, VectorCommitProcessor,
+    GenerateInteractionElements, VectorCommit,
 };
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;

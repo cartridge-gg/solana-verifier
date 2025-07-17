@@ -32,9 +32,6 @@ fn test_vector_commit() {
     while !stack.is_empty_back() {
         stack.execute();
         steps += 1;
-        if steps > 100 {
-            break;
-        } // Safety
     }
 
     println!("Executed {} steps", steps);

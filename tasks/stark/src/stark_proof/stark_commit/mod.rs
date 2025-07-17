@@ -11,6 +11,7 @@ use crate::swiftness::transcript::TranscriptRandomFelt;
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
 use lambdaworks_math::traits::ByteConversion;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use crate::swiftness::transcript::Transcript;
 
 // Import and re-export actual tasks from their modules
 pub use self::fri_commit::{
@@ -50,7 +51,9 @@ pub struct StarkCommit {
     // Store minimal state needed across steps
     traces_coefficients_count: u32,
     oods_coefficients_count: u32,
+    transcript: Transcript,
 }
+
 
 impl_type_identifiable!(StarkCommit);
 
@@ -60,6 +63,7 @@ impl StarkCommit {
             step: StarkCommitStep::Init,
             traces_coefficients_count: 0,
             oods_coefficients_count: 0,
+            transcript: Transcript::new(Felt::ZERO),
         }
     }
 }
@@ -151,9 +155,10 @@ impl Executable for StarkCommit {
                 // At this point, traces_coefficients are on the stack from PowersArray
                 // TableCommit will update transcript with composition commitment
 
-                self.step = StarkCommitStep::GenerateInteractionAfterComposition;
+                stack.push_front(&self.transcript.counter().to_bytes_be()).unwrap();
+                stack.push_front(&self.transcript.digest().to_bytes_be()).unwrap();
 
-                // Return TableCommit task
+                self.step = StarkCommitStep::GenerateInteractionAfterComposition;
                 vec![TableCommit::new().to_vec_with_type_tag()]
             }
 
