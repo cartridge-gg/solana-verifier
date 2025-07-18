@@ -46,7 +46,8 @@ impl Executable for TranscriptRandomFelt {
         match self.phase {
             TranscriptRandomFeltPhase::ComputeHash => {
                 self.phase = TranscriptRandomFeltPhase::Finished;
-                vec![PoseidonHash::new(self.digest, self.counter).to_vec_with_type_tag()]
+                PoseidonHash::push_input(self.digest, self.counter, _stack);
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
             TranscriptRandomFeltPhase::Finished => {
                 vec![]

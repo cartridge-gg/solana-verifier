@@ -286,7 +286,8 @@ impl Executable for GenerateRandomFelt {
 
                 // Generate random value using PoseidonHash
                 self.step = GenerateRandomFeltStep::ReadResult;
-                vec![PoseidonHash::new(digest, counter).to_vec_with_type_tag()]
+                PoseidonHash::push_input(digest, counter, stack);
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
             GenerateRandomFeltStep::ReadResult => {

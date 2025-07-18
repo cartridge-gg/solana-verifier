@@ -130,10 +130,6 @@ impl Executable for GenerateInteractionElements {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             GenerateInteractionStep::GenerateHash => {
-                if self.current_element >= self.total_elements {
-                    return vec![];
-                }
-
                 // Get transcript digest and counter from stack
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
@@ -144,23 +140,21 @@ impl Executable for GenerateInteractionElements {
                 stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
                 stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
 
-                // Push inputs for PoseidonHash
-                stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
-                stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
-
                 self.step = GenerateInteractionStep::ReadResult;
 
                 // Call PoseidonHash to generate random element
-                vec![PoseidonHash::new(transcript_digest, transcript_counter).to_vec_with_type_tag()]
+                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
             GenerateInteractionStep::ReadResult => {
                 // PoseidonHash puts 3 values on stack: [hash_result, input2, input1]
                 let hash_result = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop the two input values
-                stack.pop_front(); // counter
-                stack.pop_front(); // digest
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
 
                 // Get transcript state that we stored
                 let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
