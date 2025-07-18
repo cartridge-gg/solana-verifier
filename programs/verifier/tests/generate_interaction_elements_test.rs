@@ -10,7 +10,7 @@ fn test_generate_interaction_elements() {
     // Setup transcript state
     let digest = Felt::from_hex("0x123").unwrap();
     let counter = Felt::ZERO;
-    let elements_count = 2;
+    let elements_count = 3;
 
     // Push transcript state (counter, digest)
     stack.push_front(&counter.to_bytes_be()).unwrap();
@@ -26,23 +26,18 @@ fn test_generate_interaction_elements() {
         steps += 1;
     }
 
-    // Should have: [final_counter, final_digest, element1, element0]
-    let final_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    let element0 = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-    let final_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    let element1 = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-
-    // Should have generated 2 elements
-    let _element1 = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let _element0 = Felt::from_bytes_be_slice(stack.borrow_front());
+    let element2 = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
 
-    assert_eq!(
-        final_counter,
-        Felt::from(elements_count),
-        "Counter should be incremented by element count"
-    );
-    assert_eq!(final_digest, digest, "Digest should be preserved");
+    println!("element2: {}", element2);
+    println!("element1: {}", element1);
+    println!("element0: {}", element0);
+
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
     assert!(steps > 0, "Should have executed at least one step");
 }

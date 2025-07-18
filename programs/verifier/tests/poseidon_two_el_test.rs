@@ -1,6 +1,5 @@
 use stark::felt::Felt;
 use stark::poseidon::PoseidonHash;
-use stark::poseidon::PoseidonHashMany;
 use starknet_crypto::poseidon_hash;
 use starknet_crypto::Felt as StarkFelt;
 use utils::{BidirectionalStack, Scheduler};

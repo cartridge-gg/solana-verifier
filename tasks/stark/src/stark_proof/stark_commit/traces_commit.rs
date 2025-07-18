@@ -25,7 +25,7 @@ impl TracesCommit {
     pub fn new() -> Self {
         Self {
             step: TracesCommitStep::ReadOriginalCommitment,
-            interaction_elements_count: 6, // Layout has 6 interaction elements
+            interaction_elements_count: 3, // recursive_with_poseidon has 3 interaction elements
             current_element: 0,
         }
     }
@@ -143,20 +143,17 @@ impl Executable for GenerateInteractionElements {
                 self.step = GenerateInteractionStep::ReadResult;
 
                 // Call PoseidonHash to generate random element
-                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
+                PoseidonHash::push_input(transcript_counter, transcript_digest, stack);
                 vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
             GenerateInteractionStep::ReadResult => {
-                // PoseidonHash puts 3 values on stack: [hash_result, input2, input1]
                 let hash_result = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                stack.pop_front();
+                println!("hash_result: {}", hash_result);
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
 
-                // Get transcript state that we stored
                 let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -171,14 +168,9 @@ impl Executable for GenerateInteractionElements {
                 self.current_element += 1;
 
                 if self.current_element < self.total_elements {
-                    // More elements to generate - push transcript state for next iteration
                     stack.push_front(&new_counter.to_bytes_be()).unwrap();
                     stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
                     self.step = GenerateInteractionStep::GenerateHash;
-                } else {
-                    // All elements generated - push final transcript state
-                    stack.push_front(&new_counter.to_bytes_be()).unwrap();
-                    stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
                 }
 
                 vec![]
