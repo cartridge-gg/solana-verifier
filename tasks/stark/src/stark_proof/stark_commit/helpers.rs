@@ -31,15 +31,14 @@ impl Executable for PowersArray {
             stack.pop_front();
             let alpha = Felt::from_bytes_be_slice(stack.borrow_front());
 
-            // Push first value (initial)
+            stack.pop_front();
             stack.push_front(&initial.to_bytes_be()).unwrap();
 
-            // Push current value for next iteration
             let next_value = initial * alpha;
-            stack.push_front(&next_value.to_bytes_be()).unwrap();
 
             // Keep alpha on stack for next iteration
             stack.push_front(&alpha.to_bytes_be()).unwrap();
+            stack.push_front(&next_value.to_bytes_be()).unwrap();
 
             self.current = 1;
         } else if self.current < self.count {
@@ -47,20 +46,15 @@ impl Executable for PowersArray {
             let current_value = Felt::from_bytes_be_slice(stack.borrow_front());
             stack.pop_front();
             let alpha = Felt::from_bytes_be_slice(stack.borrow_front());
-
+            stack.pop_front();
             // Push current value to results
             stack.push_front(&current_value.to_bytes_be()).unwrap();
 
             // Calculate next value for next iteration
             let next_value = current_value * alpha;
-
             if self.current + 1 < self.count {
-                // Push next value and keep alpha for next iteration
-                stack.push_front(&next_value.to_bytes_be()).unwrap();
                 stack.push_front(&alpha.to_bytes_be()).unwrap();
-            } else {
-                // Last iteration - don't push anything more, just pop alpha
-                stack.pop_front(); // Remove alpha from stack
+                stack.push_front(&next_value.to_bytes_be()).unwrap();
             }
 
             self.current += 1;
