@@ -1,7 +1,7 @@
 use crate::stark_proof::PoseidonHashMany;
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
 use lambdaworks_math::traits::ByteConversion;
-use sha3::{Digest, Keccak256};
+// use sha3::{Digest, Keccak256};
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +30,12 @@ impl ProofOfWork {
             n_bits: 0,
             nonce: 0,
         }
+    }
+}
+
+impl Default for ProofOfWork {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -165,7 +171,7 @@ impl Executable for ComputeHash {
 
         // Collect input bytes
         let mut input_data = Vec::with_capacity(self.input_length);
-        let bytes_to_read = (self.input_length + 31) / 32; // Round up to full Felt values
+        let bytes_to_read = self.input_length.div_ceil(32);
 
         for i in 0..bytes_to_read {
             let felt_bytes = stack.borrow_front();
@@ -210,6 +216,12 @@ impl_type_identifiable!(UpdateTranscriptU64);
 impl UpdateTranscriptU64 {
     pub fn new() -> Self {
         Self { processed: false }
+    }
+}
+
+impl Default for UpdateTranscriptU64 {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

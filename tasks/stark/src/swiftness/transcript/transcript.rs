@@ -1,6 +1,5 @@
 use crate::felt::Felt;
 
-// This is NOT a task - it's a regular struct used for transcript operations
 pub struct Transcript {
     digest: Felt,
     counter: Felt,

@@ -31,6 +31,12 @@ impl VerifyOods {
     }
 }
 
+impl Default for VerifyOods {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for VerifyOods {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
@@ -141,13 +147,12 @@ impl Executable for EvalCompositionPolynomial {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             EvalCompositionStep::CollectMaskValues => {
-                // Mask values are already on stack from VerifyOods
                 self.step = EvalCompositionStep::ComputePublicMemoryProduct;
                 vec![]
             }
 
             EvalCompositionStep::ComputePublicMemoryProduct => {
-                let proof: &StarkProof = stack.get_proof_reference();
+                let _proof: &StarkProof = stack.get_proof_reference();
 
                 // Get trace_domain_size from stack (should be there from validate_public_input)
                 let trace_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());

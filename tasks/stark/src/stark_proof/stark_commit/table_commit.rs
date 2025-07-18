@@ -1,5 +1,5 @@
 use crate::stark_proof::stark_commit::traces_commit::VectorCommit;
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
+use crate::swiftness::stark::types::StarkProof;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy)]
@@ -13,6 +13,12 @@ impl_type_identifiable!(TableCommit);
 impl TableCommit {
     pub fn new() -> Self {
         Self { processed: false }
+    }
+}
+
+impl Default for TableCommit {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

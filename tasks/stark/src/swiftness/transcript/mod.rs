@@ -1,10 +1,10 @@
+#[allow(clippy::module_inception)]
 pub mod transcript;
 
 use crate::felt::Felt;
 use crate::poseidon::{PoseidonHash, PoseidonHashMany};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
-
 pub use transcript::Transcript;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 #[repr(C)]
 pub struct TranscriptRandomFelt {
@@ -94,7 +94,7 @@ impl Executable for TranscriptReadFelt {
         match self.phase {
             TranscriptReadFeltPhase::ComputeHash => {
                 self.phase = TranscriptReadFeltPhase::Finished;
-                let inputs = vec![self.digest + Felt::ONE, self.val];
+                let inputs = [self.digest + Felt::ONE, self.val];
                 vec![PoseidonHashMany::new(inputs.len()).to_vec_with_type_tag()]
             }
             TranscriptReadFeltPhase::Finished => {

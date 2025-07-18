@@ -1,7 +1,7 @@
 use crate::poseidon::PoseidonHash;
 use crate::stark_proof::PoseidonHashMany;
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
-use lambdaworks_math::traits::ByteConversion;
+// use lambdaworks_math::traits::ByteConversion;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,6 +28,12 @@ impl TracesCommit {
             interaction_elements_count: 6, // Layout has 6 interaction elements
             current_element: 0,
         }
+    }
+}
+
+impl Default for TracesCommit {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -214,6 +220,12 @@ impl VectorCommit {
             committed: false,
             phase: VectorCommitPhase::CallPoseidonHashMany,
         }
+    }
+}
+
+impl Default for VectorCommit {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -2,7 +2,7 @@ use crate::poseidon::PoseidonHash;
 use crate::stark_proof::stark_commit::traces_commit::VectorCommit;
 use crate::stark_proof::PoseidonHashMany;
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
-use lambdaworks_math::traits::ByteConversion;
+// use lambdaworks_math::traits::ByteConversion;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +30,12 @@ impl FriCommit {
             n_layers: 0,
             current_layer: 0,
         }
+    }
+}
+
+impl Default for FriCommit {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -71,12 +77,12 @@ impl Executable for FriCommit {
                 let proof: &StarkProof = stack.get_proof_reference();
                 let coefficients = &proof.unsent_commitment.fri.last_layer_coefficients;
 
-                let coeff_vec: Vec<Felt> = coefficients.iter().map(|f| f.clone()).collect();
+                let coeff_vec: Vec<Felt> = coefficients.iter().copied().collect();
                 let coefficients_len = coefficients.len();
 
                 // Push coefficients count
                 stack
-                    .push_front(&(coefficients_len as u32).to_be_bytes().to_vec())
+                    .push_front(&(coefficients_len as u32).to_be_bytes())
                     .unwrap();
 
                 // Push all coefficients to stack (convert to Vec first for rev())
@@ -221,7 +227,7 @@ impl Executable for UpdateTranscriptWithVector {
         // Total count for hash_many is 1 + coefficients count
         let total_count = 1 + self.count;
         stack
-            .push_front(&(total_count as u32).to_be_bytes().to_vec())
+            .push_front(&(total_count as u32).to_be_bytes())
             .unwrap();
 
         self.processed = true;
@@ -258,6 +264,12 @@ impl GenerateRandomFelt {
     }
 }
 
+impl Default for GenerateRandomFelt {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for GenerateRandomFelt {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
@@ -279,8 +291,8 @@ impl Executable for GenerateRandomFelt {
 
             GenerateRandomFeltStep::ReadResult => {
                 // Get the hash result from stack
-                let hash_result = stack.borrow_front().clone();
-                let hash_felt = Felt::from_bytes_be_slice(&hash_result);
+                let hash_result = stack.borrow_front();
+                let hash_felt = Felt::from_bytes_be_slice(hash_result);
                 stack.pop_front();
 
                 // Get stored transcript state

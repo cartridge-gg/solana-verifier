@@ -88,6 +88,12 @@ impl ComputePublicMemoryProduct {
     }
 }
 
+impl Default for ComputePublicMemoryProduct {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for ComputePublicMemoryProduct {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.processed {
@@ -137,6 +143,12 @@ impl_type_identifiable!(ComputeDilutedProduct);
 impl ComputeDilutedProduct {
     pub fn new() -> Self {
         Self { processed: false }
+    }
+}
+
+impl Default for ComputeDilutedProduct {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -190,6 +202,12 @@ impl ComputePeriodicColumns {
         Self {
             step: PeriodicColumnsStep::ComputePedersenPoints,
         }
+    }
+}
+
+impl Default for ComputePeriodicColumns {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
