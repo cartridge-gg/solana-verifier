@@ -1,11 +1,10 @@
 use stark::felt::Felt;
 use stark::stark_proof::stark_commit::TracesCommit;
 use stark::swiftness::air::trace::UnsentCommitment;
-use stark::swiftness::stark::types::{StarkProof, StarkUnsentCommitment};
+use stark::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 
-//this test is not working yet but its a good starting point
 #[test]
 fn test_traces_commit_with_reference_values() {
     let mut stack = BidirectionalStackAccount::default();
@@ -32,16 +31,9 @@ fn test_traces_commit_with_reference_values() {
     let initial_transcript_digest =
         Felt::from_hex("0x1b9182dce9dc1169fcd00c1f8c0b6acd6baad99ce578370ead5ca230b8fb8c6")
             .unwrap();
-    let initial_transcript_counter = Felt::from_hex("0x1").unwrap();
+    // let initial_transcript_counter = Felt::from_hex("0x1").unwrap();
 
-    stack
-        .push_front(&initial_transcript_counter.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&initial_transcript_digest.to_bytes_be())
-        .unwrap();
-
-    stack.push_task(TracesCommit::new());
+    stack.push_task(TracesCommit::new(initial_transcript_digest));
 
     let mut steps = 0;
     while !stack.is_empty_back() {
@@ -49,38 +41,91 @@ fn test_traces_commit_with_reference_values() {
         steps += 1;
     }
 
-    let final_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    let transcript_counter_final = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-    let final_digest = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
+    println!("transcript_counter_final: {:?}", transcript_counter_final);
 
-    // Verify final transcript values
-    assert_eq!(
-        final_counter,
-        Felt::from_hex("0x7").unwrap(),
-        "Final counter mismatch"
+    let interaction_commitment_final = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "interaction_commitment_final: {:?}",
+        interaction_commitment_final
     );
-    assert_eq!(
-        final_digest,
-        Felt::from_hex("0x76dd10bb913bf5c08e91dc51f97e0fa0bb18a4ee99adbbb80e1c84c2f67e78a")
-            .unwrap(),
-        "Final digest mismatch"
+
+    let original_commitment_final = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!("original_commitment_final: {:?}", original_commitment_final);
+
+    let diluted_check_interaction_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "diluted_check_interaction_alpha: {:?}",
+        diluted_check_interaction_alpha
+    );
+
+    let diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "diluted_check_interaction_z: {:?}",
+        diluted_check_interaction_z
+    );
+
+    let diluted_check_permutation_interaction_elm = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "diluted_check_permutation_interaction_elm: {:?}",
+        diluted_check_permutation_interaction_elm
+    );
+
+    let range_check16_perm_interaction_elm = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "range_check16_perm_interaction_elm: {:?}",
+        range_check16_perm_interaction_elm
+    );
+
+    let memory_multi_column_perm_hash_interaction_elm0 =
+        Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!(
+        "memory_multi_column_perm_hash_interaction_elm0: {:?}",
+        memory_multi_column_perm_hash_interaction_elm0
     );
 
     let memory_multi_column_perm_perm_interaction_elm =
         Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-    let memory_multi_column_perm_hash_interaction_elm0 =
-        Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let range_check16_perm_interaction_elm = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let diluted_check_permutation_interaction_elm = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let diluted_check_interaction_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
+    println!(
+        "memory_multi_column_perm_perm_interaction_elm: {:?}",
+        memory_multi_column_perm_perm_interaction_elm
+    );
+
+    let expected_original_commitment =
+        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
+            .unwrap();
+    let expected_interaction_commitment =
+        Felt::from_hex("0x7171ffc67e24fcbb2a7d1acd6244fa91c54dff15c96ca26d193907b716ce2c5")
+            .unwrap();
+
+    // Expected interaction elements from the test output
+    let expected_memory_multi_column_perm_perm_interaction_elm =
+        Felt::from_hex("0x617916729dd4132da40d4c38330a344a4704c284a3c4b36924b4d7603522a62")
+            .unwrap();
+    let expected_memory_multi_column_perm_hash_interaction_elm0 =
+        Felt::from_hex("0x1465794e32fdae09c582f92d227c7764c344f98ee680235459cf3c962a929e3")
+            .unwrap();
+    let expected_range_check16_perm_interaction_elm =
+        Felt::from_hex("0x74ce496ecec64eada712b17dc981af96d402937d655f05a3f608084c876e29b")
+            .unwrap();
+    let expected_diluted_check_permutation_interaction_elm =
+        Felt::from_hex("0x5c3e5df5894a8a28ccd319646fe8867bed69e4c6fbb1a515f7a44ca89a14bbc")
+            .unwrap();
+    let expected_diluted_check_interaction_z =
+        Felt::from_hex("0x19e69143def2003b8c2254413a58b6c573f03448bcb1ad9a4a0c66077683f15")
+            .unwrap();
+    let expected_diluted_check_interaction_alpha =
+        Felt::from_hex("0x7143d36ac29773e3194e4182dea5b4f49459a2c752df09095c0797d499f43b3")
+            .unwrap();
 
     // Assert all expected interaction elements
     assert_eq!(
@@ -111,35 +156,8 @@ fn test_traces_commit_with_reference_values() {
         "Diluted check interaction alpha mismatch"
     );
 
-    // Reference values from the test output
-    let expected_original_commitment =
-        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
-            .unwrap();
-    let expected_interaction_commitment =
-        Felt::from_hex("0x7171ffc67e24fcbb2a7d1acd6244fa91c54dff15c96ca26d193907b716ce2c5")
-            .unwrap();
-
-    // Expected interaction elements from the test output
-    let expected_memory_multi_column_perm_perm_interaction_elm =
-        Felt::from_hex("0x617916729dd4132da40d4c38330a344a4704c284a3c4b36924b4d7603522a62")
-            .unwrap();
-    let expected_memory_multi_column_perm_hash_interaction_elm0 =
-        Felt::from_hex("0x1465794e32fdae09c582f92d227c7764c344f98ee680235459cf3c962a929e3")
-            .unwrap();
-    let expected_range_check16_perm_interaction_elm =
-        Felt::from_hex("0x74ce496ecec64eada712b17dc981af96d402937d655f05a3f608084c876e29b")
-            .unwrap();
-    let expected_diluted_check_permutation_interaction_elm =
-        Felt::from_hex("0x5c3e5df5894a8a28ccd319646fe8867bed69e4c6fbb1a515f7a44ca89a14bbc")
-            .unwrap();
-    let expected_diluted_check_interaction_z =
-        Felt::from_hex("0x19e69143def2003b8c2254413a58b6c573f03448bcb1ad9a4a0c66077683f15")
-            .unwrap();
-    let expected_diluted_check_interaction_alpha =
-        Felt::from_hex("0x7143d36ac29773e3194e4182dea5b4f49459a2c752df09095c0797d499f43b3")
-            .unwrap();
-
     // Verify execution completed successfully
     assert!(steps > 0, "Should have executed at least one step");
     assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
 }

@@ -12,28 +12,52 @@ pub enum TracesCommitStep {
     Done,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Transcript {
+    digest: Felt,
+    counter: Felt,
+}
+
+impl Transcript {
+    pub fn new() -> Self {
+        Self {
+            digest: Felt::ZERO,
+            counter: Felt::ZERO,
+        }
+    }
+}
+
 #[repr(C)]
 pub struct TracesCommit {
     step: TracesCommitStep,
     interaction_elements_count: u32,
     current_element: u32,
+    transcript: Transcript,
+    interaction_commitment: Felt,
+    original_commitment: Felt,
 }
 
 impl_type_identifiable!(TracesCommit);
 
 impl TracesCommit {
-    pub fn new() -> Self {
+    pub fn new(digest: Felt) -> Self {
         Self {
             step: TracesCommitStep::ReadOriginalCommitment,
-            interaction_elements_count: 3, // recursive_with_poseidon has 3 interaction elements
+            interaction_elements_count: 6, // recursive_with_poseidon has 6 interaction elements
             current_element: 0,
+            transcript: Transcript {
+                digest: digest,
+                counter: Felt::ZERO,
+            },
+            interaction_commitment: Felt::ZERO,
+            original_commitment: Felt::ZERO,
         }
     }
 }
 
 impl Default for TracesCommit {
     fn default() -> Self {
-        Self::new()
+        Self::new(Felt::ZERO)
     }
 }
 
@@ -43,27 +67,38 @@ impl Executable for TracesCommit {
             TracesCommitStep::ReadOriginalCommitment => {
                 let proof: &StarkProof = stack.get_proof_reference();
 
-                // Get original commitment from unsent_commitment
-                let original_commitment = proof.unsent_commitment.traces.original;
+                let unsent_commitment = proof.unsent_commitment.traces;
 
-                // Push to stack for vector_commit processing
                 stack
-                    .push_front(&original_commitment.to_bytes_be())
+                    .push_front(&self.transcript.digest.to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&unsent_commitment.original.to_bytes_be())
                     .unwrap();
 
                 self.step = TracesCommitStep::GenerateInteractionElements;
 
-                // Call VectorCommit to process the commitment
                 vec![VectorCommit::new().to_vec_with_type_tag()]
             }
 
             TracesCommitStep::GenerateInteractionElements => {
-                // At this point, original commitment is processed
-                // Generate interaction elements using transcript
+                let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.original_commitment = transcript_digest;
+                println!("original_commitment: {:?}", self.original_commitment);
+
+                stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
+                stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
+
+                let transcript = Transcript {
+                    digest: transcript_digest,
+                    counter: transcript_counter,
+                };
+                self.transcript = transcript;
 
                 self.step = TracesCommitStep::ReadInteractionCommitment;
-
-                // Generate interaction elements one by one
                 vec![
                     GenerateInteractionElements::new(self.interaction_elements_count)
                         .to_vec_with_type_tag(),
@@ -72,23 +107,23 @@ impl Executable for TracesCommit {
 
             TracesCommitStep::ReadInteractionCommitment => {
                 let proof: &StarkProof = stack.get_proof_reference();
-
-                // Get interaction commitment
                 let interaction_commitment = proof.unsent_commitment.traces.interaction;
 
-                // Push to stack for vector_commit processing
+                stack
+                    .push_front(&self.transcript.digest.to_bytes_be())
+                    .unwrap();
                 stack
                     .push_front(&interaction_commitment.to_bytes_be())
                     .unwrap();
+                stack
+                    .push_front(&self.original_commitment.to_bytes_be())
+                    .unwrap();
 
                 self.step = TracesCommitStep::Done;
-
-                // Call VectorCommit again for interaction commitment
                 vec![VectorCommit::new().to_vec_with_type_tag()]
             }
 
             TracesCommitStep::Done => {
-                // All trace commitments are now on the stack
                 vec![]
             }
         }
@@ -133,31 +168,35 @@ impl Executable for GenerateInteractionElements {
                 // Get transcript digest and counter from stack
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                // println!("transcript_digest in generate hash: {:?}", transcript_digest);
                 let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                // println!("transcript_counter in generate hash: {:?}", transcript_counter);
 
                 // Store transcript state for later restoration
-                stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
                 stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
+                stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
 
                 self.step = GenerateInteractionStep::ReadResult;
 
                 // Call PoseidonHash to generate random element
-                PoseidonHash::push_input(transcript_counter, transcript_digest, stack);
+                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
                 vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
             GenerateInteractionStep::ReadResult => {
                 let hash_result = Felt::from_bytes_be_slice(stack.borrow_front());
-                println!("hash_result: {}", hash_result);
+                println!("hash_result: {:?}", hash_result);
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
 
-                let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                // println!("transcript_digest in read result: {:?}", transcript_digest);
+                let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                // println!("transcript_counter in read result: {:?}", transcript_counter);
 
                 // Push generated element to result stack
                 stack.push_front(&hash_result.to_bytes_be()).unwrap();
@@ -235,9 +274,6 @@ impl Executable for VectorCommit {
             }
             VectorCommitPhase::RestoreTranscriptState => {
                 let new_digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                stack.pop_front();
-                stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
 

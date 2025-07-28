@@ -103,7 +103,7 @@ impl Executable for StarkCommit {
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
 
                 // Return TracesCommit task which will update transcript with trace commitments
-                vec![TracesCommit::new().to_vec_with_type_tag()]
+                vec![TracesCommit::new(initial_transcript_digest).to_vec_with_type_tag()]
             }
 
             StarkCommitStep::GenerateCompositionAlpha => {

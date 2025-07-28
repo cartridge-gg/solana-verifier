@@ -14,7 +14,7 @@ fn test_vector_commit() {
     let transcript_digest =
         Felt::from_hex("0x1b9182dce9dc1169fcd00c1f8c0b6acd6baad99ce578370ead5ca230b8fb8c6")
             .unwrap();
-    let transcript_counter = Felt::from_hex("0x1").unwrap();
+    // let transcript_counter = Felt::from_hex("0x1").unwrap();
 
     // Expected result
     let expected_digest =
@@ -22,7 +22,7 @@ fn test_vector_commit() {
             .unwrap();
     let expected_counter = Felt::from_hex("0x0").unwrap(); // Counter should not change in this case
 
-    stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
+    // stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
     stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
     stack.push_front(&commitment.to_bytes_be()).unwrap();
 
@@ -55,4 +55,6 @@ fn test_vector_commit() {
         "Digest should match expected"
     );
     assert!(steps > 0, "Should have executed at least one step");
+    assert!(stack.is_empty_back(), "Stack should be empty");
+    assert!(stack.is_empty_front(), "Stack should be empty");
 }
