@@ -11,30 +11,12 @@ pub enum TracesCommitStep {
     ReadInteractionCommitment,
     Done,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Transcript {
-    digest: Felt,
-    counter: Felt,
-}
-
-impl Transcript {
-    pub fn new() -> Self {
-        Self {
-            digest: Felt::ZERO,
-            counter: Felt::ZERO,
-        }
-    }
-}
-
 #[repr(C)]
 pub struct TracesCommit {
     step: TracesCommitStep,
     interaction_elements_count: u32,
     current_element: u32,
-    transcript: Transcript,
-    interaction_commitment: Felt,
-    original_commitment: Felt,
+    digest: Felt,
 }
 
 impl_type_identifiable!(TracesCommit);
@@ -45,12 +27,7 @@ impl TracesCommit {
             step: TracesCommitStep::ReadOriginalCommitment,
             interaction_elements_count: 6, // recursive_with_poseidon has 6 interaction elements
             current_element: 0,
-            transcript: Transcript {
-                digest: digest,
-                counter: Felt::ZERO,
-            },
-            interaction_commitment: Felt::ZERO,
-            original_commitment: Felt::ZERO,
+            digest,
         }
     }
 }
@@ -69,9 +46,7 @@ impl Executable for TracesCommit {
 
                 let unsent_commitment = proof.unsent_commitment.traces;
 
-                stack
-                    .push_front(&self.transcript.digest.to_bytes_be())
-                    .unwrap();
+                stack.push_front(&self.digest.to_bytes_be()).unwrap();
                 stack
                     .push_front(&unsent_commitment.original.to_bytes_be())
                     .unwrap();
@@ -86,17 +61,11 @@ impl Executable for TracesCommit {
                 stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                self.original_commitment = transcript_digest;
-                println!("original_commitment: {:?}", self.original_commitment);
 
                 stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
                 stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
 
-                let transcript = Transcript {
-                    digest: transcript_digest,
-                    counter: transcript_counter,
-                };
-                self.transcript = transcript;
+                self.digest = transcript_digest;
 
                 self.step = TracesCommitStep::ReadInteractionCommitment;
                 vec![
@@ -108,15 +77,22 @@ impl Executable for TracesCommit {
             TracesCommitStep::ReadInteractionCommitment => {
                 let proof: &StarkProof = stack.get_proof_reference();
                 let interaction_commitment = proof.unsent_commitment.traces.interaction;
+                let original_commitment = proof.unsent_commitment.traces.original;
+                println!("interaction_commitment: {:?}", interaction_commitment);
+                println!("original_commitment: {:?}", original_commitment);
 
+                //for later usage
                 stack
-                    .push_front(&self.transcript.digest.to_bytes_be())
+                    .push_front(&original_commitment.to_bytes_be())
                     .unwrap();
                 stack
                     .push_front(&interaction_commitment.to_bytes_be())
                     .unwrap();
+
+                //for vector commit
+                stack.push_front(&self.digest.to_bytes_be()).unwrap();
                 stack
-                    .push_front(&self.original_commitment.to_bytes_be())
+                    .push_front(&interaction_commitment.to_bytes_be())
                     .unwrap();
 
                 self.step = TracesCommitStep::Done;
