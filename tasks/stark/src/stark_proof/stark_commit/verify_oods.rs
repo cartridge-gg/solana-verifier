@@ -99,7 +99,7 @@ impl Executable for VerifyOods {
 
             VerifyOodsStep::VerifyComposition => {
                 // This step is merged into EvalCompositionPolynomial for efficiency
-                unreachable!()
+                vec![]
             }
 
             VerifyOodsStep::Done => {

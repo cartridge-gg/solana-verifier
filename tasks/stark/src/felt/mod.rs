@@ -3,6 +3,7 @@ mod primitive_conversions;
 use core::ops::{Add, Neg};
 use core::str::FromStr;
 
+use num_bigint::BigUint;
 use size_of::SizeOf;
 
 use lambdaworks_math::{
@@ -344,6 +345,15 @@ impl Felt {
     /// Count the minimum number of bits needed to express `self`'s representative.
     pub fn bits(&self) -> usize {
         self.0.representative().bits_le()
+    }
+
+    pub fn to_biguint(&self) -> BigUint {
+        let big_digits = self
+            .to_le_digits()
+            .into_iter()
+            .flat_map(|limb| [limb as u32, (limb >> 32) as u32])
+            .collect();
+        BigUint::new(big_digits)
     }
 }
 

@@ -7,16 +7,17 @@ pub mod verify_oods;
 
 use crate::swiftness::air::recursive_with_poseidon::Layout;
 use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
+// use crate::swiftness::transcript::Transcript;
+use crate::poseidon::PoseidonHash;
+use crate::swiftness::air::recursive_with_poseidon::global_values::InteractionElements;
 use crate::swiftness::transcript::Transcript;
-use crate::swiftness::transcript::TranscriptRandomFelt;
+use crate::swiftness::transcript::TranscriptReadFeltVector;
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
 use lambdaworks_math::traits::ByteConversion;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 // Import and re-export actual tasks from their modules
-pub use self::fri_commit::{
-    FriCommit, FriCommitRound, GenerateRandomFelt, UpdateTranscriptWithVector,
-};
+pub use self::fri_commit::FriCommit;
 pub use self::helpers::{
     ComputeDilutedProduct, ComputePeriodicColumns, ComputePublicMemoryProduct, PowersArray,
 };
@@ -30,16 +31,13 @@ pub enum StarkCommitStep {
     Init,
     TracesCommit,
     GenerateCompositionAlpha,
-    ProcessCompositionAlpha,    // Odbiera wynik TranscriptRandomFelt
-    GenerateTracesCoefficients, // Wywołuje PowersArray z composition_alpha
+    GenerateTracesCoefficients,
     CompositionCommit,
     GenerateInteractionAfterComposition,
-    ProcessInteractionAfterComposition, // Odbiera wynik TranscriptRandomFelt
     ReadOodsValues,
     VerifyOods,
     GenerateOodsAlpha,
-    ProcessOodsAlpha,         // Odbiera wynik TranscriptRandomFelt
-    GenerateOodsCoefficients, // Wywołuje PowersArray z oods_alpha
+    GenerateOodsCoefficients,
     FriCommit,
     ProofOfWork,
     Done,
@@ -48,10 +46,11 @@ pub enum StarkCommitStep {
 #[repr(C)]
 pub struct StarkCommit {
     step: StarkCommitStep,
-    // Store minimal state needed across steps
     traces_coefficients_count: u32,
     oods_coefficients_count: u32,
-    transcript: Transcript,
+    current_transcript_digest: Felt,
+    current_transcript_counter: Felt,
+    interaction_elements: InteractionElements,
 }
 
 impl_type_identifiable!(StarkCommit);
@@ -62,7 +61,9 @@ impl StarkCommit {
             step: StarkCommitStep::Init,
             traces_coefficients_count: 0,
             oods_coefficients_count: 0,
-            transcript: Transcript::new(Felt::ZERO),
+            current_transcript_digest: Felt::ZERO,
+            current_transcript_counter: Felt::ZERO,
+            interaction_elements: InteractionElements::new(&mut Transcript::new(Felt::ZERO)),
         }
     }
 }
@@ -114,36 +115,60 @@ impl Executable for StarkCommit {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Push transcript input for TranscriptRandomFelt task
-                TranscriptRandomFelt::push_input(transcript_digest, transcript_counter, stack);
-
-                self.step = StarkCommitStep::ProcessCompositionAlpha;
-
-                // Return TranscriptRandomFelt task to generate composition_alpha
-                vec![
-                    TranscriptRandomFelt::new(transcript_digest, transcript_counter)
-                        .to_vec_with_type_tag(),
-                ]
-            }
-
-            StarkCommitStep::ProcessCompositionAlpha => {
-                // TranscriptRandomFelt finished, composition_alpha is on stack
-                let composition_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
+                let interaction_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Also pop the remaining PoseidonHash results (3 values total)
+                let original_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                self.interaction_elements.diluted_check_interaction_alpha =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.interaction_elements.diluted_check_interaction_z =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.interaction_elements
+                    .diluted_check_permutation_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.interaction_elements.range_check16_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.interaction_elements
+                    .memory_multi_column_perm_hash_interaction_elm0 =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.interaction_elements
+                    .memory_multi_column_perm_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Store values for PowersArray: (initial=ONE, alpha=composition_alpha)
-                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
-                stack.push_front(&composition_alpha.to_bytes_be()).unwrap();
+                // Store current transcript state
+                self.current_transcript_digest = transcript_digest;
+                self.current_transcript_counter = transcript_counter;
+
+                // Push input directly for PoseidonHash: digest, counter
+                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
 
                 self.step = StarkCommitStep::GenerateTracesCoefficients;
-                vec![]
+
+                // Return PoseidonHash task directly to generate composition_alpha
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
             StarkCommitStep::GenerateTracesCoefficients => {
-                // Generate traces_coefficients using PowersArray with composition_alpha
+                // PoseidonHash finished, composition_alpha is on stack
+                let composition_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                // Pop the remaining PoseidonHash results (2 values total)
+                stack.pop_front();
+                // stack.pop_front();
+
+                // Increment transcript counter (random_felt_to_prover behavior)
+                self.current_transcript_counter += Felt::ONE;
+
+                // Store values for PowersArray: (initial=ONE, alpha=composition_alpha)
+                stack.push_front(&composition_alpha.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
+
                 self.step = StarkCommitStep::CompositionCommit;
 
                 // Return PowersArray task to generate coefficients
@@ -154,11 +179,12 @@ impl Executable for StarkCommit {
                 // At this point, traces_coefficients are on the stack from PowersArray
                 // TableCommit will update transcript with composition commitment
 
+                // Use updated transcript state with incremented counter
                 stack
-                    .push_front(&self.transcript.counter().to_bytes_be())
+                    .push_front(&self.current_transcript_counter.to_bytes_be())
                     .unwrap();
                 stack
-                    .push_front(&self.transcript.digest().to_bytes_be())
+                    .push_front(&self.current_transcript_digest.to_bytes_be())
                     .unwrap();
 
                 self.step = StarkCommitStep::GenerateInteractionAfterComposition;
@@ -172,50 +198,63 @@ impl Executable for StarkCommit {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Push transcript input for TranscriptRandomFelt task
-                TranscriptRandomFelt::push_input(transcript_digest, transcript_counter, stack);
+                // Store current transcript state
+                self.current_transcript_digest = transcript_digest;
+                self.current_transcript_counter = transcript_counter;
 
-                self.step = StarkCommitStep::ProcessInteractionAfterComposition;
+                // Push input directly for PoseidonHash: digest, counter
+                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
 
-                // Return TranscriptRandomFelt task to generate interaction_after_composition
-                vec![
-                    TranscriptRandomFelt::new(transcript_digest, transcript_counter)
-                        .to_vec_with_type_tag(),
-                ]
+                self.step = StarkCommitStep::ReadOodsValues;
+
+                // Return PoseidonHash task directly to generate interaction_after_composition
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
-            StarkCommitStep::ProcessInteractionAfterComposition => {
-                // TranscriptRandomFelt finished, interaction_after_composition is on stack
+            StarkCommitStep::ReadOodsValues => {
+                // PoseidonHash finished, interaction_after_composition is on stack
                 let interaction_after_composition = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 // Pop remaining PoseidonHash results
                 stack.pop_front();
                 stack.pop_front();
 
+                // Increment transcript counter (random_felt_to_prover behavior)
+                self.current_transcript_counter += Felt::ONE;
+
                 // Store interaction_after_composition for later use
                 stack
                     .push_front(&interaction_after_composition.to_bytes_be())
                     .unwrap();
 
-                self.step = StarkCommitStep::ReadOodsValues;
-                vec![]
-            }
-
-            StarkCommitStep::ReadOodsValues => {
                 let proof: &StarkProof = stack.get_proof_reference();
+                let oods_values = proof.unsent_commitment.oods_values.as_slice().to_vec();
 
-                // Read OODS values from unsent_commitment and process with transcript
-                // For now, we'll push the count of oods_values to stack
-                let oods_values_count = proof.unsent_commitment.oods_values.len() as u32;
-                stack.push_front(&oods_values_count.to_bytes_be()).unwrap();
+                // Use TranscriptReadFeltVector to implement read_felt_vector_from_prover
+                // This will: hash(digest + 1, oods_values), update digest, reset counter
+                TranscriptReadFeltVector::push_input(
+                    self.current_transcript_digest,
+                    &oods_values,
+                    stack,
+                );
 
                 self.step = StarkCommitStep::VerifyOods;
-                vec![]
+                vec![
+                    TranscriptReadFeltVector::new(self.current_transcript_digest, oods_values)
+                        .to_vec_with_type_tag(),
+                ]
             }
 
             StarkCommitStep::VerifyOods => {
-                // Get necessary values from stack for verify_oods
-                // trace_domain_size should already be on stack from validate_public_input
+                // TranscriptReadFeltVector finished, new digest is on stack
+                let new_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                // Pop remaining results from PoseidonHashMany - need to be careful about stack content
+                // PoseidonHashMany might leave multiple values on stack
+
+                // Update transcript state: new digest, reset counter (read_felt_vector_from_prover behavior)
+                self.current_transcript_digest = new_digest;
+                self.current_transcript_counter = Felt::ZERO;
 
                 self.step = StarkCommitStep::GenerateOodsAlpha;
 
@@ -230,36 +269,34 @@ impl Executable for StarkCommit {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Push transcript input for TranscriptRandomFelt task
-                TranscriptRandomFelt::push_input(transcript_digest, transcript_counter, stack);
+                // Store current transcript state
+                self.current_transcript_digest = transcript_digest;
+                self.current_transcript_counter = transcript_counter;
 
-                self.step = StarkCommitStep::ProcessOodsAlpha;
+                // Push input directly for PoseidonHash: digest, counter
+                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
 
-                // Return TranscriptRandomFelt task to generate oods_alpha
-                vec![
-                    TranscriptRandomFelt::new(transcript_digest, transcript_counter)
-                        .to_vec_with_type_tag(),
-                ]
+                self.step = StarkCommitStep::GenerateOodsCoefficients;
+
+                // Return PoseidonHash task directly to generate oods_alpha
+                vec![PoseidonHash::new().to_vec_with_type_tag()]
             }
 
-            StarkCommitStep::ProcessOodsAlpha => {
-                // TranscriptRandomFelt finished, oods_alpha is on stack
+            StarkCommitStep::GenerateOodsCoefficients => {
+                // PoseidonHash finished, oods_alpha is on stack
                 let oods_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 // Pop remaining PoseidonHash results
                 stack.pop_front();
                 stack.pop_front();
 
+                // Increment transcript counter (random_felt_to_prover behavior)
+                self.current_transcript_counter += Felt::ONE;
+
                 // Store values for PowersArray: (initial=ONE, alpha=oods_alpha)
                 stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
                 stack.push_front(&oods_alpha.to_bytes_be()).unwrap();
 
-                self.step = StarkCommitStep::GenerateOodsCoefficients;
-                vec![]
-            }
-
-            StarkCommitStep::GenerateOodsCoefficients => {
-                // Generate oods_coefficients using PowersArray with oods_alpha
                 self.step = StarkCommitStep::FriCommit;
 
                 // Return PowersArray task for oods_coefficients

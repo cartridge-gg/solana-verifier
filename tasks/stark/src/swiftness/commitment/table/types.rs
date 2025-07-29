@@ -1,8 +1,16 @@
+use crate::swiftness::commitment::table::config::Config;
 use crate::{
     felt::Felt,
     funvec::{FunVec, FUNVEC_DECOMMITMENT_VALUES},
     swiftness::commitment::vector,
 };
+
+// Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Commitment {
+    pub config: Config,
+    pub vector_commitment: vector::types::Commitment,
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Decommitment {

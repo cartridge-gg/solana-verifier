@@ -1,7 +1,15 @@
+use crate::swiftness::commitment::vector::config::Config;
 use crate::{
     felt::Felt,
     funvec::{FunVec, FUNVEC_AUTHENTICATIONS},
 };
+
+// Commitment for a vector of field elements.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Commitment {
+    pub config: Config,
+    pub commitment_hash: Felt,
+}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Witness {
