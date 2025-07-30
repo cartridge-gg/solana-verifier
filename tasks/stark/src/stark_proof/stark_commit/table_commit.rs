@@ -1,8 +1,10 @@
+use crate::felt::Felt;
 use crate::stark_proof::stark_commit::traces_commit::VectorCommit;
 use crate::swiftness::stark::types::StarkProof;
+use crate::swiftness::stark::types::StarkUnsentCommitment;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub struct TableCommit {
     processed: bool,
@@ -24,12 +26,15 @@ impl Default for TableCommit {
 
 impl Executable for TableCommit {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-        let proof: &StarkProof = stack.get_proof_reference();
+        // let proof: &StarkProof = stack.get_proof_reference();
 
-        let composition_commitment = proof.unsent_commitment.composition;
-        stack
-            .push_front(&composition_commitment.to_bytes_be())
-            .unwrap();
+        // // let composition_commitment = proof.unsent_commitment.composition;
+        // let composition_commitment = Felt::from_bytes_be_slice(stack.borrow_front());
+        // stack.pop_front();
+
+        // stack
+        //     .push_front(&composition_commitment.to_bytes_be())
+        //     .unwrap();
 
         self.processed = true;
         vec![VectorCommit::new().to_vec_with_type_tag()]

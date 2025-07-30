@@ -34,10 +34,10 @@ fn test_fri_commit_with_reference_values() {
 
     // Push initial transcript state to stack
     stack
-        .push_front(&initial_transcript_counter.to_bytes_be())
+        .push_front(&initial_transcript_digest.to_bytes_be())
         .unwrap();
     stack
-        .push_front(&initial_transcript_digest.to_bytes_be())
+        .push_front(&initial_transcript_counter.to_bytes_be())
         .unwrap();
 
     // Execute FriCommit
@@ -53,6 +53,7 @@ fn test_fri_commit_with_reference_values() {
     // Collect results from stack
     let transcript_counter_final = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
+
     println!("transcript_counter_final: {:?}", transcript_counter_final);
 
     let transcript_digest_final = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -61,11 +62,21 @@ fn test_fri_commit_with_reference_values() {
 
     // Collect eval_points (should be 4 for n_layers=5)
     let mut eval_points = Vec::new();
-    for i in 0..4 {
+    // Collect from back (LIFO order) since eval_points are pushed to front
+    let mut temp_points = Vec::new();
+    for _ in 0..4 {
         let eval_point = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
-        eval_points.push(eval_point);
-        println!("eval_point[{}]: {:?}", i, eval_point);
+        temp_points.push(eval_point);
+    }
+
+    // Reverse to get correct order (first generated should be eval_points[0])
+    for point in temp_points.into_iter().rev() {
+        eval_points.push(point);
+    }
+
+    for (i, point) in eval_points.iter().enumerate() {
+        println!("eval_point[{}]: {:?}", i, point);
     }
 
     // Verify against expected values
@@ -95,6 +106,8 @@ fn test_fri_commit_with_reference_values() {
 
     // Verify execution completed successfully
     assert!(steps > 0, "Should have executed at least one step");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
 
     // The stack should contain the inner layer commitments and other data
     // but we're mainly testing the eval_points generation and transcript updates

@@ -1,14 +1,15 @@
 use crate::felt::Felt;
-use crate::stark_proof::stark_commit::{PoseidonHash, TableCommit, TranscriptReadFeltVector};
+use crate::stark_proof::stark_commit::{TableCommit, TranscriptReadFeltVector};
 use crate::swiftness::stark::types::StarkProof;
+use crate::swiftness::transcript::TranscriptRandomFelt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FriCommitStep {
     Init,
-    ProcessInnerLayer(usize), // Track which layer we're processing
-    GenerateEvalPoint(usize), // Generate eval point after TableCommit
-    CollectEvalPoint(usize),  // Collect eval point from PoseidonHash
+    ProcessInnerLayer(usize), // TableCommit for inner layer
+    GenerateEvalPoint(usize), // TranscriptRandomFelt for eval_point
+    CollectEvalPoint(usize),  // Collect eval_point and continue
     ReadLastLayerCoefficients,
     Done,
 }
@@ -42,19 +43,19 @@ impl Executable for FriCommit {
                 let proof: &StarkProof = stack.get_proof_reference();
                 let fri_config = &proof.config.fri;
 
-                // Validate n_layers
-                assert!(
-                    fri_config.n_layers > Felt::from(0),
-                    "Invalid n_layers value"
-                );
-
                 self.n_layers = fri_config.n_layers.to_biguint().try_into().unwrap();
 
-                // Get transcript state from stack (pushed by StarkCommit)
+                // Validate n_layers
+                assert!(self.n_layers > 0, "Invalid n_layers value");
+
+                // Get transcript state from stack (pushed by StarkCommit or test)
+                // Test pushes: counter first, then digest
                 let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("transcript_counter: {:?}", transcript_counter);
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("transcript_digest: {:?}", transcript_digest);
 
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
@@ -71,68 +72,84 @@ impl Executable for FriCommit {
 
             FriCommitStep::ProcessInnerLayer(layer_idx) => {
                 let layer_idx = *layer_idx;
+                let proof: &StarkProof = stack.get_proof_reference();
+                println!(
+                    "ProcessInnerLayer: layer_idx={}, n_layers={}",
+                    layer_idx, self.n_layers
+                );
 
-                // Check if we've processed all inner layers
+                // Check if we've processed all inner layers (n_layers - 1 total)
                 if layer_idx >= self.n_layers as usize - 1 {
+                    println!(
+                        "Finished processing inner layers, going to ReadLastLayerCoefficients"
+                    );
                     self.step = FriCommitStep::ReadLastLayerCoefficients;
                     vec![]
                 } else {
+                    //push unsent commitment for commitments vector
+                    //commitments are int fact just unsent_commitment.fri.inner_layers
+                    stack
+                        .push_front(
+                            &proof
+                                .unsent_commitment
+                                .fri
+                                .inner_layers
+                                .get(layer_idx)
+                                .unwrap()
+                                .to_bytes_be(),
+                        )
+                        .unwrap();
+
                     // Push transcript state for TableCommit
-                    // stack
-                    //     .push_front(&self.current_transcript_counter.to_bytes_be())
-                    //     .unwrap();
                     stack
                         .push_front(&self.current_transcript_digest.to_bytes_be())
                         .unwrap();
 
-                    // After TableCommit, we'll generate eval_point (except for last inner layer)
-                    if layer_idx < self.n_layers as usize - 2 {
-                        self.step = FriCommitStep::GenerateEvalPoint(layer_idx);
-                    } else {
-                        // Last inner layer, no eval_point needed
-                        self.step = FriCommitStep::ProcessInnerLayer(layer_idx + 1);
-                    }
+                    self.step = FriCommitStep::GenerateEvalPoint(layer_idx);
 
+                    // First: TableCommit (like original table_commit call)
                     vec![TableCommit::new().to_vec_with_type_tag()]
                 }
             }
 
             FriCommitStep::GenerateEvalPoint(layer_idx) => {
                 let layer_idx = *layer_idx;
+                println!("GenerateEvalPoint: layer_idx={}", layer_idx);
 
-                // TableCommit finished, get updated transcript state
-                let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                // TableCommit finished, get results: [counter, digest]
+                let table_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                let table_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // TableCommit already pushed its commitment hash to stack
-                // We'll leave it there for StarkCommit to collect later
-
-                self.current_transcript_digest = transcript_digest;
-                self.current_transcript_counter = transcript_counter;
-
-                // Generate eval_point using PoseidonHash
-                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
+                // Update transcript state with TableCommit results
+                self.current_transcript_digest = table_digest;
+                self.current_transcript_counter = table_counter;
 
                 self.step = FriCommitStep::CollectEvalPoint(layer_idx);
 
-                vec![PoseidonHash::new().to_vec_with_type_tag()]
+                // Second: TranscriptRandomFelt using transcript state AFTER TableCommit
+                vec![TranscriptRandomFelt::new(table_digest, table_counter).to_vec_with_type_tag()]
             }
 
             FriCommitStep::CollectEvalPoint(layer_idx) => {
                 let layer_idx = *layer_idx;
+                println!("CollectEvalPoint: layer_idx={}", layer_idx);
 
-                // PoseidonHash result is on stack
+                // TranscriptRandomFelt finished, get results: [counter, eval_point]
+                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
                 let eval_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop remaining PoseidonHash results
-                stack.pop_front();
 
-                // Increment transcript counter (random_felt_to_prover behavior)
-                self.current_transcript_counter += Felt::ONE;
+                // Update transcript state from TranscriptRandomFelt result
+                self.current_transcript_counter = updated_counter;
 
-                // Push eval_point back to stack for StarkCommit to collect
+                // Push eval_point back to stack for final collection
+                println!(
+                    "Pushing eval_point for layer {}: {:?}",
+                    layer_idx, eval_point
+                );
                 stack.push_front(&eval_point.to_bytes_be()).unwrap();
 
                 // Continue with next layer
@@ -141,21 +158,8 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::ReadLastLayerCoefficients => {
-                // If we had inner layers and just finished the last one
-                if self.n_layers > 1 {
-                    // Check if we're coming from last TableCommit
-                    let counter_bytes = stack.borrow_front();
-                    if !counter_bytes.is_empty() {
-                        // Get updated transcript state from last TableCommit
-                        let transcript_counter = Felt::from_bytes_be_slice(counter_bytes);
-                        stack.pop_front();
-                        let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                        stack.pop_front();
-
-                        self.current_transcript_digest = transcript_digest;
-                        self.current_transcript_counter = transcript_counter;
-                    }
-                }
+                // Transcript state is already updated by the last CollectEvalPoint
+                // No need to read from stack - eval_points and commitments are on stack for final collection
 
                 // Read last layer coefficients from proof
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -179,6 +183,8 @@ impl Executable for FriCommit {
 
                 self.step = FriCommitStep::Done;
 
+                // Note: We need to use the exact length since TranscriptReadFeltVector::new()
+                // automatically handles the +1 for digest internally
                 vec![
                     TranscriptReadFeltVector::new(last_layer_coefficients.as_slice().len())
                         .to_vec_with_type_tag(),
@@ -186,14 +192,6 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::Done => {
-                // TranscriptReadFeltVector finished, get updated digest
-                let new_digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                // Push final transcript state to stack
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap(); // Reset counter after read_felt_vector
-                stack.push_front(&new_digest.to_bytes_be()).unwrap();
-
                 // At this point, the stack contains (from front to back):
                 // - transcript_counter (0)
                 // - transcript_digest (updated)
@@ -205,9 +203,12 @@ impl Executable for FriCommit {
                 // - inner_layer_commitments[n-2] hash (from TableCommit)
                 //
                 // StarkCommit will collect these in order
-
                 vec![]
             }
         }
+    }
+
+    fn is_finished(&mut self) -> bool {
+        self.step == FriCommitStep::Done
     }
 }

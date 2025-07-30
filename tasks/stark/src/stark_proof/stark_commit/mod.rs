@@ -11,7 +11,7 @@ use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use crate::poseidon::PoseidonHash;
 use crate::swiftness::air::recursive_with_poseidon::global_values::InteractionElements;
 use crate::swiftness::transcript::Transcript;
-use crate::swiftness::transcript::TranscriptReadFeltVector;
+use crate::swiftness::transcript::{TranscriptRandomFelt, TranscriptReadFeltVector};
 use crate::{felt::Felt, swiftness::stark::types::StarkProof};
 use lambdaworks_math::traits::ByteConversion;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
@@ -145,25 +145,24 @@ impl Executable for StarkCommit {
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
 
-                // Push input directly for PoseidonHash: digest, counter
-                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
-
                 self.step = StarkCommitStep::GenerateTracesCoefficients;
 
-                // Return PoseidonHash task directly to generate composition_alpha
-                vec![PoseidonHash::new().to_vec_with_type_tag()]
+                // Use TranscriptRandomFelt to generate composition_alpha
+                vec![
+                    TranscriptRandomFelt::new(transcript_digest, transcript_counter)
+                        .to_vec_with_type_tag(),
+                ]
             }
 
             StarkCommitStep::GenerateTracesCoefficients => {
-                // PoseidonHash finished, composition_alpha is on stack
+                // TranscriptRandomFelt finished, get updated transcript state and random value
+                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
                 let composition_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop the remaining PoseidonHash results (2 values total)
-                stack.pop_front();
-                // stack.pop_front();
 
-                // Increment transcript counter (random_felt_to_prover behavior)
-                self.current_transcript_counter += Felt::ONE;
+                // Update transcript state from TranscriptRandomFelt result
+                self.current_transcript_counter = updated_counter;
 
                 // Store values for PowersArray: (initial=ONE, alpha=composition_alpha)
                 stack.push_front(&composition_alpha.to_bytes_be()).unwrap();
@@ -202,25 +201,24 @@ impl Executable for StarkCommit {
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
 
-                // Push input directly for PoseidonHash: digest, counter
-                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
-
                 self.step = StarkCommitStep::ReadOodsValues;
 
-                // Return PoseidonHash task directly to generate interaction_after_composition
-                vec![PoseidonHash::new().to_vec_with_type_tag()]
+                // Use TranscriptRandomFelt to generate interaction_after_composition
+                vec![
+                    TranscriptRandomFelt::new(transcript_digest, transcript_counter)
+                        .to_vec_with_type_tag(),
+                ]
             }
 
             StarkCommitStep::ReadOodsValues => {
-                // PoseidonHash finished, interaction_after_composition is on stack
+                // TranscriptRandomFelt finished, get updated transcript state and random value
+                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
                 let interaction_after_composition = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop remaining PoseidonHash results
-                stack.pop_front();
-                stack.pop_front();
 
-                // Increment transcript counter (random_felt_to_prover behavior)
-                self.current_transcript_counter += Felt::ONE;
+                // Update transcript state from TranscriptRandomFelt result
+                self.current_transcript_counter = updated_counter;
 
                 // Store interaction_after_composition for later use
                 stack
@@ -243,15 +241,15 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::VerifyOods => {
-                // TranscriptReadFeltVector finished, new digest is on stack
-                let new_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                // TranscriptReadFeltVector finished, get updated transcript state
+                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop remaining results from PoseidonHashMany - need to be careful about stack content
-                // PoseidonHashMany might leave multiple values on stack
+                let updated_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                // Update transcript state: new digest, reset counter (read_felt_vector_from_prover behavior)
-                self.current_transcript_digest = new_digest;
-                self.current_transcript_counter = Felt::ZERO;
+                // Update transcript state from TranscriptReadFeltVector result
+                self.current_transcript_digest = updated_digest;
+                self.current_transcript_counter = updated_counter;
 
                 self.step = StarkCommitStep::GenerateOodsAlpha;
 
@@ -260,35 +258,26 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::GenerateOodsAlpha => {
-                // VerifyOods finished, get updated transcript state from stack
-                let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                // Store current transcript state
-                self.current_transcript_digest = transcript_digest;
-                self.current_transcript_counter = transcript_counter;
-
-                // Push input directly for PoseidonHash: digest, counter
-                PoseidonHash::push_input(transcript_digest, transcript_counter, stack);
-
+                // VerifyOods finished, use current transcript state
                 self.step = StarkCommitStep::GenerateOodsCoefficients;
 
-                // Return PoseidonHash task directly to generate oods_alpha
-                vec![PoseidonHash::new().to_vec_with_type_tag()]
+                // Use TranscriptRandomFelt to generate oods_alpha
+                vec![TranscriptRandomFelt::new(
+                    self.current_transcript_digest,
+                    self.current_transcript_counter,
+                )
+                .to_vec_with_type_tag()]
             }
 
             StarkCommitStep::GenerateOodsCoefficients => {
-                // PoseidonHash finished, oods_alpha is on stack
+                // TranscriptRandomFelt finished, get updated transcript state and random value
+                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
                 let oods_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // Pop remaining PoseidonHash results
-                stack.pop_front();
-                stack.pop_front();
 
-                // Increment transcript counter (random_felt_to_prover behavior)
-                self.current_transcript_counter += Felt::ONE;
+                // Update transcript state from TranscriptRandomFelt result
+                self.current_transcript_counter = updated_counter;
 
                 // Store values for PowersArray: (initial=ONE, alpha=oods_alpha)
                 stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();

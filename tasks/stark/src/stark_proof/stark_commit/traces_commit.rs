@@ -234,9 +234,9 @@ impl Executable for VectorCommit {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             VectorCommitPhase::CallPoseidonHashMany => {
-                let commitment = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let commitment = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
                 // Update transcript digest: hash(digest + 1, commitment)
