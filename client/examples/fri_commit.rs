@@ -15,7 +15,7 @@ use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as 
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
-use stark::stark_proof::validate_public_input::ValidatePublicInput;
+use stark::stark_proof::stark_commit::FriCommit;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -79,7 +79,7 @@ async fn main() -> client::Result<()> {
     .await?;
     println!("Account initialized: {signature}");
 
-    println!("\nValidatePublicInput Task on Solana");
+    println!("\nFriCommit Task on Solana");
     println!("==================================");
 
     let input = include_str!("../../example_proof/saya.json");
@@ -121,13 +121,10 @@ async fn main() -> client::Result<()> {
     send_and_confirm_transactions(&client, &transactions).await?;
     println!("Proof data set successfully");
 
-    // Push the ValidatePublicInput task to the stack
-    let validate_task = ValidatePublicInput::new();
+    // Push the FriCommit task to the stack
+    let validate_task = FriCommit::new();
 
-    println!(
-        "Using ValidatePublicInput with TYPE_TAG: {}",
-        ValidatePublicInput::TYPE_TAG
-    );
+    println!("Using FriCommit with TYPE_TAG: {}", FriCommit::TYPE_TAG);
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
@@ -143,7 +140,7 @@ async fn main() -> client::Result<()> {
         &[push_task_ix],
     )
     .await?;
-    println!("ValidatePublicInput task pushed: {signature}");
+    println!("FriCommit task pushed: {signature}");
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -193,7 +190,7 @@ async fn main() -> client::Result<()> {
     }
 
     println!("All execution steps completed");
-    println!("\nValidatePublicInput successfully executed on Solana!");
+    println!("\nFriCommit successfully executed on Solana!");
 
     Ok(())
 }

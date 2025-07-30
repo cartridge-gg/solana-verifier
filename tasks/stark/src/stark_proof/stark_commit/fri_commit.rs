@@ -15,7 +15,6 @@ pub enum FriCommitStep {
 }
 
 impl_type_identifiable!(FriCommit);
-
 #[repr(C)]
 pub struct FriCommit {
     step: FriCommitStep,
@@ -47,10 +46,8 @@ impl Executable for FriCommit {
 
                 let transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("transcript_counter: {:?}", transcript_counter);
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("transcript_digest: {:?}", transcript_digest);
 
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
@@ -75,9 +72,6 @@ impl Executable for FriCommit {
 
                 // Check if we've processed all inner layers (n_layers - 1 total)
                 if layer_idx >= self.n_layers as usize - 1 {
-                    println!(
-                        "Finished processing inner layers, going to ReadLastLayerCoefficients"
-                    );
                     self.step = FriCommitStep::ReadLastLayerCoefficients;
                     vec![]
                 } else {
@@ -105,7 +99,6 @@ impl Executable for FriCommit {
 
             FriCommitStep::GenerateEvalPoint(layer_idx) => {
                 let layer_idx = *layer_idx;
-                println!("GenerateEvalPoint: layer_idx={}", layer_idx);
 
                 let table_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
@@ -122,7 +115,6 @@ impl Executable for FriCommit {
 
             FriCommitStep::CollectEvalPoint(layer_idx) => {
                 let layer_idx = *layer_idx;
-                println!("CollectEvalPoint: layer_idx={}", layer_idx);
 
                 let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
@@ -130,11 +122,6 @@ impl Executable for FriCommit {
                 stack.pop_front();
 
                 self.current_transcript_counter = updated_counter;
-
-                println!(
-                    "Pushing eval_point for layer {}: {:?}",
-                    layer_idx, eval_point
-                );
                 stack.push_front(&eval_point.to_bytes_be()).unwrap();
 
                 self.step = FriCommitStep::ProcessInnerLayer(layer_idx + 1);
