@@ -30,15 +30,15 @@ impl TranscriptRandomFelt {
         }
     }
 
-    pub fn push_input<T: BidirectionalStack>(digest: Felt, counter: Felt, stack: &mut T) {
-        // PoseidonHash expects 5 values on stack: s1, s2, s3, v1, v2
-        // We need to provide: digest as v1, counter as v2, and zeros for s1, s2, s3
-        stack.push_front(&counter.to_bytes_be()).unwrap();
-        stack.push_front(&digest.to_bytes_be()).unwrap();
-        stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-        stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-        stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-    }
+    // pub fn push_input<T: BidirectionalStack>(digest: Felt, counter: Felt, stack: &mut T) {
+    //     // PoseidonHash expects 5 values on stack: s1, s2, s3, v1, v2
+    //     // We need to provide: digest as v1, counter as v2, and zeros for s1, s2, s3
+    //     stack.push_front(&counter.to_bytes_be()).unwrap();
+    //     stack.push_front(&digest.to_bytes_be()).unwrap();
+    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+    // }
 }
 
 impl Executable for TranscriptRandomFelt {
@@ -62,25 +62,24 @@ impl Executable for TranscriptRandomFelt {
 
 #[repr(C)]
 pub struct TranscriptReadFelt {
-    digest: Felt,
-    val: Felt,
     phase: TranscriptReadFeltPhase,
+    inputs_len: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TranscriptReadFeltPhase {
     ComputeHash,
+    ReadPosiedonResult,
     Finished,
 }
 
 impl_type_identifiable!(TranscriptReadFelt);
 
 impl TranscriptReadFelt {
-    pub fn new(digest: Felt, val: Felt) -> Self {
+    pub fn new() -> Self {
         Self {
-            digest,
-            val,
             phase: TranscriptReadFeltPhase::ComputeHash,
+            inputs_len: 2,
         }
     }
 
@@ -91,12 +90,23 @@ impl TranscriptReadFelt {
 }
 
 impl Executable for TranscriptReadFelt {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptReadFeltPhase::ComputeHash => {
+                self.phase = TranscriptReadFeltPhase::ReadPosiedonResult;
+                vec![PoseidonHashMany::new(self.inputs_len).to_vec_with_type_tag()]
+            }
+            TranscriptReadFeltPhase::ReadPosiedonResult => {
+                let result = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
+
+                stack.push_front(&result.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+
                 self.phase = TranscriptReadFeltPhase::Finished;
-                let inputs = [self.digest + Felt::ONE, self.val];
-                vec![PoseidonHashMany::new(inputs.len()).to_vec_with_type_tag()]
+                vec![]
             }
             TranscriptReadFeltPhase::Finished => {
                 vec![]
@@ -111,25 +121,24 @@ impl Executable for TranscriptReadFelt {
 
 #[repr(C)]
 pub struct TranscriptReadFeltVector {
-    digest: Felt,
-    values: Vec<Felt>,
     phase: TranscriptReadFeltVectorPhase,
+    inputs_len: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TranscriptReadFeltVectorPhase {
     ComputeHash,
+    ReadPosiedonResult,
     Finished,
 }
 
 impl_type_identifiable!(TranscriptReadFeltVector);
 
 impl TranscriptReadFeltVector {
-    pub fn new(digest: Felt, values: Vec<Felt>) -> Self {
+    pub fn new(inputs_len: usize) -> Self {
         Self {
-            digest,
-            values,
             phase: TranscriptReadFeltVectorPhase::ComputeHash,
+            inputs_len: inputs_len + 1,
         }
     }
 
@@ -141,13 +150,23 @@ impl TranscriptReadFeltVector {
 }
 
 impl Executable for TranscriptReadFeltVector {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptReadFeltVectorPhase::ComputeHash => {
+                self.phase = TranscriptReadFeltVectorPhase::ReadPosiedonResult;
+                vec![PoseidonHashMany::new(self.inputs_len).to_vec_with_type_tag()]
+            }
+            TranscriptReadFeltVectorPhase::ReadPosiedonResult => {
+                let result = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
+
+                stack.push_front(&result.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+
                 self.phase = TranscriptReadFeltVectorPhase::Finished;
-                let mut inputs = vec![self.digest + Felt::ONE];
-                inputs.extend_from_slice(&self.values);
-                vec![PoseidonHashMany::new(inputs.len()).to_vec_with_type_tag()]
+                vec![]
             }
             TranscriptReadFeltVectorPhase::Finished => {
                 vec![]

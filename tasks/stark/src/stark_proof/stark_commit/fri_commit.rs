@@ -80,9 +80,9 @@ impl Executable for FriCommit {
                     vec![]
                 } else {
                     // Push transcript state for TableCommit
-                    stack
-                        .push_front(&self.current_transcript_counter.to_bytes_be())
-                        .unwrap();
+                    // stack
+                    //     .push_front(&self.current_transcript_counter.to_bytes_be())
+                    //     .unwrap();
                     stack
                         .push_front(&self.current_transcript_digest.to_bytes_be())
                         .unwrap();
@@ -181,11 +181,10 @@ impl Executable for FriCommit {
 
                 self.step = FriCommitStep::Done;
 
-                vec![TranscriptReadFeltVector::new(
-                    self.current_transcript_digest,
-                    last_layer_coefficients.as_slice().to_vec(),
-                )
-                .to_vec_with_type_tag()]
+                vec![
+                    TranscriptReadFeltVector::new(last_layer_coefficients.as_slice().len())
+                        .to_vec_with_type_tag(),
+                ]
             }
 
             FriCommitStep::Done => {

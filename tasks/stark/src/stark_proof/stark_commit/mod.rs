@@ -239,10 +239,7 @@ impl Executable for StarkCommit {
                 );
 
                 self.step = StarkCommitStep::VerifyOods;
-                vec![
-                    TranscriptReadFeltVector::new(self.current_transcript_digest, oods_values)
-                        .to_vec_with_type_tag(),
-                ]
+                vec![TranscriptReadFeltVector::new(oods_values.len()).to_vec_with_type_tag()]
             }
 
             StarkCommitStep::VerifyOods => {
