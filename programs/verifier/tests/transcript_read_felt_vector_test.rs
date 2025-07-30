@@ -46,6 +46,8 @@ fn test_transcript_read_felt_vector() {
     );
     assert_eq!(result_counter, expected_counter, "Counter should be zero");
     assert!(steps > 0, "Should have executed at least one step");
+    assert_eq!(stack.front_index, 0, "Stack should be empty after test");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty after test");
 }
 
 // Reference implementation for verification

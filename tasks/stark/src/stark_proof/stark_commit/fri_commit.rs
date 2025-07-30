@@ -19,8 +19,6 @@ impl_type_identifiable!(FriCommit);
 pub struct FriCommit {
     step: FriCommitStep,
     n_layers: u32,
-
-    // Transcript state
     current_transcript_digest: Felt,
     current_transcript_counter: Felt,
 }

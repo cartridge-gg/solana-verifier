@@ -23,15 +23,20 @@ fn test_transcript_random_felt() {
         steps += 1;
     }
 
-    // Get result from stack - should be the hash result
-    let result = Felt::from_bytes_be_slice(stack.borrow_front());
+    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
 
     println!("Expected: {:?}", expected_result);
-    println!("Actual:   {:?}", result);
+    println!("Actual:   {:?}", digest);
+    println!("Counter:  {:?}", counter);
 
-    assert_eq!(result, expected_result, "Random felt should match expected");
+    assert_eq!(counter, Felt::THREE, "Counter should be three");
+    assert_eq!(digest, expected_result, "Random felt should match expected");
     assert!(steps > 0, "Should have executed at least one step");
+    assert_eq!(stack.front_index, 0, "Stack should be empty after test");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty after test");
 }
 
 // Reference implementation for verification

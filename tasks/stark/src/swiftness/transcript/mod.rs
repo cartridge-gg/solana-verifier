@@ -16,6 +16,7 @@ pub struct TranscriptRandomFelt {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TranscriptRandomFeltPhase {
     ComputeHash,
+    ReadPosiedonResult,
     Finished,
 }
 
@@ -29,25 +30,28 @@ impl TranscriptRandomFelt {
             phase: TranscriptRandomFeltPhase::ComputeHash,
         }
     }
-
-    // pub fn push_input<T: BidirectionalStack>(digest: Felt, counter: Felt, stack: &mut T) {
-    //     // PoseidonHash expects 5 values on stack: s1, s2, s3, v1, v2
-    //     // We need to provide: digest as v1, counter as v2, and zeros for s1, s2, s3
-    //     stack.push_front(&counter.to_bytes_be()).unwrap();
-    //     stack.push_front(&digest.to_bytes_be()).unwrap();
-    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-    //     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-    // }
 }
 
 impl Executable for TranscriptRandomFelt {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptRandomFeltPhase::ComputeHash => {
-                self.phase = TranscriptRandomFeltPhase::Finished;
-                PoseidonHash::push_input(self.digest, self.counter, _stack);
+                self.phase = TranscriptRandomFeltPhase::ReadPosiedonResult;
+                PoseidonHash::push_input(self.digest, self.counter, stack);
                 vec![PoseidonHash::new().to_vec_with_type_tag()]
+            }
+            TranscriptRandomFeltPhase::ReadPosiedonResult => {
+                let result = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
+
+                stack.push_front(&result.to_bytes_be()).unwrap();
+                let counter = self.counter + Felt::ONE;
+                stack.push_front(&counter.to_bytes_be()).unwrap();
+
+                self.phase = TranscriptRandomFeltPhase::Finished;
+                vec![]
             }
             TranscriptRandomFeltPhase::Finished => {
                 vec![]
