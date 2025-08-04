@@ -1,9 +1,9 @@
 use crate::swiftness::commitment::table::config::Config;
 use crate::{
-    felt::Felt,
     funvec::{FunVec, FUNVEC_DECOMMITMENT_VALUES},
     swiftness::commitment::vector,
 };
+use felt::Felt;
 
 // Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
 #[derive(Debug, Clone, PartialEq)]

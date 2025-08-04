@@ -1,3 +1,4 @@
+pub mod eval_composition_polynomial_inner;
 pub mod fri_commit;
 pub mod helpers;
 pub mod proof_or_work;
@@ -9,11 +10,13 @@ use crate::swiftness::air::recursive_with_poseidon::Layout;
 use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
 // use crate::swiftness::transcript::Transcript;
 use crate::poseidon::PoseidonHash;
-use crate::swiftness::air::recursive_with_poseidon::global_values::InteractionElements;
+use crate::swiftness::stark::types::StarkProof;
 use crate::swiftness::transcript::Transcript;
 use crate::swiftness::transcript::{TranscriptRandomFelt, TranscriptReadFeltVector};
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
+use felt::Felt;
 use lambdaworks_math::traits::ByteConversion;
+use utils::global_values::InteractionElements;
+use utils::ProofData;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 // Import and re-export actual tasks from their modules
@@ -75,7 +78,7 @@ impl Default for StarkCommit {
 }
 
 impl Executable for StarkCommit {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             StarkCommitStep::Init => {
                 // Get Layout::N_CONSTRAINTS and calculate counts

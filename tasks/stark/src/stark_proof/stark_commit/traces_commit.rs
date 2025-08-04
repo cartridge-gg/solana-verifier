@@ -1,8 +1,9 @@
 use crate::poseidon::PoseidonHash;
 use crate::stark_proof::PoseidonHashMany;
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
+use crate::swiftness::stark::types::StarkProof;
 // use lambdaworks_math::traits::ByteConversion;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TracesCommitStep {
@@ -39,7 +40,7 @@ impl Default for TracesCommit {
 }
 
 impl Executable for TracesCommit {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             TracesCommitStep::ReadOriginalCommitment => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -138,7 +139,7 @@ impl GenerateInteractionElements {
 }
 
 impl Executable for GenerateInteractionElements {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             GenerateInteractionStep::GenerateHash => {
                 // Get transcript digest and counter from stack
@@ -231,7 +232,7 @@ impl Default for VectorCommit {
 }
 
 impl Executable for VectorCommit {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             VectorCommitPhase::CallPoseidonHashMany => {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());

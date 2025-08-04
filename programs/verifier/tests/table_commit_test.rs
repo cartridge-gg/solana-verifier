@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::stark_proof::stark_commit::TableCommit;
 use stark::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler};

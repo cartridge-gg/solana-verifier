@@ -1,6 +1,6 @@
 use crate::stark_proof::stark_commit::traces_commit::VectorCommit;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
-
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct TableCommit {
@@ -22,7 +22,7 @@ impl Default for TableCommit {
 }
 
 impl Executable for TableCommit {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         self.processed = true;
         vec![VectorCommit::new().to_vec_with_type_tag()]
     }

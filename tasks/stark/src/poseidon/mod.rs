@@ -3,7 +3,8 @@ pub mod hades;
 
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
-use crate::{felt::Felt, poseidon::hades::HadesPermutation};
+use crate::poseidon::hades::HadesPermutation;
+use felt::Felt;
 
 #[repr(C)]
 pub struct PoseidonHashMany {

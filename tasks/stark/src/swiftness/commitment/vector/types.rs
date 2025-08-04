@@ -1,8 +1,6 @@
+use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS};
 use crate::swiftness::commitment::vector::config::Config;
-use crate::{
-    felt::Felt,
-    funvec::{FunVec, FUNVEC_AUTHENTICATIONS},
-};
+use felt::Felt;
 
 // Commitment for a vector of field elements.
 #[derive(Debug, Clone, PartialEq)]

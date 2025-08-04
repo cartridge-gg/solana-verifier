@@ -12,6 +12,9 @@ solana-program = "2.2.1"
 solana-system-interface = { version = "1.0.0", features = ["bincode"] }
 thiserror = "2.0.12"
 typetag = "0.2.20"
+lambdaworks-math = "0.12.0"
+num-bigint = "0.4.6"
+size-of = "0.1.5"
 
 client = { path = "./client" }
 greeting = { path = "./programs/greeting" }
@@ -19,5 +22,6 @@ verifier = { path = "./programs/verifier" }
 utils = { path = "./programs/utils" }
 
 arithmetic = { path = "./tasks/arithmetic" }
+felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }
 

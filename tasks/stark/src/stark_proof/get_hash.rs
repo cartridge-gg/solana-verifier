@@ -1,8 +1,8 @@
 use crate::{
-    felt::Felt, pedersen::PedersenHash, poseidon::PoseidonHashMany,
-    swiftness::stark::types::StarkProof,
+    pedersen::PedersenHash, poseidon::PoseidonHashMany, swiftness::stark::types::StarkProof,
 };
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GetHashStep {
@@ -46,7 +46,7 @@ impl Default for GetHash {
 }
 
 impl Executable for GetHash {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             GetHashStep::Init => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -175,7 +175,7 @@ impl Executable for GetHash {
                 total_elements += headers_len * 3;
 
                 let inputs_with_one = total_elements + 1;
-                let zero_count = inputs_with_one.div_ceil(2) * 2 - inputs_with_one;
+                let zero_count = (inputs_with_one as usize).div_ceil(2) * 2 - inputs_with_one;
                 for _ in 0..zero_count {
                     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 }

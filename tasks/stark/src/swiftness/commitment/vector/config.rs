@@ -1,4 +1,4 @@
-use crate::felt::Felt;
+use felt::Felt;
 
 #[derive(Debug, Clone, PartialEq, Default, Copy)]
 pub struct Config {

@@ -1,5 +1,5 @@
-use crate::felt::Felt;
 use crate::funvec::{FunVec, FUNVEC_PAGES};
+use felt::Felt;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct SegmentInfo {

@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::swiftness::transcript::TranscriptRandomFelt;
 use starknet_crypto::poseidon_hash;
 use starknet_crypto::Felt as StarknetFelt;

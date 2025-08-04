@@ -1,4 +1,4 @@
-use crate::felt::Felt;
+use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack};
 use utils::{Executable, TypeIdentifiable};
 

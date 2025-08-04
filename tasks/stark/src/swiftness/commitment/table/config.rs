@@ -1,4 +1,5 @@
-use crate::{felt::Felt, swiftness::commitment::vector};
+use crate::swiftness::commitment::vector;
+use felt::Felt;
 
 #[derive(Debug, Clone, PartialEq, Default, Copy)]
 pub struct Config {

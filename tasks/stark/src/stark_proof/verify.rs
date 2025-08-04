@@ -1,10 +1,11 @@
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+use crate::stark_proof::get_hash::GetHash;
 use crate::stark_proof::stark_commit::StarkCommit;
 use crate::stark_proof::stark_verify::StarkVerify;
 use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
-use crate::{felt::Felt, stark_proof::get_hash::GetHash};
+use felt::Felt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
@@ -38,7 +39,7 @@ impl Default for Verify {
 }
 
 impl Executable for Verify {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             VerifyStep::ValidatePublicInput => {
                 self.step = VerifyStep::GetHash;

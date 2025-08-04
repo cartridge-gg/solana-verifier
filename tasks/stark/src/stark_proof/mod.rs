@@ -1,6 +1,7 @@
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::{felt::Felt, poseidon::PoseidonHashMany, swiftness::stark::types::StarkProof};
+use crate::{poseidon::PoseidonHashMany, swiftness::stark::types::StarkProof};
+use felt::Felt;
 
 pub mod get_hash;
 pub mod stark_commit;
@@ -55,7 +56,7 @@ impl HashPublicInputs {
 }
 
 impl Executable for HashPublicInputs {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             HashPublicInputsStep::Init => {
                 self.step = HashPublicInputsStep::ProgramHash;
@@ -135,7 +136,7 @@ impl Default for VerifyPublicInput {
 }
 
 impl Executable for VerifyPublicInput {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             VerifyPublicInputStep::Init => {
                 let proof: &StarkProof = stack.get_proof_reference();

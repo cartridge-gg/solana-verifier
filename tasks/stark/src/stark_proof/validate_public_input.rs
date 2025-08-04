@@ -1,8 +1,9 @@
-use crate::felt::NonZeroFelt;
 use crate::stark_proof::segments;
 use crate::stark_proof::{MAX_LOG_N_STEPS, MAX_RANGE_CHECK};
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use crate::swiftness::stark::types::StarkProof;
+use felt::Felt;
+use felt::NonZeroFelt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValidatePublicInputStep {
@@ -32,7 +33,7 @@ impl Default for ValidatePublicInput {
 }
 
 impl Executable for ValidatePublicInput {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             ValidatePublicInputStep::Validate => {
                 let proof: &StarkProof = stack.get_proof_reference();

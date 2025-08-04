@@ -1,7 +1,7 @@
-use crate::felt::Felt;
 use crate::swiftness::commitment::table::types::Commitment as TableCommitment;
 use crate::swiftness::commitment::table::types::Witness as TableWitness;
 use crate::swiftness::fri::config::Config;
+use felt::Felt;
 
 // Commitment values for FRI. Used to generate a commitment by "reading" these values
 // from the transcript.

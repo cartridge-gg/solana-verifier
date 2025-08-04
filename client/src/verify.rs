@@ -3,15 +3,14 @@ use crate::{
     setup_payer, ClientError,
 };
 use crate::{read_keypair_file, Config, Result};
+use felt::Felt;
 use log::info;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::Keypair,
     signer::Signer,
 };
-use stark::{
-    felt::Felt, stark_proof::VerifyPublicInput, swiftness::stark::types::cast_struct_to_slice,
-};
+use stark::{stark_proof::VerifyPublicInput, swiftness::stark::types::cast_struct_to_slice};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::AccountCast;
 use utils::BidirectionalStack;

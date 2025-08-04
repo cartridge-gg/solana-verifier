@@ -1,12 +1,13 @@
-use crate::felt::NonZeroFelt;
 use crate::swiftness::air::diluted::get_diluted_product;
 use crate::swiftness::air::periodic_columns::{
     eval_pedersen_x, eval_pedersen_y, eval_poseidon_poseidon_full_round_key0,
     eval_poseidon_poseidon_full_round_key1, eval_poseidon_poseidon_full_round_key2,
     eval_poseidon_poseidon_partial_round_key0, eval_poseidon_poseidon_partial_round_key1,
 };
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use crate::swiftness::stark::types::StarkProof;
+use felt::Felt;
+use felt::NonZeroFelt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 // PowersArray task - generates array of powers [1, alpha, alpha^2, ..., alpha^(n-1)]
 #[repr(C)]
@@ -24,7 +25,7 @@ impl PowersArray {
 }
 
 impl Executable for PowersArray {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.current == 0 {
             // First iteration - get initial value and alpha
             let initial = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -89,7 +90,7 @@ impl Default for ComputePublicMemoryProduct {
 }
 
 impl Executable for ComputePublicMemoryProduct {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.processed {
             return vec![];
         }
@@ -147,7 +148,7 @@ impl Default for ComputeDilutedProduct {
 }
 
 impl Executable for ComputeDilutedProduct {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.processed {
             return vec![];
         }
@@ -206,7 +207,7 @@ impl Default for ComputePeriodicColumns {
 }
 
 impl Executable for ComputePeriodicColumns {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             PeriodicColumnsStep::ComputePedersenPoints => {
                 let proof: &StarkProof = stack.get_proof_reference();

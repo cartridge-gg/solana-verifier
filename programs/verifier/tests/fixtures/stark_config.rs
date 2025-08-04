@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::swiftness::stark::config::StarkConfig;
 
 pub fn get() -> StarkConfig {

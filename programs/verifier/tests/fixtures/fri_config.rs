@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::funvec::FunVec;
 use stark::swiftness::commitment::{table, vector};
 use stark::swiftness::fri::config::Config as FriConfig;

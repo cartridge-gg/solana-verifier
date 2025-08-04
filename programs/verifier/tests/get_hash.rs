@@ -1,5 +1,5 @@
 use crate::public_input::get;
-use stark::felt::Felt;
+use felt::Felt;
 use stark::stark_proof::get_hash::GetHash;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};

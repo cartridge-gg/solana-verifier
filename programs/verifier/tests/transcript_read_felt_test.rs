@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::swiftness::transcript::TranscriptReadFelt;
 use starknet_crypto::{poseidon_hash_many, Felt as StarknetFelt};
 use utils::{BidirectionalStack, Scheduler};

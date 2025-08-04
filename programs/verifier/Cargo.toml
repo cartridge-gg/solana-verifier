@@ -19,6 +19,7 @@ utils.workspace = true
 arithmetic.workspace = true
 stark.workspace = true
 swiftness_proof_parser = { path = "../../parser" }
+felt.workspace = true
 serde_json = "1.0"
 starknet-crypto = "0.7.1"
 

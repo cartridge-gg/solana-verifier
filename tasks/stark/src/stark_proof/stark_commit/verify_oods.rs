@@ -1,10 +1,11 @@
-use crate::felt::NonZeroFelt;
 use crate::stark_proof::stark_commit::helpers::{
     ComputeDilutedProduct, ComputePeriodicColumns, ComputePublicMemoryProduct,
 };
 use crate::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use crate::swiftness::stark::types::StarkProof;
+use felt::Felt;
+use felt::NonZeroFelt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyOodsStep {
@@ -38,7 +39,7 @@ impl Default for VerifyOods {
 }
 
 impl Executable for VerifyOods {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             VerifyOodsStep::PrepareEvaluation => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -144,7 +145,7 @@ impl EvalCompositionPolynomial {
 }
 
 impl Executable for EvalCompositionPolynomial {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             EvalCompositionStep::CollectMaskValues => {
                 self.step = EvalCompositionStep::ComputePublicMemoryProduct;

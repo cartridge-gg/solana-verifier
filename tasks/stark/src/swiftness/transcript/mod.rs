@@ -1,10 +1,10 @@
-#[allow(clippy::module_inception)]
-pub mod transcript;
+// #[allow(clippy::module_inception)]
+// pub mod transcript;
 
-use crate::felt::Felt;
 use crate::poseidon::{PoseidonHash, PoseidonHashMany};
-pub use transcript::Transcript;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+pub use utils::transcript::Transcript;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[repr(C)]
 pub struct TranscriptRandomFelt {
@@ -33,7 +33,7 @@ impl TranscriptRandomFelt {
 }
 
 impl Executable for TranscriptRandomFelt {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptRandomFeltPhase::ComputeHash => {
                 self.phase = TranscriptRandomFeltPhase::ReadPosiedonResult;
@@ -94,7 +94,7 @@ impl TranscriptReadFelt {
 }
 
 impl Executable for TranscriptReadFelt {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptReadFeltPhase::ComputeHash => {
                 self.phase = TranscriptReadFeltPhase::ReadPosiedonResult;
@@ -154,7 +154,7 @@ impl TranscriptReadFeltVector {
 }
 
 impl Executable for TranscriptReadFeltVector {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             TranscriptReadFeltVectorPhase::ComputeHash => {
                 self.phase = TranscriptReadFeltVectorPhase::ReadPosiedonResult;

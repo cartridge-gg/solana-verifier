@@ -1,7 +1,7 @@
 pub mod config;
 
-use crate::felt::Felt;
 use crate::swiftness::commitment::table;
+use felt::Felt;
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct UnsentCommitment {
     pub original: Felt,

@@ -1,9 +1,9 @@
-use crate::felt::Felt;
 use crate::pedersen::constants::{POINTS_P1, POINTS_P2, POINTS_P3, POINTS_P4, SHIFT_POINT};
+use felt::Felt;
 use lambdaworks_math::elliptic_curve::short_weierstrass::{
     curves::stark_curve::StarkCurve, point::ShortWeierstrassProjectivePoint,
 };
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 pub mod constants;
 
@@ -101,8 +101,12 @@ impl Executable for PedersenHash {
                 let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
                 stack.pop_front();
 
-                self.acc =
-                    ShortWeierstrassProjectivePoint::<StarkCurve>::new([x.0, y.0, z.0]).unwrap();
+                self.acc = ShortWeierstrassProjectivePoint::<StarkCurve>::new([
+                    *x.inner(),
+                    *y.inner(),
+                    *z.inner(),
+                ])
+                .unwrap();
 
                 let result = *self.acc.to_affine().x();
                 stack.push_front(&result.to_bytes_be()).unwrap();
@@ -158,7 +162,7 @@ impl LookupAndAccumulate {
 }
 
 impl Executable for LookupAndAccumulate {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             LookupAndAccumulatePhase::Lookup => {
                 let z = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
@@ -168,8 +172,12 @@ impl Executable for LookupAndAccumulate {
                 let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
                 stack.pop_front();
 
-                self.acc =
-                    ShortWeierstrassProjectivePoint::<StarkCurve>::new([x.0, y.0, z.0]).unwrap();
+                self.acc = ShortWeierstrassProjectivePoint::<StarkCurve>::new([
+                    *x.inner(),
+                    *y.inner(),
+                    *z.inner(),
+                ])
+                .unwrap();
                 self.phase = LookupAndAccumulatePhase::Accumulate;
                 vec![]
             }

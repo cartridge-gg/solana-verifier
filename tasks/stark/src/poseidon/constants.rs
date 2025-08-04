@@ -1,4 +1,4 @@
-use crate::felt::Felt;
+use felt::Felt;
 
 use crate::poseidon::hades::HadesPermutation;
 

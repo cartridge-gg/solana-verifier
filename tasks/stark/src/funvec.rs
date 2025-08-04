@@ -3,7 +3,7 @@ use std::ops::Deref;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::log::sol_log_64;
 
-use crate::felt::Felt;
+use felt::Felt;
 
 pub const FUNVEC_LAYERS: usize = 10;
 pub const FUNVEC_OODS: usize = 256;

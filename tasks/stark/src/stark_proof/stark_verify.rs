@@ -1,4 +1,5 @@
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
@@ -29,7 +30,7 @@ impl Default for StarkVerify {
 }
 
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::Init => {
                 self.step = StarkVerifyStep::Output;

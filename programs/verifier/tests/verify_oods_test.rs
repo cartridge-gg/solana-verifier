@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::funvec::{FunVec, FUNVEC_OODS};
 use stark::stark_proof::stark_commit::VerifyOods;
 use stark::swiftness::stark::types::StarkProof;

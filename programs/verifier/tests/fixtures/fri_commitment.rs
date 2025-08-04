@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::swiftness::commitment::types::Commitment as FriCommitment;
 use stark::swiftness::commitment::{
     table::{config::Config as TableCommitmentConfig, types::Commitment as TableCommitment},

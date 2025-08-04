@@ -1,8 +1,8 @@
 use crate::{
-    felt::Felt,
     funvec::{FunVec, FUNVEC_LAST_LAYER, FUNVEC_LAYERS, FUNVEC_LEAVES},
     swiftness::commitment::table,
 };
+use felt::Felt;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct UnsentCommitment {

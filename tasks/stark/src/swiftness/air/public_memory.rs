@@ -1,13 +1,11 @@
-use crate::{
-    felt::Felt,
-    funvec::{FunVec, FUNVEC_SEGMENTS},
-};
+use crate::funvec::{FunVec, FUNVEC_SEGMENTS};
+use felt::Felt;
 
 use super::{
     dynamic::DynamicParams,
     types::{ContinuousPageHeader, Page, SegmentInfo},
 };
-use crate::felt::NonZeroFelt;
+use felt::NonZeroFelt;
 
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default)]

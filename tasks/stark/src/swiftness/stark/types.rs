@@ -1,10 +1,10 @@
 use super::config::StarkConfig;
-use crate::felt::Felt;
 use crate::funvec::{FunVec, FUNVEC_OODS};
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
 use crate::swiftness::commitment::table;
 use crate::swiftness::{fri, pow::pow};
+use felt::Felt;
 
 pub fn cast_slice_to_struct<T>(slice: &[u8]) -> &T
 where
@@ -62,7 +62,6 @@ pub struct StarkWitness {
 #[cfg(test)]
 mod test {
     use crate::{
-        felt::Felt,
         funvec::FunVec,
         swiftness::{
             air::public_memory::PublicInput,
@@ -76,6 +75,7 @@ mod test {
             },
         },
     };
+    use felt::Felt;
 
     #[test]
     fn test_stark_proof() {

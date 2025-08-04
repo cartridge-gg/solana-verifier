@@ -1,5 +1,5 @@
-use crate::felt::Felt;
-use crate::swiftness::transcript::Transcript;
+use super::transcript::Transcript;
+use felt::Felt;
 
 #[derive(Debug, PartialEq)]
 pub struct EcPoint {
@@ -47,6 +47,48 @@ pub struct GlobalValues {
     pub diluted_check_first_elm: Felt,
     pub diluted_check_permutation_public_memory_prod: Felt,
     pub diluted_check_final_cum_val: Felt,
+}
+
+impl Default for GlobalValues {
+    fn default() -> Self {
+        Self {
+            trace_length: Felt::ZERO,
+            initial_pc: Felt::ZERO,
+            final_pc: Felt::ZERO,
+            initial_ap: Felt::ZERO,
+            final_ap: Felt::ZERO,
+            initial_pedersen_addr: Felt::ZERO,
+            initial_range_check_addr: Felt::ZERO,
+            initial_bitwise_addr: Felt::ZERO,
+            initial_poseidon_addr: Felt::ZERO,
+            range_check_min: Felt::ZERO,
+            range_check_max: Felt::ZERO,
+            offset_size: Felt::ZERO,
+            half_offset_size: Felt::ZERO,
+            pedersen_shift_point: EcPoint {
+                x: Felt::ZERO,
+                y: Felt::ZERO,
+            },
+            pedersen_points_x: Felt::ZERO,
+            pedersen_points_y: Felt::ZERO,
+            poseidon_poseidon_full_round_key0: Felt::ZERO,
+            poseidon_poseidon_full_round_key1: Felt::ZERO,
+            poseidon_poseidon_full_round_key2: Felt::ZERO,
+            poseidon_poseidon_partial_round_key0: Felt::ZERO,
+            poseidon_poseidon_partial_round_key1: Felt::ZERO,
+            memory_multi_column_perm_perm_interaction_elm: Felt::ZERO,
+            memory_multi_column_perm_hash_interaction_elm0: Felt::ZERO,
+            range_check16_perm_interaction_elm: Felt::ZERO,
+            diluted_check_permutation_interaction_elm: Felt::ZERO,
+            diluted_check_interaction_z: Felt::ZERO,
+            diluted_check_interaction_alpha: Felt::ZERO,
+            memory_multi_column_perm_perm_public_memory_prod: Felt::ZERO,
+            range_check16_perm_public_memory_prod: Felt::ZERO,
+            diluted_check_first_elm: Felt::ZERO,
+            diluted_check_permutation_public_memory_prod: Felt::ZERO,
+            diluted_check_final_cum_val: Felt::ZERO,
+        }
+    }
 }
 
 // Elements that are sent from the prover after the commitment on the original trace.

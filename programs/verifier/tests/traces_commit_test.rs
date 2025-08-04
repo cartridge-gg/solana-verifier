@@ -1,4 +1,4 @@
-use stark::felt::Felt;
+use felt::Felt;
 use stark::stark_proof::stark_commit::TracesCommit;
 use stark::swiftness::air::trace::UnsentCommitment;
 use stark::swiftness::stark::types::StarkProof;

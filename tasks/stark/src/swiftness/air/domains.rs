@@ -1,4 +1,4 @@
-use crate::felt::{Felt, NonZeroFelt};
+use felt::{Felt, NonZeroFelt};
 
 const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
 
@@ -44,7 +44,7 @@ impl StarkDomains {
 
 #[cfg(test)]
 mod tests {
-    use crate::felt::Felt;
+    use felt::Felt;
 
     use crate::swiftness::air::domains::StarkDomains;
 

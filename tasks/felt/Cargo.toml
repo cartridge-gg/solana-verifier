@@ -1,0 +1,9 @@
+[package]
+name = "felt"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+lambdaworks-math.workspace = true
+num-bigint.workspace = true
+size-of.workspace = true 

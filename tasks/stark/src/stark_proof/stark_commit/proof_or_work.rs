@@ -1,8 +1,9 @@
 use crate::stark_proof::PoseidonHashMany;
-use crate::{felt::Felt, swiftness::stark::types::StarkProof};
+use crate::swiftness::stark::types::StarkProof;
 use lambdaworks_math::traits::ByteConversion;
 // use sha3::{Digest, Keccak256};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProofOfWorkStep {
@@ -40,7 +41,7 @@ impl Default for ProofOfWork {
 }
 
 impl Executable for ProofOfWork {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             ProofOfWorkStep::PrepareInitialHash => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -161,7 +162,7 @@ impl ComputeHash {
 }
 
 impl Executable for ComputeHash {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.processed {
             return vec![];
         }
@@ -226,7 +227,7 @@ impl Default for UpdateTranscriptU64 {
 }
 
 impl Executable for UpdateTranscriptU64 {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         if self.processed {
             return vec![];
         }

@@ -7,3 +7,4 @@ edition.workspace = true
 solana-program.workspace = true
 thiserror.workspace = true
 typetag.workspace = true
+felt.workspace = true

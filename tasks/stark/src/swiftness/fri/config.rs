@@ -1,6 +1,6 @@
-use crate::felt::Felt;
 use crate::funvec::FunVec;
 use crate::swiftness::commitment::table;
+use felt::Felt;
 
 const _MAX_LAST_LAYER_LOG_DEGREE_BOUND: u64 = 15;
 const _MAX_FRI_LAYERS: u64 = 15;

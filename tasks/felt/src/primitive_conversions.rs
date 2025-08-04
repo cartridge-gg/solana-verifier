@@ -1,7 +1,7 @@
 use lambdaworks_math::{field::element::FieldElement, unsigned_integer::element::UnsignedInteger};
 use num_bigint::BigUint;
 
-use crate::felt::Felt;
+use crate::Felt;
 
 // Bool <-> Felt
 impl From<bool> for Felt {
@@ -186,7 +186,7 @@ impl_try_felt_into_signed!(i128);
 
 #[cfg(test)]
 mod tests {
-    use crate::felt::Felt;
+    use crate::Felt;
     #[test]
     fn from_and_try_from_works_both_way_for_valid_unsigned_values() {
         // u8

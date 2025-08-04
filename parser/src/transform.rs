@@ -1,5 +1,5 @@
 use crate::stark_proof;
-use stark::felt::Felt;
+use felt::Felt;
 use stark::funvec::FunVec;
 use stark::swiftness::air::dynamic::DynamicParams;
 use stark::swiftness::air::public_memory::PublicInput as PublicInputVerifier;

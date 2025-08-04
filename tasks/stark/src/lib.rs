@@ -1,4 +1,3 @@
-pub mod felt;
 pub mod funvec;
 pub mod pedersen;
 pub mod poseidon;

@@ -1,4 +1,4 @@
-use crate::felt::Felt;
+use felt::Felt;
 
 #[macro_export]
 macro_rules! felt {
@@ -17,14 +17,14 @@ macro_rules! felt_hex {
 #[macro_export]
 macro_rules! felt_nonzero {
     ($expr:expr) => {
-        NonZeroFelt::from_felt_unchecked($expr)
+        felt::NonZeroFelt::from_felt_unchecked($expr)
     };
 }
 
 #[macro_export]
 macro_rules! felt_try_nonzero {
     ($expr:expr) => {
-        NonZeroFelt::try_from($expr)
+        felt::NonZeroFelt::try_from($expr)
     };
 }
 

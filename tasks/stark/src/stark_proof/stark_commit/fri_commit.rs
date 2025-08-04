@@ -1,8 +1,8 @@
-use crate::felt::Felt;
 use crate::stark_proof::stark_commit::{TableCommit, TranscriptReadFeltVector};
 use crate::swiftness::stark::types::StarkProof;
 use crate::swiftness::transcript::TranscriptRandomFelt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
+use felt::Felt;
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FriCommitStep {
@@ -35,7 +35,7 @@ impl FriCommit {
 }
 
 impl Executable for FriCommit {
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match &self.step {
             FriCommitStep::Init => {
                 let proof: &StarkProof = stack.get_proof_reference();

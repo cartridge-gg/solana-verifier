@@ -1,5 +1,5 @@
-use crate::felt::Felt;
 use crate::swiftness::air::consts::FELT_0;
+use felt::Felt;
 
 // Evaluates a periodic column at a point.
 // A periodic column of N values yields these values on the subgroup of size N.

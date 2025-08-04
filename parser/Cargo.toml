@@ -14,3 +14,4 @@ starknet-crypto = "0.7.1"
 starknet-types-core = "0.1.5"
 thiserror = "1.0.61"
 stark = { path = "../tasks/stark" }
+felt = { path = "../tasks/felt" }
