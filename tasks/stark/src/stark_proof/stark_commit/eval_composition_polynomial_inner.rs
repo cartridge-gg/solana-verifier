@@ -1,11 +1,9 @@
 use crate::swiftness::air::consts::*;
 use crate::swiftness::air::recursive_with_poseidon::consts::FELT_1;
-use crate::swiftness::air::recursive_with_poseidon::GlobalValues;
 use crate::swiftness::stark::types::StarkProof;
 use felt::felt_nonzero;
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
-use utils::{CAPACITY, DOMAINS_SIZE, LENGTH_SIZE, MASK_VALUES_SIZE, POWS_SIZE};
 
 // Macro to maintain readability: column_row[col][row] -> mask_values[index]
 // Maps column_row notation to flat array indices based on the original pattern

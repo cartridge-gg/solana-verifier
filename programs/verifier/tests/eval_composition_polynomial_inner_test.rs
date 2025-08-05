@@ -1,17 +1,12 @@
 use felt::Felt;
-use stark::funvec::FunVec;
 use stark::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::commitment::table::types::Witness as TableWitness;
-use stark::swiftness::commitment::vector::types::Witness as VectorWitness;
 use stark::swiftness::stark::types::StarkProof;
 use utils::global_values::EcPoint;
-use utils::{
-    BidirectionalStack, ProofData, Scheduler, MASK_VALUES_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE,
-};
+use utils::{BidirectionalStack, Scheduler, MASK_VALUES_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use fixtures::{fri_commitment, fri_config, fri_unsent_commitment, oods_values, stark_config};
+use fixtures::{fri_config, fri_unsent_commitment, oods_values, stark_config};
 
 use crate::fixtures::constraint_coefficients;
 

@@ -1,6 +1,6 @@
 use crate::swiftness::air::consts::*;
 use crate::swiftness::air::recursive_with_poseidon::GlobalValues;
-use felt::{felt_nonzero, Felt, NonZeroFelt};
+use felt::{felt_nonzero, Felt};
 
 pub fn eval_composition_polynomial_inner(
     mask_values: &[Felt],
