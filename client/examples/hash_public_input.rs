@@ -4,6 +4,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use felt::Felt;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::Keypair,
@@ -11,9 +12,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::{
-    felt::Felt, stark_proof::HashPublicInputs, swiftness::stark::types::cast_struct_to_slice,
-};
+use stark::{stark_proof::HashPublicInputs, swiftness::stark::types::cast_struct_to_slice};
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};

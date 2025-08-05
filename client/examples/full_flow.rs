@@ -4,6 +4,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use felt::Felt;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
@@ -13,7 +14,6 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::{
-    felt::Felt,
     stark_proof::VerifyPublicInput,
     swiftness::stark::types::{cast_struct_to_slice, StarkProof},
 };

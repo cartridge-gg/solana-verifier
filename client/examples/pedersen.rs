@@ -2,6 +2,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use felt::Felt;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -10,7 +11,7 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::pedersen::PedersenHash;
-use stark::{felt::Felt, swiftness::stark::types::cast_struct_to_slice};
+use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
