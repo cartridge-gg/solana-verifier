@@ -408,7 +408,7 @@ impl Executable for EvalCompositionPolynomialInner {
 
             EvalCompositionPolynomialInnerPhase::ComputeConstraints => {
                 // Get all references at once to avoid borrowing conflicts
-                let (proof, domains, mask_values, global_values, constraint_coefficients) =
+                let (_, _, domains, mask_values, global_values, constraint_coefficients, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 println!("global_values {:?}", global_values);

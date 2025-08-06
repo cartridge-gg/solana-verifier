@@ -1,4 +1,5 @@
 pub mod eval_composition_polynomial_inner;
+pub mod eval_oods_polynomial_inner;
 pub mod fri_commit;
 pub mod helpers;
 pub mod proof_or_work;
