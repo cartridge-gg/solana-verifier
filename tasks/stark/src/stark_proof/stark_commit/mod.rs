@@ -9,13 +9,10 @@ pub mod verify_oods;
 
 use crate::swiftness::air::recursive_with_poseidon::Layout;
 use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
-// use crate::swiftness::transcript::Transcript;
-use crate::poseidon::PoseidonHash;
 use crate::swiftness::stark::types::StarkProof;
 use crate::swiftness::transcript::Transcript;
 use crate::swiftness::transcript::{TranscriptRandomFelt, TranscriptReadFeltVector};
 use felt::Felt;
-use lambdaworks_math::traits::ByteConversion;
 use utils::global_values::InteractionElements;
 use utils::ProofData;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};

@@ -3,7 +3,7 @@ use stark::stark_proof::stark_commit::eval_oods_polynomial_inner::EvalOodsPolyno
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use stark::swiftness::stark::types::StarkProof;
 use utils::global_values::EcPoint;
-use utils::{BidirectionalStack, Scheduler, MASK_VALUES_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE};
+use utils::{BidirectionalStack, Scheduler, OODS_VALUES_SIZE};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 use fixtures::{fri_config, fri_unsent_commitment, oods_values, stark_config};
@@ -21,7 +21,6 @@ fn test_eval_oods_polynomial_inner() {
     proof.config = stark_config::get();
     stack.proof = proof;
 
-    // Create column_values array with sample data
     let column_values = vec![
         Felt::from_hex("0x4259480c2e22c881ee19f1a33a3ba4741be9d482d60a1e101caa1880a60da4a")
             .unwrap(),
@@ -44,7 +43,6 @@ fn test_eval_oods_polynomial_inner() {
         Felt::from_hex("0x6c6059de8def374197a382cb19880e30f1aa80a009bf4c3db6dfa5656f308").unwrap(),
     ];
 
-    // Create oods_values array with sample data
     let oods_values = oods_values::get();
     let oods_slice = &oods_values.as_slice()[0..OODS_VALUES_SIZE];
 
@@ -55,7 +53,6 @@ fn test_eval_oods_polynomial_inner() {
         .try_into()
         .unwrap();
 
-    // Create GlobalValues struct with sample data
     let global_values = GlobalValues {
         trace_length: Felt::from_hex("0x10000000").unwrap(),
         initial_pc: Felt::from_hex("0x1").unwrap(),
@@ -141,7 +138,6 @@ fn test_eval_oods_polynomial_inner() {
         .unwrap(),
     };
 
-    // Set global values in the stack account
     stack.global_values = global_values;
 
     let point = Felt::from_hex("0x7f90255cc310f54635400a0fc3ad5d4dcd9afb685485297d828f04cb9c29fcb")
@@ -157,7 +153,6 @@ fn test_eval_oods_polynomial_inner() {
     stack.push_front(&oods_point.to_bytes_be()).unwrap();
     stack.push_front(&point.to_bytes_be()).unwrap();
 
-    // Push the task to the stack
     stack.push_task(EvalOodsPolynomialInner::new());
 
     let mut steps = 0;
@@ -168,7 +163,6 @@ fn test_eval_oods_polynomial_inner() {
 
     println!("Executed {} steps", steps);
 
-    // Get the result from stack
     let result = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
 

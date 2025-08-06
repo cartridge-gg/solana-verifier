@@ -1,7 +1,6 @@
 use crate::error::VerifierError;
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::air::recursive_with_poseidon::Layout;
 use stark::swiftness::stark::types::cast_struct_to_slice_mut;
 use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::ProofData;
