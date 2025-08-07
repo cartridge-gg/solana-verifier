@@ -223,6 +223,10 @@ impl ProofData for BidirectionalStackAccount {
     fn get_global_values(&self) -> &GlobalValues {
         &self.global_values
     }
+
+    fn set_global_values(&mut self, global_values: GlobalValues) {
+        self.global_values = global_values;
+    }
 }
 
 #[cfg(test)]

@@ -26,6 +26,7 @@ impl PublicInput {
     // Returns the ratio between the product of all public memory cells and z^|public_memory|.
     // This is the value that needs to be at the memory_multi_column_perm_perm_public_memory_prod
     // member expression.
+    #[inline(always)]
     pub fn get_public_memory_product_ratio(
         &self,
         z: Felt,
@@ -46,6 +47,7 @@ impl PublicInput {
             .field_div(&NonZeroFelt::from_felt_unchecked(denominator_pad))
     }
     // Returns the product of all public memory cells.
+    #[inline(always)]
     pub fn get_public_memory_product(&self, z: Felt, alpha: Felt) -> (Felt, Felt) {
         let main_page_prod = self.main_page.get_product(z, alpha);
 
@@ -58,7 +60,7 @@ impl PublicInput {
         (prod, total_length)
     }
 }
-
+#[inline(always)]
 fn get_continuous_pages_product(page_headers: &FunVec<ContinuousPageHeader, 0>) -> (Felt, Felt) {
     let mut res = Felt::ONE;
     let mut total_length = Felt::ZERO;

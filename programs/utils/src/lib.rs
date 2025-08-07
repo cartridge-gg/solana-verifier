@@ -100,6 +100,9 @@ pub trait ProofData {
 
     /// Get global values - to be implemented by concrete types that have access to GlobalValues
     fn get_global_values(&self) -> &GlobalValues;
+
+    /// Set global values - to be implemented by concrete types that have access to GlobalValues
+    fn set_global_values(&mut self, global_values: GlobalValues);
 }
 
 /// Trait for providing automatic type identification with cryptographic hashing

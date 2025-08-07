@@ -1,3 +1,4 @@
+pub mod eval_composition_polynomial;
 pub mod eval_composition_polynomial_inner;
 pub mod eval_oods_polynomial_inner;
 pub mod fri_commit;
@@ -18,14 +19,13 @@ use utils::ProofData;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 // Import and re-export actual tasks from their modules
+pub use self::eval_composition_polynomial::EvalCompositionPolynomial;
 pub use self::fri_commit::FriCommit;
-pub use self::helpers::{
-    ComputeDilutedProduct, ComputePeriodicColumns, ComputePublicMemoryProduct, PowersArray,
-};
+pub use self::helpers::PowersArray;
 pub use self::proof_or_work::{ComputeHash, ProofOfWork, UpdateTranscriptU64};
 pub use self::table_commit::TableCommit;
 pub use self::traces_commit::{GenerateInteractionElements, TracesCommit, VectorCommit};
-pub use self::verify_oods::{EvalCompositionPolynomial, VerifyOods};
+pub use self::verify_oods::VerifyOods;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkCommitStep {
@@ -141,6 +141,57 @@ impl Executable for StarkCommit {
                     .memory_multi_column_perm_perm_interaction_elm =
                     Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+
+                // Push InteractionElements onto stack for later use by EvalCompositionPolynomial
+                // Push in reverse order so they can be popped in correct order
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .memory_multi_column_perm_perm_interaction_elm
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .memory_multi_column_perm_hash_interaction_elm0
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .range_check16_perm_interaction_elm
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .diluted_check_permutation_interaction_elm
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .diluted_check_interaction_z
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
+                stack
+                    .push_front(
+                        &self
+                            .interaction_elements
+                            .diluted_check_interaction_alpha
+                            .to_bytes_be(),
+                    )
+                    .unwrap();
 
                 // Store current transcript state
                 self.current_transcript_digest = transcript_digest;
