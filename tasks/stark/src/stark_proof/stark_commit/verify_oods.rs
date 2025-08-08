@@ -14,7 +14,7 @@ pub enum VerifyOodsStep {
 #[repr(C)]
 pub struct VerifyOods {
     step: VerifyOodsStep,
-    oods_values_count: usize,
+    oods_point: Felt,
 }
 
 impl_type_identifiable!(VerifyOods);
@@ -23,7 +23,7 @@ impl VerifyOods {
     pub fn new() -> Self {
         Self {
             step: VerifyOodsStep::PrepareEvaluation,
-            oods_values_count: 0,
+            oods_point: Felt::ZERO,
         }
     }
 }
@@ -39,6 +39,10 @@ impl Executable for VerifyOods {
         match self.step {
             VerifyOodsStep::PrepareEvaluation => {
                 self.step = VerifyOodsStep::EvalCompositionPolynomial;
+                self.oods_point = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                stack.push_front(&self.oods_point.to_bytes_be()).unwrap();
 
                 vec![EvalCompositionPolynomial::new().to_vec_with_type_tag()]
             }
@@ -49,17 +53,16 @@ impl Executable for VerifyOods {
                 stack.pop_front();
 
                 let proof: &StarkProof = stack.get_proof_reference();
+                let oods_values_count = proof.unsent_commitment.oods_values.len();
+
                 // Push the two composition values separately
                 let comp_value_0 =
-                    proof.unsent_commitment.oods_values.as_slice()[self.oods_values_count - 2];
+                    proof.unsent_commitment.oods_values.as_slice()[oods_values_count - 2];
                 let comp_value_1 =
-                    proof.unsent_commitment.oods_values.as_slice()[self.oods_values_count - 1];
-
-                // Get oods_point (interaction_after_composition from stack)
-                let oods_point = Felt::from_bytes_be_slice(stack.borrow_front());
+                    proof.unsent_commitment.oods_values.as_slice()[oods_values_count - 1];
 
                 // Calculate claimed_composition = comp_value_0 + comp_value_1 * oods_point
-                let claimed_composition = comp_value_0 + comp_value_1 * oods_point;
+                let claimed_composition = comp_value_0 + comp_value_1 * self.oods_point;
 
                 // Verify they match
                 assert!(

@@ -3,7 +3,7 @@ pub mod eval_composition_polynomial_inner;
 pub mod eval_oods_polynomial_inner;
 pub mod fri_commit;
 pub mod helpers;
-pub mod proof_or_work;
+pub mod proof_of_work;
 pub mod table_commit;
 pub mod traces_commit;
 pub mod verify_oods;
@@ -22,7 +22,7 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifi
 pub use self::eval_composition_polynomial::EvalCompositionPolynomial;
 pub use self::fri_commit::FriCommit;
 pub use self::helpers::PowersArray;
-pub use self::proof_or_work::{ComputeHash, ProofOfWork, UpdateTranscriptU64};
+pub use self::proof_of_work::{ComputeHash, ProofOfWork, UpdateTranscriptU64};
 pub use self::table_commit::TableCommit;
 pub use self::traces_commit::{GenerateInteractionElements, TracesCommit, VectorCommit};
 pub use self::verify_oods::VerifyOods;
@@ -120,79 +120,6 @@ impl Executable for StarkCommit {
                 stack.pop_front();
                 let original_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                self.interaction_elements.diluted_check_interaction_alpha =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.interaction_elements.diluted_check_interaction_z =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.interaction_elements
-                    .diluted_check_permutation_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.interaction_elements.range_check16_perm_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.interaction_elements
-                    .memory_multi_column_perm_hash_interaction_elm0 =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.interaction_elements
-                    .memory_multi_column_perm_perm_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                // Push InteractionElements onto stack for later use by EvalCompositionPolynomial
-                // Push in reverse order so they can be popped in correct order
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .memory_multi_column_perm_perm_interaction_elm
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .memory_multi_column_perm_hash_interaction_elm0
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .range_check16_perm_interaction_elm
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .diluted_check_permutation_interaction_elm
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .diluted_check_interaction_z
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-                stack
-                    .push_front(
-                        &self
-                            .interaction_elements
-                            .diluted_check_interaction_alpha
-                            .to_bytes_be(),
-                    )
-                    .unwrap();
-
                 // Store current transcript state
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
@@ -294,14 +221,14 @@ impl Executable for StarkCommit {
 
             StarkCommitStep::VerifyOods => {
                 // TranscriptReadFeltVector finished, get updated transcript state
-                let updated_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                let reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let updated_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
                 // Update transcript state from TranscriptReadFeltVector result
                 self.current_transcript_digest = updated_digest;
-                self.current_transcript_counter = updated_counter;
+                self.current_transcript_counter = reseted_counter;
 
                 self.step = StarkCommitStep::GenerateOodsAlpha;
 

@@ -75,9 +75,9 @@ impl Executable for EvalCompositionPolynomial {
         match self.step {
             EvalCompositionStep::CollectMaskValues => {
                 // Get parameters from stack
-                self.trace_generator = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
                 self.point = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.trace_generator = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.trace_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();

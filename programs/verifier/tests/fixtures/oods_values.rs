@@ -1,7 +1,7 @@
 use felt::Felt;
 use stark::funvec::FunVec;
 
-pub fn get() -> FunVec<Felt, 194> {
+pub fn get() -> FunVec<Felt, 256> {
     FunVec::from_vec(vec![
         Felt::from_hex_unchecked(
             "0x2e6d380bf135d48fe8c134a845c8f667a0cfd9bd8266c821900a37d66529efc",

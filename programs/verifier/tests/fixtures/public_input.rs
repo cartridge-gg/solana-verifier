@@ -5,76 +5,39 @@ use stark::swiftness::air::types::{AddrValue, Page, SegmentInfo};
 
 pub fn get() -> PublicInput {
     PublicInput {
-        log_n_steps: Felt::from_hex_unchecked("0xe"),
-        range_check_min: Felt::from_hex_unchecked("0x7ffa"),
-        range_check_max: Felt::from_hex_unchecked("0x8001"),
-        layout: Felt::from_hex_unchecked("0x726563757273697665"),
-        // dynamic_params: None,
-        dynamic_params: Some(stark::swiftness::air::dynamic::DynamicParams {
-            add_mod_a0_suboffset: 1,
-            add_mod_a1_suboffset: 2,
-            add_mod_a2_suboffset: 3,
-            add_mod_a3_suboffset: 4,
-            add_mod_a_offset_suboffset: 5,
-            add_mod_b0_suboffset: 10,
-            add_mod_b1_suboffset: 11,
-            add_mod_b2_suboffset: 12,
-            add_mod_b3_suboffset: 13,
-            add_mod_b_offset_suboffset: 14,
-            cpu_decode_mem_inst_suboffset: 100,
-            cpu_decode_off0_suboffset: 101,
-            cpu_decode_off1_suboffset: 102,
-            cpu_decode_off2_suboffset: 103,
-            cpu_operands_mem_dst_suboffset: 200,
-            cpu_operands_mem_op0_suboffset: 201,
-            cpu_operands_mem_op1_suboffset: 202,
-            pedersen_input0_suboffset: 300,
-            pedersen_input1_suboffset: 301,
-            pedersen_output_suboffset: 302,
-            pedersen_builtin_row_ratio: 256,
-            poseidon_param_0_input_output_suboffset: 400,
-            poseidon_param_1_input_output_suboffset: 401,
-            poseidon_param_2_input_output_suboffset: 402,
-            poseidon_row_ratio: 128,
-            range_check_builtin_inner_range_check_suboffset: 500,
-            range_check_builtin_mem_suboffset: 501,
-            range_check_builtin_row_ratio: 64,
-            bitwise_diluted_var_pool_suboffset: 600,
-            bitwise_row_ratio: 32,
-            bitwise_var_pool_suboffset: 601,
-            ec_op_builtin_row_ratio: 512,
-            ec_op_p_x_suboffset: 700,
-            ec_op_p_y_suboffset: 701,
-            ec_op_q_x_suboffset: 702,
-            ec_op_q_y_suboffset: 703,
-            ec_op_r_x_suboffset: 704,
-            ec_op_r_y_suboffset: 705,
-            ..Default::default()
-        }),
+        log_n_steps: Felt::from_hex_unchecked("0x18"),
+        range_check_min: Felt::from_hex_unchecked("0x0"),
+        range_check_max: Felt::from_hex_unchecked("0xffff"),
+        layout: Felt::from_hex_unchecked("0x7265637572736976655f776974685f706f736569646f6e"),
+        dynamic_params: None,
         segments: FunVec::from_vec(vec![
             SegmentInfo {
                 begin_addr: Felt::from_hex_unchecked("0x1"),
                 stop_ptr: Felt::from_hex_unchecked("0x5"),
             },
             SegmentInfo {
-                begin_addr: Felt::from_hex_unchecked("0x25"),
-                stop_ptr: Felt::from_hex_unchecked("0x68"),
+                begin_addr: Felt::from_hex_unchecked("0x1c6"),
+                stop_ptr: Felt::from_hex_unchecked("0x1c43b3"),
             },
             SegmentInfo {
-                begin_addr: Felt::from_hex_unchecked("0x68"),
-                stop_ptr: Felt::from_hex_unchecked("0x6a"),
+                begin_addr: Felt::from_hex_unchecked("0x1c43b3"),
+                stop_ptr: Felt::from_hex_unchecked("0x1c43b8"),
             },
             SegmentInfo {
-                begin_addr: Felt::from_hex_unchecked("0x6a"),
-                stop_ptr: Felt::from_hex_unchecked("0x6a"),
+                begin_addr: Felt::from_hex_unchecked("0x1c43b8"),
+                stop_ptr: Felt::from_hex_unchecked("0x1e7f0e"),
             },
             SegmentInfo {
-                begin_addr: Felt::from_hex_unchecked("0x1ea"),
-                stop_ptr: Felt::from_hex_unchecked("0x1ea"),
+                begin_addr: Felt::from_hex_unchecked("0x1f43b8"),
+                stop_ptr: Felt::from_hex_unchecked("0x2032d7"),
             },
             SegmentInfo {
-                begin_addr: Felt::from_hex_unchecked("0x9ea"),
-                stop_ptr: Felt::from_hex_unchecked("0x9ea"),
+                begin_addr: Felt::from_hex_unchecked("0x2f43b8"),
+                stop_ptr: Felt::from_hex_unchecked("0x33d748"),
+            },
+            SegmentInfo {
+                begin_addr: Felt::from_hex_unchecked("0x7f43b8"),
+                stop_ptr: Felt::from_hex_unchecked("0x7fc6fe"),
             },
         ]),
         padding_addr: Felt::from_hex_unchecked("0x1"),
@@ -86,7 +49,7 @@ pub fn get() -> PublicInput {
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x2"),
-                value: Felt::from_hex_unchecked("0x4"),
+                value: Felt::from_hex_unchecked("0xb"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x3"),
@@ -94,7 +57,7 @@ pub fn get() -> PublicInput {
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x4"),
-                value: Felt::from_hex_unchecked("0x4"),
+                value: Felt::from_hex_unchecked("0x1b3"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x5"),
@@ -106,59 +69,63 @@ pub fn get() -> PublicInput {
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x7"),
-                value: Felt::from_hex_unchecked("0x40780017fff7fff"),
+                value: Felt::from_hex_unchecked("0x208b7fff7fff7ffe"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x8"),
-                value: Felt::from_hex_unchecked("0x1"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0x9"),
-                value: Felt::from_hex_unchecked("0x400380007ffa8000"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xa"),
-                value: Felt::from_hex_unchecked("0x480680017fff8000"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xb"),
-                value: Felt::from_hex_unchecked("0x1"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xc"),
-                value: Felt::from_hex_unchecked("0x480680017fff8000"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xd"),
-                value: Felt::from_hex_unchecked("0x1"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xe"),
-                value: Felt::from_hex_unchecked("0x480a80007fff8000"),
-            },
-            AddrValue {
-                address: Felt::from_hex_unchecked("0xf"),
                 value: Felt::from_hex_unchecked("0x1104800180018000"),
             },
             AddrValue {
+                address: Felt::from_hex_unchecked("0x9"),
+                value: Felt::from_hex_unchecked(
+                    "0x800000000000011000000000000000000000000000000000000000000000000",
+                ),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xa"),
+                value: Felt::from_hex_unchecked("0x482480017ffe8000"),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xb"),
+                value: Felt::from_hex_unchecked(
+                    "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffffff",
+                ),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xc"),
+                value: Felt::from_hex_unchecked("0x208b7fff7fff7ffe"),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xd"),
+                value: Felt::from_hex_unchecked("0x20780017fff7ffd"),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xe"),
+                value: Felt::from_hex_unchecked("0x4"),
+            },
+            AddrValue {
+                address: Felt::from_hex_unchecked("0xf"),
+                value: Felt::from_hex_unchecked("0x480a7ffb7fff8000"),
+            },
+            AddrValue {
                 address: Felt::from_hex_unchecked("0x10"),
-                value: Felt::from_hex_unchecked("0x9"),
+                value: Felt::from_hex_unchecked("0x208b7fff7fff7ffe"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x11"),
-                value: Felt::from_hex_unchecked("0x400280017ffa7fff"),
+                value: Felt::from_hex_unchecked("0x40780017fff7fff"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x12"),
-                value: Felt::from_hex_unchecked("0x482680017ffa8000"),
+                value: Felt::from_hex_unchecked("0x3"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x13"),
-                value: Felt::from_hex_unchecked("0x2"),
+                value: Felt::from_hex_unchecked("0x404b800080008000"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x14"),
-                value: Felt::from_hex_unchecked("0x480a7ffb7fff8000"),
+                value: Felt::from_hex_unchecked("0x400380007ff98001"),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x15"),

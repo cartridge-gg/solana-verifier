@@ -1,0 +1,42 @@
+use felt::Felt;
+use stark::stark_proof::stark_commit::ProofOfWork;
+use stark::swiftness::stark::types::StarkProof;
+use utils::{BidirectionalStack, Scheduler};
+use verifier::state::BidirectionalStackAccount;
+
+mod fixtures;
+
+#[test]
+fn test_proof_of_work_with_reference_values() {
+    let mut stack = BidirectionalStackAccount::default();
+
+    let mut proof = StarkProof::default();
+
+    let digest: [u8; 32] = [
+        4, 95, 162, 177, 183, 248, 159, 156, 78, 134, 182, 48, 118, 191, 221, 127, 64, 53, 5, 81,
+        127, 23, 239, 148, 25, 227, 176, 237, 25, 158, 163, 230,
+    ];
+    let nonce: u64 = 0xd5bee6b9;
+    let n_bits: u8 = 32;
+
+    proof.unsent_commitment.proof_of_work.nonce = nonce;
+    proof.config.proof_of_work.n_bits = n_bits;
+
+    stack.proof = proof;
+
+    stack.push_front(&digest).unwrap();
+
+    stack.push_task(ProofOfWork::new());
+
+    let mut steps = 0;
+    while !stack.is_empty_back() {
+        stack.execute();
+        steps += 1;
+    }
+
+    let some_value = Felt::from_bytes_be_slice(stack.borrow_front());
+    println!("some_value: {:?}", some_value);
+    stack.pop_front();
+
+    println!("ProofOfWork test completed successfully in {} steps", steps);
+}

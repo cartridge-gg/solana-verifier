@@ -411,8 +411,8 @@ impl Executable for EvalCompositionPolynomialInner {
                 let (_, _, domains, mask_values, global_values, constraint_coefficients, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
-                println!("global_values {:?}", global_values);
-                println!("domains {:?}", domains);
+                println!("mask_values {:?}", mask_values);
+                println!("constraint_coefficients {:?}", constraint_coefficients);
 
                 // Compute intermediate values using column_row! macro directly
                 let cpu_decode_opcode_range_check_bit_0 = column_row!(mask_values, 0, 0)
