@@ -13,6 +13,7 @@ pub enum ProofOfWorkStep {
     ComputeFinalHash,
     VerifyWork,
     UpdateTranscript,
+    CollectResults,
     Done,
 }
 
@@ -110,7 +111,7 @@ impl Executable for ProofOfWork {
                 stack.push_front(&self.digest.to_bytes_be()).unwrap();
                 // Update transcript with nonce
                 stack.push_front(&self.nonce.to_be_bytes()).unwrap();
-                self.step = ProofOfWorkStep::Done;
+                self.step = ProofOfWorkStep::CollectResults;
 
                 vec![UpdateTranscriptU64::new().to_vec_with_type_tag()]
             }
