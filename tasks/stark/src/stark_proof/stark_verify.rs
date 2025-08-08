@@ -1,4 +1,3 @@
-use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

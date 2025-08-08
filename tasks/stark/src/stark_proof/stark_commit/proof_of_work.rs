@@ -114,6 +114,16 @@ impl Executable for ProofOfWork {
 
                 vec![UpdateTranscriptU64::new().to_vec_with_type_tag()]
             }
+            ProofOfWorkStep::CollectResults => {
+                let _reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.digest = digest;
+                self.step = ProofOfWorkStep::Done;
+
+                vec![]
+            }
 
             ProofOfWorkStep::Done => {
                 vec![]

@@ -34,9 +34,15 @@ fn test_proof_of_work_with_reference_values() {
         steps += 1;
     }
 
-    let some_value = Felt::from_bytes_be_slice(stack.borrow_front());
-    println!("some_value: {:?}", some_value);
+    let reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    println!("reseted_counter: {:?}", reseted_counter);
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    println!("digest: {:?}", digest);
     stack.pop_front();
 
+    assert!(steps > 0, "Should have executed at least one step");
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
     println!("ProofOfWork test completed successfully in {} steps", steps);
 }
