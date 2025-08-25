@@ -51,6 +51,7 @@ impl Executable for VerifyOods {
                 // At this point, composition_from_trace is on the stack
                 let composition_from_trace = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("composition_from_trace: {:?}", composition_from_trace);
 
                 let proof: &StarkProof = stack.get_proof_reference();
                 let oods_values_count = proof.unsent_commitment.oods_values.len();

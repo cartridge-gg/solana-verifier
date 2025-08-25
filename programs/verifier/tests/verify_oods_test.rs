@@ -12,13 +12,6 @@ use utils::transcript::Transcript;
 fn test_verify_oods_with_reference_values() {
     let mut stack = BidirectionalStackAccount::default();
 
-    let transcript = Transcript::new_with_counter(
-        Felt::from_hex_unchecked(
-            "0xaf91f2c71f4a594b1575d258ce82464475c82d8fb244142d0db450491c1b52",
-        ),
-        Felt::from_hex_unchecked("0x0"),
-    );
-
     let public_input = public_input::get();
     let unsent_commitment = fri_unsent_commitment::get();
     let config = stark_config::get();
@@ -96,7 +89,7 @@ fn test_verify_oods_with_reference_values() {
         )
         .unwrap();
 
-    let point = Felt::from_hex("0x7f90255cc310f54635400a0fc3ad5d4dcd9afb685485297d828f04cb9c29fcb")
+    let point = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
         .unwrap();
 
     stack

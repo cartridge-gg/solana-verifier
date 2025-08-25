@@ -4,9 +4,9 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 pub const DILUTED_N_BITS: u32 = 16;
 pub const DILUTED_SPACING: u32 = 4;
 pub const FELT_2: Felt = Felt::from_hex_unchecked("0x2");
-pub const PEDERSEN_BUILTIN_RATIO: u32 = 8;
-pub const PEDERSEN_BUILTIN_REPETITIONS: u32 = 4;
-pub const POSEIDON_RATIO: u32 = 8;
+pub const PEDERSEN_BUILTIN_RATIO: u32 = 256;
+pub const PEDERSEN_BUILTIN_REPETITIONS: u32 = 1;
+pub const POSEIDON_RATIO: u32 = 64;
 
 // PowersArray task - generates array of powers [1, alpha, alpha^2, ..., alpha^(n-1)]
 #[repr(C)]

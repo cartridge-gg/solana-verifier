@@ -2,7 +2,6 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
-use felt::Felt;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
@@ -87,7 +86,6 @@ async fn main() -> client::Result<()> {
 
     // Calculate proof size
     let proof_bytes = cast_struct_to_slice(&mut proof_verifier).to_vec();
-    let proof_size = proof_bytes.len();
 
     // Calculate offsets
     let stack_offset = 0;

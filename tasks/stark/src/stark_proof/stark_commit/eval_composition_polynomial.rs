@@ -83,22 +83,26 @@ impl Executable for EvalCompositionPolynomial {
                 stack.pop_front();
 
                 // Get InteractionElements from stack (they were pushed by StarkCommit::GenerateCompositionAlpha)
+                self.memory_multi_column_perm_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                self.diluted_check_interaction_alpha =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.diluted_check_permutation_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                self.range_check16_perm_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
                 self.memory_multi_column_perm_hash_interaction_elm0 =
                     Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                self.memory_multi_column_perm_perm_interaction_elm =
+
+                self.range_check16_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                self.diluted_check_permutation_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                self.diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                self.diluted_check_interaction_alpha =
                     Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
@@ -116,14 +120,10 @@ impl Executable for EvalCompositionPolynomial {
                     .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
 
                 self.public_memory_prod_ratio = public_input.get_public_memory_product_ratio(
-                    self.diluted_check_interaction_z,
-                    self.diluted_check_interaction_alpha,
+                    self.memory_multi_column_perm_perm_interaction_elm,
+                    self.memory_multi_column_perm_hash_interaction_elm0,
                     public_memory_column_size,
                 );
-
-                // Get point from stack (oods_point)
-                let point = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
 
                 self.diluted_prod = get_diluted_product(
                     DILUTED_N_BITS.into(),
@@ -146,14 +146,15 @@ impl Executable for EvalCompositionPolynomial {
                     )
                     .unwrap(),
                 );
-                let pedersen_point = point.pow_felt(&n_pedersen_hash_copies);
+
+                let pedersen_point = self.point.pow_felt(&n_pedersen_hash_copies);
                 self.pedersen_points_x = eval_pedersen_x(pedersen_point);
                 self.pedersen_points_y = eval_pedersen_y(pedersen_point);
 
                 // Calculate poseidon points
                 let n_poseidon_copies =
                     n_steps.field_div(&NonZeroFelt::try_from(Felt::from(POSEIDON_RATIO)).unwrap());
-                let poseidon_point = point.pow_felt(&n_poseidon_copies);
+                let poseidon_point = self.point.pow_felt(&n_poseidon_copies);
                 let poseidon_full_round_key0 =
                     eval_poseidon_poseidon_full_round_key0(poseidon_point);
                 let poseidon_full_round_key1 =

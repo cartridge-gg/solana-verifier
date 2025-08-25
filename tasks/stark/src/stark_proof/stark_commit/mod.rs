@@ -51,7 +51,6 @@ pub struct StarkCommit {
     oods_coefficients_count: u32,
     current_transcript_digest: Felt,
     current_transcript_counter: Felt,
-    interaction_elements: InteractionElements,
 }
 
 impl_type_identifiable!(StarkCommit);
@@ -64,7 +63,6 @@ impl StarkCommit {
             oods_coefficients_count: 0,
             current_transcript_digest: Felt::ZERO,
             current_transcript_counter: Felt::ZERO,
-            interaction_elements: InteractionElements::new(&mut Transcript::new(Felt::ZERO)),
         }
     }
 }
@@ -90,16 +88,18 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::TracesCommit => {
-                // Initialize transcript state - should come from outside, but for now use placeholder
-                let initial_transcript_digest = Felt::from_hex("0x1").unwrap(); // Should come from caller
-                let initial_transcript_counter = Felt::ZERO;
+                // Get initial transcript state from stack (should be set by caller)
+                let initial_transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let initial_transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                // Push initial transcript state to stack
-                stack
-                    .push_front(&initial_transcript_counter.to_bytes_be())
-                    .unwrap();
+                // Push initial transcript state back to stack for TracesCommit
                 stack
                     .push_front(&initial_transcript_digest.to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&initial_transcript_counter.to_bytes_be())
                     .unwrap();
 
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
@@ -116,10 +116,10 @@ impl Executable for StarkCommit {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let interaction_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let original_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                // let interaction_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
+                // stack.pop_front();
+                // let original_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
+                // stack.pop_front();
                 // Store current transcript state
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
@@ -229,6 +229,7 @@ impl Executable for StarkCommit {
                 // Update transcript state from TranscriptReadFeltVector result
                 self.current_transcript_digest = updated_digest;
                 self.current_transcript_counter = reseted_counter;
+                //push odds point?
 
                 self.step = StarkCommitStep::GenerateOodsAlpha;
 
