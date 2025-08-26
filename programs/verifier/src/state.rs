@@ -2,10 +2,14 @@ use crate::error::VerifierError;
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use stark::swiftness::stark::types::cast_struct_to_slice_mut;
+use stark::swiftness::stark::types::StarkCommitment;
 use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
+use utils::global_values::InteractionElements;
 use utils::ProofData;
+use utils::StarkCommitmentTrait;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE, POWS_SIZE};
+
 /// Define the type of state stored in accounts
 #[repr(C)]
 #[derive(Debug)]
@@ -20,6 +24,7 @@ pub struct BidirectionalStackAccount {
     pub global_values: GlobalValues,
     pub constraint_coefficients: [Felt; N_CONSTRAINTS],
     pub column_values: [Felt; COLUMN_VALUES_SIZE],
+    pub stark_commitment: StarkCommitment<InteractionElements>,
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -34,6 +39,7 @@ impl Default for BidirectionalStackAccount {
             global_values: GlobalValues::default(),
             constraint_coefficients: [Felt::ZERO; N_CONSTRAINTS],
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
+            stark_commitment: StarkCommitment::default(),
         }
     }
 }
@@ -159,6 +165,36 @@ impl BidirectionalStack for BidirectionalStackAccount {
     }
 }
 
+impl StarkCommitmentTrait for BidirectionalStackAccount {
+    fn get_stark_commitment<T: Sized>(&self) -> &T {
+        let bytes = cast_struct_to_slice(&self.stark_commitment);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &*(bytes.as_ptr() as *const T) }
+    }
+
+    fn get_stark_commitment_mut<T: Sized>(&mut self) -> &mut T {
+        let bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
+    }
+
+    fn set_stark_commitment<T: Sized>(&mut self, stark_commitment: &T) {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                (stark_commitment as *const T) as *const u8,
+                std::mem::size_of::<T>(),
+            )
+        };
+        assert_eq!(
+            bytes.len(),
+            std::mem::size_of::<StarkCommitment<InteractionElements>>()
+        );
+        self.stark_commitment = unsafe {
+            std::ptr::read(bytes.as_ptr() as *const StarkCommitment<InteractionElements>)
+        };
+    }
+}
+
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
         cast_struct_to_slice(&self.proof)
@@ -226,6 +262,19 @@ impl ProofData for BidirectionalStackAccount {
 
     fn set_global_values(&mut self, global_values: GlobalValues) {
         self.global_values = global_values;
+    }
+
+    fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
+        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+
+        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+
+        (stark_commitment, proof)
     }
 }
 

@@ -65,6 +65,12 @@ pub trait Scheduler: BidirectionalStack {
     }
 }
 
+pub trait StarkCommitmentTrait {
+    fn get_stark_commitment<T: Sized>(&self) -> &T;
+    fn get_stark_commitment_mut<T: Sized>(&mut self) -> &mut T;
+    fn set_stark_commitment<T: Sized>(&mut self, stark_commitment: &T);
+}
+
 pub trait ProofData {
     /// Get a reference to the proof data as any type T
     fn get_proof_reference<T: Sized>(&self) -> &T {
@@ -103,6 +109,8 @@ pub trait ProofData {
 
     /// Set global values - to be implemented by concrete types that have access to GlobalValues
     fn set_global_values(&mut self, global_values: GlobalValues);
+
+    fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
 }
 
 /// Trait for providing automatic type identification with cryptographic hashing
@@ -147,7 +155,10 @@ pub trait Executable: Sized + TypeIdentifiable {
     /// The type tag is now automatically derived from TypeIdentifiable trait
     /// Using u32 instead of u8 for a much larger ID space
     const TYPE_TAG: u32 = Self::TYPE_ID;
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>>;
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>>;
     fn is_finished(&mut self) -> bool {
         false
     }

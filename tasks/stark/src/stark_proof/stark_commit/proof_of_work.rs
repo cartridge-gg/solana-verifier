@@ -187,7 +187,6 @@ impl Executable for ComputeHash {
             hasher.update(&input_data);
             hasher.finalize().to_vec()
         };
-        println!("hash_result: {:?}", &hash_result);
 
         // Push hash result (32 bytes)
         stack.push_front(&hash_result).unwrap();

@@ -1,9 +1,9 @@
 use felt::Felt;
-use stark::swiftness::commitment::types::Commitment as FriCommitment;
 use stark::swiftness::commitment::{
     table::{config::Config as TableCommitmentConfig, types::Commitment as TableCommitment},
     vector::{config::Config as VectorCommitmentConfig, types::Commitment as VectorCommitment},
 };
+use stark::swiftness::fri::types::Commitment as FriCommitment;
 
 pub fn get() -> FriCommitment {
     FriCommitment {

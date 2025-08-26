@@ -2011,15 +2011,21 @@ pub fn get() -> PublicInput {
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x1c43b5"),
-                value: Felt::from_hex_unchecked("0x193641eb151b0f41674641089952e60bc3aded26e3cf42793655c562b8c3aa0"),
+                value: Felt::from_hex_unchecked(
+                    "0x193641eb151b0f41674641089952e60bc3aded26e3cf42793655c562b8c3aa0",
+                ),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x1c43b6"),
-                value: Felt::from_hex_unchecked("0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07"),
+                value: Felt::from_hex_unchecked(
+                    "0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07",
+                ),
             },
             AddrValue {
                 address: Felt::from_hex_unchecked("0x1c43b7"),
-                value: Felt::from_hex_unchecked("0xb2c58e4eec9b5a8f0c5ba4d15ae59c8ac8a8d96fca443dd591296ba3391aaf"),
+                value: Felt::from_hex_unchecked(
+                    "0xb2c58e4eec9b5a8f0c5ba4d15ae59c8ac8a8d96fca443dd591296ba3391aaf",
+                ),
             },
         ])),
         continuous_page_headers: FunVec::from_vec(vec![]),

@@ -1,6 +1,6 @@
 use crate::{
     funvec::{FunVec, FUNVEC_LAST_LAYER, FUNVEC_LAYERS, FUNVEC_LEAVES},
-    swiftness::commitment::table,
+    swiftness::{self, commitment::table},
 };
 use felt::Felt;
 
@@ -27,4 +27,16 @@ pub struct LayerWitness {
     pub leaves: FunVec<Felt, FUNVEC_LEAVES>,
     // Table commitment witnesses for decommiting all the leaves.
     pub table_witness: table::types::Witness,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct Commitment {
+    pub config: swiftness::fri::config::Config,
+    // Array of size n_layers - 1 containing table commitments for each inner layer.
+    pub inner_layers: Vec<swiftness::commitment::table::types::Commitment>,
+    // Array of size n_layers, of one evaluation point for each layer.
+    pub eval_points: Vec<Felt>,
+    // Array of size 2**log_last_layer_degree_bound containing coefficients for the last layer
+    // polynomial.
+    pub last_layer_coefficients: Vec<Felt>,
 }

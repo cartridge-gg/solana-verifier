@@ -5,8 +5,8 @@ use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 use crate::fixtures::constraint_coefficients;
+use crate::fixtures::stark_commitment;
 use fixtures::{fri_unsent_commitment, oods_values, public_input, stark_config, stark_domains};
-use utils::transcript::Transcript;
 
 #[test]
 fn test_verify_oods_with_reference_values() {
@@ -33,61 +33,46 @@ fn test_verify_oods_with_reference_values() {
     proof.public_input = public_input;
     stack.proof = proof;
 
-    //Push the interaction elements to stack for testing (in reverse order as they will be popped)
-    // diluted_check_interaction_alpha
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
-    // diluted_check_interaction_z
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
-    // diluted_check_permutation_interaction_elm
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
-    // range_check16_perm_interaction_elm
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
-    // memory_multi_column_perm_hash_interaction_elm0
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
-    // memory_multi_column_perm_perm_interaction_elm
-    stack
-        .push_front(
-            &Felt::from_hex_unchecked(
-                "0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64",
-            )
-            .to_bytes_be(),
-        )
-        .unwrap();
+    let mut stark_commitment = stark_commitment::get();
+
+    stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_perm_interaction_elm = Felt::from_hex_unchecked(
+        "0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64",
+    );
+    stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_hash_interaction_elm0 = Felt::from_hex_unchecked(
+        "0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288",
+    );
+    stark_commitment
+        .traces
+        .interaction_elements
+        .range_check16_perm_interaction_elm = Felt::from_hex_unchecked(
+        "0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c",
+    );
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_permutation_interaction_elm = Felt::from_hex_unchecked(
+        "0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322",
+    );
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_z = Felt::from_hex_unchecked(
+        "0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48",
+    );
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_alpha = Felt::from_hex_unchecked(
+        "0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822",
+    );
+
+    stack.stark_commitment = stark_commitment;
 
     let point = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
         .unwrap();
@@ -109,6 +94,7 @@ fn test_verify_oods_with_reference_values() {
         stack.execute();
         steps += 1;
     }
-
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
     println!("VerifyOods test completed successfully in {} steps", steps);
 }

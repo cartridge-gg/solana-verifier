@@ -205,9 +205,7 @@ pub fn get() -> FunVec<Felt, 194> {
         Felt::from_hex_unchecked(
             "0x5d529b2b178acdb995804427e7eff4dcc69aa071a53c03765d88334b537df1f",
         ),
-        Felt::from_hex_unchecked(
-            "0xb0b56f73d99478dcdf327f4c06c7ba51abfbbe28cbc0db24fafb9eb23b618",
-        ),
+        Felt::from_hex_unchecked("0xb0b56f73d99478dcdf327f4c06c7ba51abfbbe28cbc0db24fafb9eb23b618"),
         Felt::from_hex_unchecked(
             "0x6bdf96d133763ab12d86ff94f84db26484fd87177ebe789a13514c984b45e46",
         ),

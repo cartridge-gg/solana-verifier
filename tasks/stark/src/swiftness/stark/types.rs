@@ -1,10 +1,14 @@
 use super::config::StarkConfig;
 use crate::funvec::{FunVec, FUNVEC_OODS};
+use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
 use crate::swiftness::commitment::table;
 use crate::swiftness::{fri, pow::pow};
 use felt::Felt;
+use swiftness::air::trace::Commitment as TracesCommitment;
+use swiftness::commitment::table::types::Commitment as TableCommitment;
+use swiftness::fri::types::Commitment as FriCommitment;
 
 pub fn cast_slice_to_struct<T>(slice: &[u8]) -> &T
 where
@@ -58,6 +62,16 @@ pub struct StarkWitness {
     pub composition_decommitment: table::types::Decommitment,
     pub composition_witness: table::types::Witness,
     pub fri_witness: fri::types::Witness,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct StarkCommitment<InteractionElements> {
+    pub traces: TracesCommitment<InteractionElements>,
+    pub composition: TableCommitment,
+    pub interaction_after_composition: Felt,
+    pub oods_values: Vec<Felt>,
+    pub interaction_after_oods: Vec<Felt>,
+    pub fri: FriCommitment,
 }
 #[cfg(test)]
 mod test {

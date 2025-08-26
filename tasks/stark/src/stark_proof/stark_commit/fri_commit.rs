@@ -1,8 +1,14 @@
+use crate::stark_proof::stark_commit::CommitmentTable;
+use crate::stark_proof::stark_commit::ConfigTable;
 use crate::stark_proof::stark_commit::{TableCommit, TranscriptReadFeltVector};
-use crate::swiftness::stark::types::StarkProof;
+use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
 use crate::swiftness::transcript::TranscriptRandomFelt;
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::global_values::InteractionElements;
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
+    TypeIdentifiable,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FriCommitStep {
@@ -35,7 +41,10 @@ impl FriCommit {
 }
 
 impl Executable for FriCommit {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match &self.step {
             FriCommitStep::Init => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -64,17 +73,34 @@ impl Executable for FriCommit {
 
             FriCommitStep::ProcessInnerLayer(layer_idx) => {
                 let layer_idx = *layer_idx;
-                let proof: &StarkProof = stack.get_proof_reference();
-                println!(
-                    "ProcessInnerLayer: layer_idx={}, n_layers={}",
-                    layer_idx, self.n_layers
-                );
-
                 // Check if we've processed all inner layers (n_layers - 1 total)
                 if layer_idx >= self.n_layers as usize - 1 {
                     self.step = FriCommitStep::ReadLastLayerCoefficients;
                     vec![]
                 } else {
+                    let (stark_commitment, proof) = stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
+
+                    let inner_layer = proof
+                        .unsent_commitment
+                        .fri
+                        .inner_layers
+                        .get(layer_idx)
+                        .unwrap();
+                    let inner_layer_commitment = CommitmentTable {
+                        config: ConfigTable::default(),
+                        vector_commitment:
+                            crate::swiftness::commitment::vector::types::Commitment {
+                                config:
+                                    crate::swiftness::commitment::vector::config::Config::default(),
+                                commitment_hash: *inner_layer,
+                            },
+                    };
+                    stark_commitment
+                        .fri
+                        .inner_layers
+                        .push(inner_layer_commitment);
+
+                    let proof: &StarkProof = stack.get_proof_reference();
                     stack
                         .push_front(
                             &proof
@@ -121,8 +147,12 @@ impl Executable for FriCommit {
                 let eval_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+                stark_commitment.fri.eval_points.push(eval_point);
+
                 self.current_transcript_counter = updated_counter;
-                stack.push_front(&eval_point.to_bytes_be()).unwrap();
+                // stack.push_front(&eval_point.to_bytes_be()).unwrap();
 
                 self.step = FriCommitStep::ProcessInnerLayer(layer_idx + 1);
                 vec![]
@@ -140,6 +170,13 @@ impl Executable for FriCommit {
                     "Invalid last layer coefficients length"
                 );
 
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+
+                //this might overflow solana stack because to_vec() creates a new vector
+                stark_commitment.fri.last_layer_coefficients =
+                    last_layer_coefficients.as_slice().to_vec();
+
                 TranscriptReadFeltVector::push_input(
                     self.current_transcript_digest,
                     last_layer_coefficients.as_slice(),
@@ -155,17 +192,6 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::Done => {
-                // At this point, the stack contains (from front to back):
-                // - transcript_counter (0)
-                // - transcript_digest (updated)
-                // - inner_layer_commitments[0] hash (from TableCommit)
-                // - eval_points[0] (from PoseidonHash)
-                // - inner_layer_commitments[1] hash (from TableCommit)
-                // - eval_points[1] (from PoseidonHash)
-                // - ...
-                // - inner_layer_commitments[n-2] hash (from TableCommit)
-                //
-                // StarkCommit will collect these in order
                 vec![]
             }
         }

@@ -22,3 +22,15 @@ pub struct Witness {
     pub original: table::types::Witness,
     pub interaction: table::types::Witness,
 }
+
+// Commitment for the Traces component.
+#[derive(Debug, PartialEq, Default)]
+pub struct Commitment<InteractionElements> {
+    // Commitment to the first trace.
+    pub original: table::types::Commitment,
+    // The interaction elements that were sent to the prover after the first trace commitment (e.g.
+    // memory interaction).
+    pub interaction_elements: InteractionElements,
+    // Commitment to the second (interaction) trace.
+    pub interaction: table::types::Commitment,
+}

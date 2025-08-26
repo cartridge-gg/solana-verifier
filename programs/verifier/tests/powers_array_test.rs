@@ -45,4 +45,6 @@ fn test_powers_array() {
     assert_eq!(result1, Felt::from(2), "Powers[1] should be 2");
     assert_eq!(result2, Felt::from(4), "Powers[2] should be 4");
     assert!(steps > 0, "Should have executed at least one step");
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
 }

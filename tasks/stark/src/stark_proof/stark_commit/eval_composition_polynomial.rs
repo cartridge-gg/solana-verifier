@@ -13,10 +13,15 @@ use crate::swiftness::air::recursive_with_poseidon::segments;
 use crate::swiftness::air::recursive_with_poseidon::GlobalValues;
 use crate::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
 use crate::swiftness::air::recursive_with_poseidon::{SHIFT_POINT_X, SHIFT_POINT_Y};
+use crate::swiftness::stark::types::StarkCommitment;
 use crate::swiftness::stark::types::StarkProof;
 use felt::Felt;
 use felt::NonZeroFelt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::global_values::InteractionElements;
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
+    TypeIdentifiable,
+};
 
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -71,7 +76,10 @@ impl EvalCompositionPolynomial {
 }
 
 impl Executable for EvalCompositionPolynomial {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             EvalCompositionStep::CollectMaskValues => {
                 // Get parameters from stack
@@ -82,29 +90,33 @@ impl Executable for EvalCompositionPolynomial {
                 self.trace_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Get InteractionElements from stack (they were pushed by StarkCommit::GenerateCompositionAlpha)
-                self.memory_multi_column_perm_perm_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
 
-                self.memory_multi_column_perm_hash_interaction_elm0 =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                self.range_check16_perm_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                self.diluted_check_permutation_interaction_elm =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                self.diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                self.diluted_check_interaction_alpha =
-                    Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                self.memory_multi_column_perm_perm_interaction_elm = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .memory_multi_column_perm_perm_interaction_elm;
+                self.memory_multi_column_perm_hash_interaction_elm0 = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .memory_multi_column_perm_hash_interaction_elm0;
+                self.range_check16_perm_interaction_elm = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .range_check16_perm_interaction_elm;
+                self.diluted_check_permutation_interaction_elm = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .diluted_check_permutation_interaction_elm;
+                self.diluted_check_interaction_z = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .diluted_check_interaction_z;
+                self.diluted_check_interaction_alpha = stark_commitment
+                    .traces
+                    .interaction_elements
+                    .diluted_check_interaction_alpha;
 
                 self.step = EvalCompositionStep::ComputePeriodicColumns;
                 vec![]

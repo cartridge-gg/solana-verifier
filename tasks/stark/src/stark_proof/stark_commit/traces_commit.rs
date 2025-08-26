@@ -2,7 +2,10 @@ use crate::poseidon::PoseidonHash;
 use crate::stark_proof::PoseidonHashMany;
 use crate::swiftness::stark::types::StarkProof;
 // use lambdaworks_math::traits::ByteConversion;
+use crate::swiftness::stark::types::StarkCommitment;
 use felt::Felt;
+use utils::global_values::InteractionElements;
+use utils::StarkCommitmentTrait;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +43,10 @@ impl Default for TracesCommit {
 }
 
 impl Executable for TracesCommit {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             TracesCommitStep::ReadOriginalCommitment => {
                 let proof: &StarkProof = stack.get_proof_reference();
@@ -62,6 +68,14 @@ impl Executable for TracesCommit {
                 stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                //Set commitment hash for original trace
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+                stark_commitment
+                    .traces
+                    .original
+                    .vector_commitment
+                    .commitment_hash = transcript_digest;
 
                 stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
                 stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
@@ -76,6 +90,36 @@ impl Executable for TracesCommit {
             }
 
             TracesCommitStep::ReadInteractionCommitment => {
+                let diluted_check_interaction_alpha =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let diluted_check_interaction_z = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let diluted_check_permutation_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let range_check16_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let memory_multi_column_perm_hash_interaction_elm0 =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let memory_multi_column_perm_perm_interaction_elm =
+                    Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+
+                stark_commitment.traces.interaction_elements = InteractionElements {
+                    memory_multi_column_perm_perm_interaction_elm,
+                    memory_multi_column_perm_hash_interaction_elm0,
+                    range_check16_perm_interaction_elm,
+                    diluted_check_permutation_interaction_elm,
+                    diluted_check_interaction_z,
+                    diluted_check_interaction_alpha,
+                };
+
                 let proof: &StarkProof = stack.get_proof_reference();
                 let interaction_commitment = proof.unsent_commitment.traces.interaction;
                 let original_commitment = proof.unsent_commitment.traces.original;
@@ -163,7 +207,6 @@ impl Executable for GenerateInteractionElements {
 
             GenerateInteractionStep::ReadResult => {
                 let hash_result = Felt::from_bytes_be_slice(stack.borrow_front());
-                println!("hash_result: {:?}", hash_result);
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
