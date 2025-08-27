@@ -72,7 +72,6 @@ impl Executable for ProofOfWork {
                 // Prepare data for final hash: init_hash || nonce
                 let init_hash: [u8; 32] = stack.borrow_front().try_into().unwrap();
                 stack.pop_front();
-                let nonce_bytes = self.nonce.to_be_bytes();
 
                 stack.push_front(&self.nonce.to_be_bytes()).unwrap();
                 stack.push_front(&init_hash).unwrap();
@@ -94,7 +93,7 @@ impl Executable for ProofOfWork {
                 println!("final_hash: {:?}", final_hash);
                 println!(
                     "final_hash: {:?}",
-                    Felt::from_bytes_be_slice(&final_hash.as_slice())
+                    Felt::from_bytes_be_slice(final_hash.as_slice())
                 );
 
                 // Check first 16 bytes (128 bits)

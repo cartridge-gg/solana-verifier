@@ -175,7 +175,7 @@ impl Executable for GetHash {
                 total_elements += headers_len * 3;
 
                 let inputs_with_one = total_elements + 1;
-                let zero_count = (inputs_with_one as usize).div_ceil(2) * 2 - inputs_with_one;
+                let zero_count = inputs_with_one.div_ceil(2) * 2 - inputs_with_one;
                 for _ in 0..zero_count {
                     stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 }

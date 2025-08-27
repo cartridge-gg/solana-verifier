@@ -40,6 +40,12 @@ impl FriCommit {
     }
 }
 
+impl Default for FriCommit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for FriCommit {
     fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
         &mut self,
@@ -160,8 +166,7 @@ impl Executable for FriCommit {
 
             FriCommitStep::ReadLastLayerCoefficients => {
                 let proof: &StarkProof = stack.get_proof_reference();
-                let last_layer_coefficients =
-                    proof.unsent_commitment.fri.last_layer_coefficients.clone();
+                let last_layer_coefficients = proof.unsent_commitment.fri.last_layer_coefficients;
 
                 let expected_len =
                     Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);

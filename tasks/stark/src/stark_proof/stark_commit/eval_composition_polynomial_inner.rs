@@ -609,10 +609,10 @@ impl Executable for EvalCompositionPolynomialInner {
                     * cpu_decode_opcode_range_check_bit_0
                     - cpu_decode_opcode_range_check_bit_0)
                     * domains[4].field_div(&felt_nonzero!(domains[0]));
-                total_sum = total_sum + constraint_coefficients[0] * value;
+                total_sum += constraint_coefficients[0] * value;
                 // Constraint: cpu/decode/opcode_range_check/zero.
                 let value = (column_row!(mask_values, 0, 0)).field_div(&felt_nonzero!(domains[4]));
-                total_sum = total_sum + constraint_coefficients[1] * value;
+                total_sum += constraint_coefficients[1] * value;
                 // Constraint: cpu/decode/opcode_range_check_input.
                 let value = (column_row!(mask_values, 1, 1)
                     - (((column_row!(mask_values, 0, 0) * global_values.offset_size
@@ -622,32 +622,32 @@ impl Executable for EvalCompositionPolynomialInner {
                         * global_values.offset_size
                         + column_row!(mask_values, 4, 0)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[2] * value;
+                total_sum += constraint_coefficients[2] * value;
 
                 // Constraint: cpu/decode/flag_op1_base_op0_bit.
                 let value = (cpu_decode_flag_op1_base_op0_0 * cpu_decode_flag_op1_base_op0_0
                     - cpu_decode_flag_op1_base_op0_0)
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[3] * value;
+                total_sum += constraint_coefficients[3] * value;
 
                 // Constraint: cpu/decode/flag_res_op1_bit.
                 let value = (cpu_decode_flag_res_op1_0 * cpu_decode_flag_res_op1_0
                     - cpu_decode_flag_res_op1_0)
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[4] * value;
+                total_sum += constraint_coefficients[4] * value;
 
                 // Constraint: cpu/decode/flag_pc_update_regular_bit.
                 let value = (cpu_decode_flag_pc_update_regular_0
                     * cpu_decode_flag_pc_update_regular_0
                     - cpu_decode_flag_pc_update_regular_0)
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[5] * value;
+                total_sum += constraint_coefficients[5] * value;
 
                 // Constraint: cpu/decode/fp_update_regular_bit.
                 let value = (cpu_decode_fp_update_regular_0 * cpu_decode_fp_update_regular_0
                     - cpu_decode_fp_update_regular_0)
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[6] * value;
+                total_sum += constraint_coefficients[6] * value;
 
                 // Constraint: cpu/operands/mem_dst_addr.
                 let value = (column_row!(mask_values, 1, 8) + global_values.half_offset_size
@@ -656,7 +656,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             * column_row!(mask_values, 5, 0)
                         + column_row!(mask_values, 4, 0)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[7] * value;
+                total_sum += constraint_coefficients[7] * value;
 
                 // Constraint: cpu/operands/mem0_addr.
                 let value = (column_row!(mask_values, 1, 4) + global_values.half_offset_size
@@ -665,7 +665,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             * column_row!(mask_values, 5, 0)
                         + column_row!(mask_values, 4, 8)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[8] * value;
+                total_sum += constraint_coefficients[8] * value;
 
                 // Constraint: cpu/operands/mem1_addr.
                 let value = (column_row!(mask_values, 1, 12) + global_values.half_offset_size
@@ -675,13 +675,13 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_flag_op1_base_op0_0 * column_row!(mask_values, 1, 5)
                         + column_row!(mask_values, 4, 4)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[9] * value;
+                total_sum += constraint_coefficients[9] * value;
 
                 // Constraint: cpu/operands/ops_mul.
                 let value = (column_row!(mask_values, 5, 4)
                     - column_row!(mask_values, 1, 5) * column_row!(mask_values, 1, 13))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[10] * value;
+                total_sum += constraint_coefficients[10] * value;
 
                 // Constraint: cpu/operands/res.
                 let value = ((FELT_1 - cpu_decode_opcode_range_check_bit_9)
@@ -691,19 +691,19 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_opcode_range_check_bit_6 * column_row!(mask_values, 5, 4)
                         + cpu_decode_flag_res_op1_0 * column_row!(mask_values, 1, 13)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[11] * value;
+                total_sum += constraint_coefficients[11] * value;
 
                 // Constraint: cpu/update_registers/update_pc/tmp0.
                 let value = (column_row!(mask_values, 5, 2)
                     - cpu_decode_opcode_range_check_bit_9 * column_row!(mask_values, 1, 9))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[12] * value;
+                total_sum += constraint_coefficients[12] * value;
 
                 // Constraint: cpu/update_registers/update_pc/tmp1.
                 let value = (column_row!(mask_values, 5, 10)
                     - column_row!(mask_values, 5, 2) * column_row!(mask_values, 5, 12))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[13] * value;
+                total_sum += constraint_coefficients[13] * value;
 
                 // Constraint: cpu/update_registers/update_pc/pc_cond_negative.
                 let value = ((FELT_1 - cpu_decode_opcode_range_check_bit_9)
@@ -716,14 +716,14 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_opcode_range_check_bit_8
                             * (column_row!(mask_values, 1, 0) + column_row!(mask_values, 5, 12))))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[14] * value;
+                total_sum += constraint_coefficients[14] * value;
 
                 // Constraint: cpu/update_registers/update_pc/pc_cond_positive.
                 let value = ((column_row!(mask_values, 5, 10)
                     - cpu_decode_opcode_range_check_bit_9)
                     * (column_row!(mask_values, 1, 16) - npc_reg_0))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[15] * value;
+                total_sum += constraint_coefficients[15] * value;
 
                 // Constraint: cpu/update_registers/update_ap/ap_update.
                 let value = (column_row!(mask_values, 5, 16)
@@ -732,7 +732,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_opcode_range_check_bit_11
                         + cpu_decode_opcode_range_check_bit_12 * FELT_2))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[16] * value;
+                total_sum += constraint_coefficients[16] * value;
 
                 // Constraint: cpu/update_registers/update_fp/fp_update.
                 let value = (column_row!(mask_values, 5, 24)
@@ -741,13 +741,13 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_opcode_range_check_bit_12
                             * (column_row!(mask_values, 5, 0) + FELT_2)))
                     * domains[24].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[17] * value;
+                total_sum += constraint_coefficients[17] * value;
 
                 // Constraint: cpu/opcodes/call/push_fp.
                 let value = (cpu_decode_opcode_range_check_bit_12
                     * (column_row!(mask_values, 1, 9) - column_row!(mask_values, 5, 8)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[18] * value;
+                total_sum += constraint_coefficients[18] * value;
 
                 // Constraint: cpu/opcodes/call/push_pc.
                 let value = (cpu_decode_opcode_range_check_bit_12
@@ -756,19 +756,19 @@ impl Executable for EvalCompositionPolynomialInner {
                             + cpu_decode_opcode_range_check_bit_2
                             + FELT_1)))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[19] * value;
+                total_sum += constraint_coefficients[19] * value;
 
                 // Constraint: cpu/opcodes/call/off0.
                 let value = (cpu_decode_opcode_range_check_bit_12
                     * (column_row!(mask_values, 4, 0) - global_values.half_offset_size))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[20] * value;
+                total_sum += constraint_coefficients[20] * value;
 
                 // Constraint: cpu/opcodes/call/off1.
                 let value = (cpu_decode_opcode_range_check_bit_12
                     * (column_row!(mask_values, 4, 8) - (global_values.half_offset_size + FELT_1)))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[21] * value;
+                total_sum += constraint_coefficients[21] * value;
 
                 // Constraint: cpu/opcodes/call/flags.
                 let value = (cpu_decode_opcode_range_check_bit_12
@@ -780,19 +780,19 @@ impl Executable for EvalCompositionPolynomialInner {
                             + cpu_decode_opcode_range_check_bit_1
                             + FELT_4)))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[22] * value;
+                total_sum += constraint_coefficients[22] * value;
 
                 // Constraint: cpu/opcodes/ret/off0.
                 let value = (cpu_decode_opcode_range_check_bit_13
                     * (column_row!(mask_values, 4, 0) + FELT_2 - global_values.half_offset_size))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[23] * value;
+                total_sum += constraint_coefficients[23] * value;
 
                 // Constraint: cpu/opcodes/ret/off2.
                 let value = (cpu_decode_opcode_range_check_bit_13
                     * (column_row!(mask_values, 4, 4) + FELT_1 - global_values.half_offset_size))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[24] * value;
+                total_sum += constraint_coefficients[24] * value;
 
                 // Constraint: cpu/opcodes/ret/flags.
                 let value = (cpu_decode_opcode_range_check_bit_13
@@ -802,43 +802,43 @@ impl Executable for EvalCompositionPolynomialInner {
                         + cpu_decode_flag_res_op1_0
                         - FELT_4))
                     .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[25] * value;
+                total_sum += constraint_coefficients[25] * value;
 
                 // Constraint: cpu/opcodes/assert_eq/assert_eq.
                 let value = (cpu_decode_opcode_range_check_bit_14
                     * (column_row!(mask_values, 1, 9) - column_row!(mask_values, 5, 12)))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[26] * value;
+                total_sum += constraint_coefficients[26] * value;
 
                 // Constraint: initial_ap.
                 let value = (column_row!(mask_values, 5, 0) - global_values.initial_ap)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[27] * value;
+                total_sum += constraint_coefficients[27] * value;
 
                 // Constraint: initial_fp.
                 let value = (column_row!(mask_values, 5, 8) - global_values.initial_ap)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[28] * value;
+                total_sum += constraint_coefficients[28] * value;
 
                 // Constraint: initial_pc.
                 let value = (column_row!(mask_values, 1, 0) - global_values.initial_pc)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[29] * value;
+                total_sum += constraint_coefficients[29] * value;
 
                 // Constraint: final_ap.
                 let value = (column_row!(mask_values, 5, 0) - global_values.final_ap)
                     .field_div(&felt_nonzero!(domains[24]));
-                total_sum = total_sum + constraint_coefficients[30] * value;
+                total_sum += constraint_coefficients[30] * value;
 
                 // Constraint: final_fp.
                 let value = (column_row!(mask_values, 5, 8) - global_values.initial_ap)
                     .field_div(&felt_nonzero!(domains[24]));
-                total_sum = total_sum + constraint_coefficients[31] * value;
+                total_sum += constraint_coefficients[31] * value;
 
                 // Constraint: final_pc.
                 let value = (column_row!(mask_values, 1, 0) - global_values.final_pc)
                     .field_div(&felt_nonzero!(domains[24]));
-                total_sum = total_sum + constraint_coefficients[32] * value;
+                total_sum += constraint_coefficients[32] * value;
 
                 // Constraint: memory/multi_column_perm/perm/init0.
                 let value = ((global_values.memory_multi_column_perm_perm_interaction_elm
@@ -851,7 +851,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         * column_row!(mask_values, 1, 1)
                     - global_values.memory_multi_column_perm_perm_interaction_elm)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[33] * value;
+                total_sum += constraint_coefficients[33] * value;
 
                 // Constraint: memory/multi_column_perm/perm/step0.
                 let value = ((global_values.memory_multi_column_perm_perm_interaction_elm
@@ -865,37 +865,37 @@ impl Executable for EvalCompositionPolynomialInner {
                                 * column_row!(mask_values, 1, 3)))
                         * column_row!(mask_values, 6, 0))
                     * domains[26].field_div(&felt_nonzero!(domains[1]));
-                total_sum = total_sum + constraint_coefficients[34] * value;
+                total_sum += constraint_coefficients[34] * value;
 
                 // Constraint: memory/multi_column_perm/perm/last.
                 let value = (column_row!(mask_values, 6, 0)
                     - global_values.memory_multi_column_perm_perm_public_memory_prod)
                     .field_div(&felt_nonzero!(domains[26]));
-                total_sum = total_sum + constraint_coefficients[35] * value;
+                total_sum += constraint_coefficients[35] * value;
 
                 // Constraint: memory/diff_is_bit.
                 let value = (memory_address_diff_0 * memory_address_diff_0 - memory_address_diff_0)
                     * domains[26].field_div(&felt_nonzero!(domains[1]));
-                total_sum = total_sum + constraint_coefficients[36] * value;
+                total_sum += constraint_coefficients[36] * value;
 
                 // Constraint: memory/is_func.
                 let value = ((memory_address_diff_0 - FELT_1)
                     * (column_row!(mask_values, 2, 1) - column_row!(mask_values, 2, 3)))
                     * domains[26].field_div(&felt_nonzero!(domains[1]));
-                total_sum = total_sum + constraint_coefficients[37] * value;
+                total_sum += constraint_coefficients[37] * value;
 
                 // Constraint: memory/initial_addr.
                 let value = (column_row!(mask_values, 2, 0) - FELT_1)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[38] * value;
+                total_sum += constraint_coefficients[38] * value;
 
                 // Constraint: public_memory_addr_zero.
                 let value = (column_row!(mask_values, 1, 2)).field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[39] * value;
+                total_sum += constraint_coefficients[39] * value;
 
                 // Constraint: public_memory_value_zero.
                 let value = (column_row!(mask_values, 1, 3)).field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[40] * value;
+                total_sum += constraint_coefficients[40] * value;
 
                 // Constraint: range_check16/perm/init0.
                 let value = ((global_values.range_check16_perm_interaction_elm
@@ -904,7 +904,7 @@ impl Executable for EvalCompositionPolynomialInner {
                     + column_row!(mask_values, 4, 0)
                     - global_values.range_check16_perm_interaction_elm)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[41] * value;
+                total_sum += constraint_coefficients[41] * value;
 
                 // Constraint: range_check16/perm/step0.
                 let value = ((global_values.range_check16_perm_interaction_elm
@@ -914,28 +914,28 @@ impl Executable for EvalCompositionPolynomialInner {
                         - column_row!(mask_values, 4, 4))
                         * column_row!(mask_values, 7, 1))
                     * domains[27].field_div(&felt_nonzero!(domains[2]));
-                total_sum = total_sum + constraint_coefficients[42] * value;
+                total_sum += constraint_coefficients[42] * value;
 
                 // Constraint: range_check16/perm/last.
                 let value = (column_row!(mask_values, 7, 1)
                     - global_values.range_check16_perm_public_memory_prod)
                     .field_div(&felt_nonzero!(domains[27]));
-                total_sum = total_sum + constraint_coefficients[43] * value;
+                total_sum += constraint_coefficients[43] * value;
 
                 // Constraint: range_check16/diff_is_bit.
                 let value = (range_check16_diff_0 * range_check16_diff_0 - range_check16_diff_0)
                     * domains[27].field_div(&felt_nonzero!(domains[2]));
-                total_sum = total_sum + constraint_coefficients[44] * value;
+                total_sum += constraint_coefficients[44] * value;
 
                 // Constraint: range_check16/minimum.
                 let value = (column_row!(mask_values, 4, 2) - global_values.range_check_min)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[45] * value;
+                total_sum += constraint_coefficients[45] * value;
 
                 // Constraint: range_check16/maximum.
                 let value = (column_row!(mask_values, 4, 2) - global_values.range_check_max)
                     .field_div(&felt_nonzero!(domains[27]));
-                total_sum = total_sum + constraint_coefficients[46] * value;
+                total_sum += constraint_coefficients[46] * value;
 
                 // Constraint: diluted_check/permutation/init0.
                 let value = ((global_values.diluted_check_permutation_interaction_elm
@@ -944,7 +944,7 @@ impl Executable for EvalCompositionPolynomialInner {
                     + column_row!(mask_values, 3, 0)
                     - global_values.diluted_check_permutation_interaction_elm)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[47] * value;
+                total_sum += constraint_coefficients[47] * value;
 
                 // Constraint: diluted_check/permutation/step0.
                 let value = ((global_values.diluted_check_permutation_interaction_elm
@@ -954,24 +954,24 @@ impl Executable for EvalCompositionPolynomialInner {
                         - column_row!(mask_values, 3, 2))
                         * column_row!(mask_values, 7, 0))
                     * domains[26].field_div(&felt_nonzero!(domains[1]));
-                total_sum = total_sum + constraint_coefficients[48] * value;
+                total_sum += constraint_coefficients[48] * value;
 
                 // Constraint: diluted_check/permutation/last.
                 let value = (column_row!(mask_values, 7, 0)
                     - global_values.diluted_check_permutation_public_memory_prod)
                     .field_div(&felt_nonzero!(domains[26]));
-                total_sum = total_sum + constraint_coefficients[49] * value;
+                total_sum += constraint_coefficients[49] * value;
 
                 // Constraint: diluted_check/init.
                 let value = (column_row!(mask_values, 6, 1) - FELT_1)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[50] * value;
+                total_sum += constraint_coefficients[50] * value;
 
                 // Constraint: diluted_check/first_element.
                 let value = (column_row!(mask_values, 3, 1)
                     - global_values.diluted_check_first_elm)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[51] * value;
+                total_sum += constraint_coefficients[51] * value;
 
                 // Constraint: diluted_check/step.
                 let value = (column_row!(mask_values, 6, 3)
@@ -984,20 +984,20 @@ impl Executable for EvalCompositionPolynomialInner {
                             * (column_row!(mask_values, 3, 3) - column_row!(mask_values, 3, 1))
                             * (column_row!(mask_values, 3, 3) - column_row!(mask_values, 3, 1))))
                     * domains[26].field_div(&felt_nonzero!(domains[1]));
-                total_sum = total_sum + constraint_coefficients[52] * value;
+                total_sum += constraint_coefficients[52] * value;
 
                 // Constraint: diluted_check/last.
                 let value = (column_row!(mask_values, 6, 1)
                     - global_values.diluted_check_final_cum_val)
                     .field_div(&felt_nonzero!(domains[26]));
-                total_sum = total_sum + constraint_coefficients[53] * value;
+                total_sum += constraint_coefficients[53] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/last_one_is_zero.
                 let value = (column_row!(mask_values, 5, 57)
                     * (column_row!(mask_values, 4, 3)
                         - (column_row!(mask_values, 4, 11) + column_row!(mask_values, 4, 11))))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[54] * value;
+                total_sum += constraint_coefficients[54] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/zeroes_between_ones0.
                 let value = (column_row!(mask_values, 5, 57)
@@ -1005,7 +1005,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         - FELT_3138550867693340381917894711603833208051177722232017256448
                             * column_row!(mask_values, 4, 1539)))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[55] * value;
+                total_sum += constraint_coefficients[55] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/cumulative_bit192.
                 let value = (column_row!(mask_values, 5, 57)
@@ -1014,14 +1014,14 @@ impl Executable for EvalCompositionPolynomialInner {
                             - (column_row!(mask_values, 4, 1547)
                                 + column_row!(mask_values, 4, 1547))))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[56] * value;
+                total_sum += constraint_coefficients[56] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/zeroes_between_ones192.
                 let value = (column_row!(mask_values, 4, 2047)
                     * (column_row!(mask_values, 4, 1547)
                         - FELT_8 * column_row!(mask_values, 4, 1571)))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[57] * value;
+                total_sum += constraint_coefficients[57] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/cumulative_bit196.
                 let value = (column_row!(mask_values, 4, 2047)
@@ -1031,7 +1031,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             - (column_row!(mask_values, 4, 1579)
                                 + column_row!(mask_values, 4, 1579))))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[58] * value;
+                total_sum += constraint_coefficients[58] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_unpacking/zeroes_between_ones196.
                 let value = ((column_row!(mask_values, 4, 2011)
@@ -1039,21 +1039,21 @@ impl Executable for EvalCompositionPolynomialInner {
                     * (column_row!(mask_values, 4, 1579)
                         - FELT_18014398509481984 * column_row!(mask_values, 4, 2011)))
                 .field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[59] * value;
+                total_sum += constraint_coefficients[59] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/booleanity_test.
                 let value = (pedersen_hash0_ec_subset_sum_bit_0
                     * (pedersen_hash0_ec_subset_sum_bit_0 - FELT_1))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[60] * value;
+                total_sum += constraint_coefficients[60] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/bit_extraction_end.
                 let value = (column_row!(mask_values, 4, 3)).field_div(&felt_nonzero!(domains[21]));
-                total_sum = total_sum + constraint_coefficients[61] * value;
+                total_sum += constraint_coefficients[61] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/zeros_tail.
                 let value = (column_row!(mask_values, 4, 3)).field_div(&felt_nonzero!(domains[20]));
-                total_sum = total_sum + constraint_coefficients[62] * value;
+                total_sum += constraint_coefficients[62] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/add_points/slope.
                 let value = (pedersen_hash0_ec_subset_sum_bit_0
@@ -1061,7 +1061,7 @@ impl Executable for EvalCompositionPolynomialInner {
                     - column_row!(mask_values, 4, 7)
                         * (column_row!(mask_values, 4, 1) - global_values.pedersen_points_x))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[63] * value;
+                total_sum += constraint_coefficients[63] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/add_points/x.
                 let value = (column_row!(mask_values, 4, 7) * column_row!(mask_values, 4, 7)
@@ -1070,7 +1070,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             + global_values.pedersen_points_x
                             + column_row!(mask_values, 4, 9)))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[64] * value;
+                total_sum += constraint_coefficients[64] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/add_points/y.
                 let value = (pedersen_hash0_ec_subset_sum_bit_0
@@ -1078,129 +1078,129 @@ impl Executable for EvalCompositionPolynomialInner {
                     - column_row!(mask_values, 4, 7)
                         * (column_row!(mask_values, 4, 1) - column_row!(mask_values, 4, 9)))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[65] * value;
+                total_sum += constraint_coefficients[65] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/copy_point/x.
                 let value = (pedersen_hash0_ec_subset_sum_bit_neg_0
                     * (column_row!(mask_values, 4, 9) - column_row!(mask_values, 4, 1)))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[66] * value;
+                total_sum += constraint_coefficients[66] * value;
 
                 // Constraint: pedersen/hash0/ec_subset_sum/copy_point/y.
                 let value = (pedersen_hash0_ec_subset_sum_bit_neg_0
                     * (column_row!(mask_values, 4, 13) - column_row!(mask_values, 4, 5)))
                     * domains[20].field_div(&felt_nonzero!(domains[3]));
-                total_sum = total_sum + constraint_coefficients[67] * value;
+                total_sum += constraint_coefficients[67] * value;
 
                 // Constraint: pedersen/hash0/copy_point/x.
                 let value = (column_row!(mask_values, 4, 2049) - column_row!(mask_values, 4, 2041))
                     * domains[22].field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[68] * value;
+                total_sum += constraint_coefficients[68] * value;
 
                 // Constraint: pedersen/hash0/copy_point/y.
                 let value = (column_row!(mask_values, 4, 2053) - column_row!(mask_values, 4, 2045))
                     * domains[22].field_div(&felt_nonzero!(domains[19]));
-                total_sum = total_sum + constraint_coefficients[69] * value;
+                total_sum += constraint_coefficients[69] * value;
 
                 // Constraint: pedersen/hash0/init/x.
                 let value = (column_row!(mask_values, 4, 1) - global_values.pedersen_shift_point.x)
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[70] * value;
+                total_sum += constraint_coefficients[70] * value;
 
                 // Constraint: pedersen/hash0/init/y.
                 let value = (column_row!(mask_values, 4, 5) - global_values.pedersen_shift_point.y)
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[71] * value;
+                total_sum += constraint_coefficients[71] * value;
 
                 // Constraint: pedersen/input0_value0.
                 let value = (column_row!(mask_values, 1, 11) - column_row!(mask_values, 4, 3))
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[72] * value;
+                total_sum += constraint_coefficients[72] * value;
 
                 // Constraint: pedersen/input0_addr.
                 let value = (column_row!(mask_values, 1, 4106)
                     - (column_row!(mask_values, 1, 1034) + FELT_1))
                     * domains[28].field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[73] * value;
+                total_sum += constraint_coefficients[73] * value;
 
                 // Constraint: pedersen/init_addr.
                 let value = (column_row!(mask_values, 1, 10) - global_values.initial_pedersen_addr)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[74] * value;
+                total_sum += constraint_coefficients[74] * value;
 
                 // Constraint: pedersen/input1_value0.
                 let value = (column_row!(mask_values, 1, 2059) - column_row!(mask_values, 4, 2051))
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[75] * value;
+                total_sum += constraint_coefficients[75] * value;
 
                 // Constraint: pedersen/input1_addr.
                 let value = (column_row!(mask_values, 1, 2058)
                     - (column_row!(mask_values, 1, 10) + FELT_1))
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[76] * value;
+                total_sum += constraint_coefficients[76] * value;
 
                 // Constraint: pedersen/output_value0.
                 let value = (column_row!(mask_values, 1, 1035) - column_row!(mask_values, 4, 4089))
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[77] * value;
+                total_sum += constraint_coefficients[77] * value;
 
                 // Constraint: pedersen/output_addr.
                 let value = (column_row!(mask_values, 1, 1034)
                     - (column_row!(mask_values, 1, 2058) + FELT_1))
                     .field_div(&felt_nonzero!(domains[23]));
-                total_sum = total_sum + constraint_coefficients[78] * value;
+                total_sum += constraint_coefficients[78] * value;
 
                 // Constraint: range_check_builtin/value.
                 let value = (range_check_builtin_value7_0 - column_row!(mask_values, 1, 139))
                     .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[79] * value;
+                total_sum += constraint_coefficients[79] * value;
 
                 // Constraint: range_check_builtin/addr_step.
                 let value = (column_row!(mask_values, 1, 394)
                     - (column_row!(mask_values, 1, 138) + FELT_1))
                     * domains[29].field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[80] * value;
+                total_sum += constraint_coefficients[80] * value;
 
                 // Constraint: range_check_builtin/init_addr.
                 let value = (column_row!(mask_values, 1, 138)
                     - global_values.initial_range_check_addr)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[81] * value;
+                total_sum += constraint_coefficients[81] * value;
 
                 // Constraint: bitwise/init_var_pool_addr.
                 let value = (column_row!(mask_values, 1, 42) - global_values.initial_bitwise_addr)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[82] * value;
+                total_sum += constraint_coefficients[82] * value;
 
                 // Constraint: bitwise/step_var_pool_addr.
                 let value = (column_row!(mask_values, 1, 106)
                     - (column_row!(mask_values, 1, 42) + FELT_1))
                     * domains[10].field_div(&felt_nonzero!(domains[7]));
-                total_sum = total_sum + constraint_coefficients[83] * value;
+                total_sum += constraint_coefficients[83] * value;
 
                 // Constraint: bitwise/x_or_y_addr.
                 let value = (column_row!(mask_values, 1, 74)
                     - (column_row!(mask_values, 1, 234) + FELT_1))
                     .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[84] * value;
+                total_sum += constraint_coefficients[84] * value;
 
                 // Constraint: bitwise/next_var_pool_addr.
                 let value = (column_row!(mask_values, 1, 298)
                     - (column_row!(mask_values, 1, 74) + FELT_1))
                     * domains[29].field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[85] * value;
+                total_sum += constraint_coefficients[85] * value;
 
                 // Constraint: bitwise/partition.
                 let value = (bitwise_sum_var_0_0 + bitwise_sum_var_8_0
                     - column_row!(mask_values, 1, 43))
                 .field_div(&felt_nonzero!(domains[7]));
-                total_sum = total_sum + constraint_coefficients[86] * value;
+                total_sum += constraint_coefficients[86] * value;
 
                 // Constraint: bitwise/or_is_and_plus_xor.
                 let value = (column_row!(mask_values, 1, 75)
                     - (column_row!(mask_values, 1, 171) + column_row!(mask_values, 1, 235)))
                 .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[87] * value;
+                total_sum += constraint_coefficients[87] * value;
 
                 // Constraint: bitwise/addition_is_xor_with_and.
                 let value = (column_row!(mask_values, 3, 0) + column_row!(mask_values, 3, 64)
@@ -1208,122 +1208,122 @@ impl Executable for EvalCompositionPolynomialInner {
                         + column_row!(mask_values, 3, 128)
                         + column_row!(mask_values, 3, 128)))
                 .field_div(&felt_nonzero!(domains[11]));
-                total_sum = total_sum + constraint_coefficients[88] * value;
+                total_sum += constraint_coefficients[88] * value;
 
                 // Constraint: bitwise/unique_unpacking192.
                 let value = ((column_row!(mask_values, 3, 176) + column_row!(mask_values, 3, 240))
                     * FELT_16
                     - column_row!(mask_values, 3, 2))
                 .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[89] * value;
+                total_sum += constraint_coefficients[89] * value;
 
                 // Constraint: bitwise/unique_unpacking193.
                 let value = ((column_row!(mask_values, 3, 180) + column_row!(mask_values, 3, 244))
                     * FELT_16
                     - column_row!(mask_values, 3, 130))
                 .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[90] * value;
+                total_sum += constraint_coefficients[90] * value;
 
                 // Constraint: bitwise/unique_unpacking194.
                 let value = ((column_row!(mask_values, 3, 184) + column_row!(mask_values, 3, 248))
                     * FELT_16
                     - column_row!(mask_values, 3, 66))
                 .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[91] * value;
+                total_sum += constraint_coefficients[91] * value;
 
                 // Constraint: bitwise/unique_unpacking195.
                 let value = ((column_row!(mask_values, 3, 188) + column_row!(mask_values, 3, 252))
                     * FELT_256
                     - column_row!(mask_values, 3, 194))
                 .field_div(&felt_nonzero!(domains[9]));
-                total_sum = total_sum + constraint_coefficients[92] * value;
+                total_sum += constraint_coefficients[92] * value;
 
                 // Constraint: poseidon/param_0/init_input_output_addr.
                 let value = (column_row!(mask_values, 1, 266)
                     - global_values.initial_poseidon_addr)
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[93] * value;
+                total_sum += constraint_coefficients[93] * value;
 
                 // Constraint: poseidon/param_0/addr_input_output_step.
                 let value = (column_row!(mask_values, 1, 778)
                     - (column_row!(mask_values, 1, 266) + FELT_3))
                     * domains[30].field_div(&felt_nonzero!(domains[12]));
-                total_sum = total_sum + constraint_coefficients[94] * value;
+                total_sum += constraint_coefficients[94] * value;
 
                 // Constraint: poseidon/param_1/init_input_output_addr.
                 let value = (column_row!(mask_values, 1, 202)
                     - (global_values.initial_poseidon_addr + FELT_1))
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[95] * value;
+                total_sum += constraint_coefficients[95] * value;
 
                 // Constraint: poseidon/param_1/addr_input_output_step.
                 let value = (column_row!(mask_values, 1, 714)
                     - (column_row!(mask_values, 1, 202) + FELT_3))
                     * domains[30].field_div(&felt_nonzero!(domains[12]));
-                total_sum = total_sum + constraint_coefficients[96] * value;
+                total_sum += constraint_coefficients[96] * value;
 
                 // Constraint: poseidon/param_2/init_input_output_addr.
                 let value = (column_row!(mask_values, 1, 458)
                     - (global_values.initial_poseidon_addr + FELT_2))
                     .field_div(&felt_nonzero!(domains[25]));
-                total_sum = total_sum + constraint_coefficients[97] * value;
+                total_sum += constraint_coefficients[97] * value;
 
                 // Constraint: poseidon/param_2/addr_input_output_step.
                 let value = (column_row!(mask_values, 1, 970)
                     - (column_row!(mask_values, 1, 458) + FELT_3))
                     * domains[30].field_div(&felt_nonzero!(domains[12]));
-                total_sum = total_sum + constraint_coefficients[98] * value;
+                total_sum += constraint_coefficients[98] * value;
 
                 // Constraint: poseidon/poseidon/full_rounds_state0_squaring.
                 let value = (column_row!(mask_values, 5, 9) * column_row!(mask_values, 5, 9)
                     - column_row!(mask_values, 5, 105))
                 .field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[99] * value;
+                total_sum += constraint_coefficients[99] * value;
 
                 // Constraint: poseidon/poseidon/full_rounds_state1_squaring.
                 let value = (column_row!(mask_values, 5, 73) * column_row!(mask_values, 5, 73)
                     - column_row!(mask_values, 5, 25))
                 .field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[100] * value;
+                total_sum += constraint_coefficients[100] * value;
 
                 // Constraint: poseidon/poseidon/full_rounds_state2_squaring.
                 let value = (column_row!(mask_values, 5, 41) * column_row!(mask_values, 5, 41)
                     - column_row!(mask_values, 5, 89))
                 .field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[101] * value;
+                total_sum += constraint_coefficients[101] * value;
 
                 // Constraint: poseidon/poseidon/partial_rounds_state0_squaring.
                 let value = (column_row!(mask_values, 5, 6) * column_row!(mask_values, 5, 6)
                     - column_row!(mask_values, 5, 14))
                 .field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[102] * value;
+                total_sum += constraint_coefficients[102] * value;
 
                 // Constraint: poseidon/poseidon/partial_rounds_state1_squaring.
                 let value = (column_row!(mask_values, 5, 1) * column_row!(mask_values, 5, 1)
                     - column_row!(mask_values, 5, 17))
                     * domains[15].field_div(&felt_nonzero!(domains[6]));
-                total_sum = total_sum + constraint_coefficients[103] * value;
+                total_sum += constraint_coefficients[103] * value;
 
                 // Constraint: poseidon/poseidon/add_first_round_key0.
                 let value = (column_row!(mask_values, 1, 267)
                         + FELT_2950795762459345168613727575620414179244544320470208355568817838579231751791
                         - column_row!(mask_values, 5, 9))
                         .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[104] * value;
+                total_sum += constraint_coefficients[104] * value;
 
                 // Constraint: poseidon/poseidon/add_first_round_key1.
                 let value = (column_row!(mask_values, 1, 203)
                         + FELT_1587446564224215276866294500450702039420286416111469274423465069420553242820
                         - column_row!(mask_values, 5, 73))
                         .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[105] * value;
+                total_sum += constraint_coefficients[105] * value;
 
                 // Constraint: poseidon/poseidon/add_first_round_key2.
                 let value = (column_row!(mask_values, 1, 459)
                         + FELT_1645965921169490687904413452218868659025437693527479459426157555728339600137
                         - column_row!(mask_values, 5, 41))
                         .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[106] * value;
+                total_sum += constraint_coefficients[106] * value;
 
                 // Constraint: poseidon/poseidon/full_round0.
                 let value = (column_row!(mask_values, 5, 137)
@@ -1334,7 +1334,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         + poseidon_poseidon_full_rounds_state2_cubed_0
                         + global_values.poseidon_poseidon_full_round_key0))
                     * domains[13].field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[107] * value;
+                total_sum += constraint_coefficients[107] * value;
 
                 // Constraint: poseidon/poseidon/full_round1.
                 let value = (column_row!(mask_values, 5, 201)
@@ -1343,7 +1343,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         + poseidon_poseidon_full_rounds_state2_cubed_0
                         + global_values.poseidon_poseidon_full_round_key1))
                     * domains[13].field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[108] * value;
+                total_sum += constraint_coefficients[108] * value;
 
                 // Constraint: poseidon/poseidon/full_round2.
                 let value = (column_row!(mask_values, 5, 169)
@@ -1353,7 +1353,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         + poseidon_poseidon_full_rounds_state1_cubed_0
                         + global_values.poseidon_poseidon_full_round_key2))
                     * domains[13].field_div(&felt_nonzero!(domains[8]));
-                total_sum = total_sum + constraint_coefficients[109] * value;
+                total_sum += constraint_coefficients[109] * value;
 
                 // Constraint: poseidon/poseidon/last_full_round0.
                 let value = (column_row!(mask_values, 1, 779)
@@ -1363,7 +1363,7 @@ impl Executable for EvalCompositionPolynomialInner {
                         + poseidon_poseidon_full_rounds_state1_cubed_7
                         + poseidon_poseidon_full_rounds_state2_cubed_7))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[110] * value;
+                total_sum += constraint_coefficients[110] * value;
 
                 // Constraint: poseidon/poseidon/last_full_round1.
                 let value = (column_row!(mask_values, 1, 715)
@@ -1371,7 +1371,7 @@ impl Executable for EvalCompositionPolynomialInner {
                     - (poseidon_poseidon_full_rounds_state0_cubed_7
                         + poseidon_poseidon_full_rounds_state2_cubed_7))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[111] * value;
+                total_sum += constraint_coefficients[111] * value;
 
                 // Constraint: poseidon/poseidon/last_full_round2.
                 let value = (column_row!(mask_values, 1, 971)
@@ -1380,22 +1380,22 @@ impl Executable for EvalCompositionPolynomialInner {
                     - (poseidon_poseidon_full_rounds_state0_cubed_7
                         + poseidon_poseidon_full_rounds_state1_cubed_7))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[112] * value;
+                total_sum += constraint_coefficients[112] * value;
 
                 // Constraint: poseidon/poseidon/copy_partial_rounds0_i0.
                 let value = (column_row!(mask_values, 5, 982) - column_row!(mask_values, 5, 1))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[113] * value;
+                total_sum += constraint_coefficients[113] * value;
 
                 // Constraint: poseidon/poseidon/copy_partial_rounds0_i1.
                 let value = (column_row!(mask_values, 5, 998) - column_row!(mask_values, 5, 33))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[114] * value;
+                total_sum += constraint_coefficients[114] * value;
 
                 // Constraint: poseidon/poseidon/copy_partial_rounds0_i2.
                 let value = (column_row!(mask_values, 5, 1014) - column_row!(mask_values, 5, 65))
                     .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[115] * value;
+                total_sum += constraint_coefficients[115] * value;
 
                 // Constraint: poseidon/poseidon/margin_full_to_partial0.
                 let value = (column_row!(mask_values, 5, 6)
@@ -1405,7 +1405,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             + poseidon_poseidon_full_rounds_state1_cubed_3
                             + FELT_2121140748740143694053732746913428481442990369183417228688865837805149503386))
                 .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[116] * value;
+                total_sum += constraint_coefficients[116] * value;
 
                 // Constraint: poseidon/poseidon/margin_full_to_partial1.
                 let value = (column_row!(mask_values, 5, 22)
@@ -1417,7 +1417,7 @@ impl Executable for EvalCompositionPolynomialInner {
                                 * poseidon_poseidon_partial_rounds_state0_cubed_0
                             + FELT_2006642341318481906727563724340978325665491359415674592697055778067937914672))
                 .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[117] * value;
+                total_sum += constraint_coefficients[117] * value;
 
                 // Constraint: poseidon/poseidon/margin_full_to_partial2.
                 let value = (column_row!(mask_values, 5, 38)
@@ -1430,7 +1430,7 @@ impl Executable for EvalCompositionPolynomialInner {
                                 * poseidon_poseidon_partial_rounds_state0_cubed_1
                             + FELT_427751140904099001132521606468025610873158555767197326325930641757709538586))
                 .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[118] * value;
+                total_sum += constraint_coefficients[118] * value;
 
                 // Constraint: poseidon/poseidon/partial_round0.
                 let value = (column_row!(mask_values, 5, 54)
@@ -1443,7 +1443,7 @@ impl Executable for EvalCompositionPolynomialInner {
                                 * poseidon_poseidon_partial_rounds_state0_cubed_2
                             + global_values.poseidon_poseidon_partial_round_key0))
                 * domains[17].field_div(&felt_nonzero!(domains[5]));
-                total_sum = total_sum + constraint_coefficients[119] * value;
+                total_sum += constraint_coefficients[119] * value;
 
                 // Constraint: poseidon/poseidon/partial_round1.
                 let value = (column_row!(mask_values, 5, 97)
@@ -1456,7 +1456,7 @@ impl Executable for EvalCompositionPolynomialInner {
                                 * poseidon_poseidon_partial_rounds_state1_cubed_2
                             + global_values.poseidon_poseidon_partial_round_key1))
                 * domains[18].field_div(&felt_nonzero!(domains[6]));
-                total_sum = total_sum + constraint_coefficients[120] * value;
+                total_sum += constraint_coefficients[120] * value;
 
                 // Constraint: poseidon/poseidon/margin_partial_to_full0.
                 let value = (column_row!(mask_values, 5, 521)
@@ -1467,7 +1467,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             + poseidon_poseidon_partial_rounds_state1_cubed_21
                             + FELT_560279373700919169769089400651532183647886248799764942664266404650165812023))
                 .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[121] * value;
+                total_sum += constraint_coefficients[121] * value;
 
                 // Constraint: poseidon/poseidon/margin_partial_to_full1.
                 let value = (column_row!(mask_values, 5, 585)
@@ -1477,7 +1477,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             + poseidon_poseidon_partial_rounds_state1_cubed_21
                             + FELT_1401754474293352309994371631695783042590401941592571735921592823982231996415))
                 .field_div(&felt_nonzero!(domains[16]));
-                total_sum = total_sum + constraint_coefficients[122] * value;
+                total_sum += constraint_coefficients[122] * value;
 
                 // Constraint: poseidon/poseidon/margin_partial_to_full2.
                 let value = (column_row!(mask_values, 5, 553)
@@ -1491,7 +1491,7 @@ impl Executable for EvalCompositionPolynomialInner {
                             + FELT_1246177936547655338400308396717835700699368047388302793172818304164989556526))
                 .field_div(&felt_nonzero!(domains[16]));
 
-                total_sum = total_sum + constraint_coefficients[123] * value;
+                total_sum += constraint_coefficients[123] * value;
 
                 stack.push_front(&total_sum.to_bytes_be()).unwrap();
                 self.total_sum = total_sum;

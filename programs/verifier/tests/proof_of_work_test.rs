@@ -17,11 +17,8 @@ fn test_proof_of_work_with_reference_values() {
         127, 23, 239, 148, 25, 227, 176, 237, 25, 158, 163, 230,
     ];
     let nonce: u64 = 0xd5bee6b9;
-    let n_bits: u8 = 32;
 
     proof.unsent_commitment.proof_of_work.nonce = nonce;
-    // proof.config.proof_of_work.n_bits = n_bits;
-
     stack.proof = proof;
 
     stack.push_front(&digest).unwrap();
@@ -35,7 +32,6 @@ fn test_proof_of_work_with_reference_values() {
     }
 
     let reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-    println!("reseted_counter: {:?}", reseted_counter);
     stack.pop_front();
     let digest = Felt::from_bytes_be_slice(stack.borrow_front());
     println!("digest: {:?}", digest);

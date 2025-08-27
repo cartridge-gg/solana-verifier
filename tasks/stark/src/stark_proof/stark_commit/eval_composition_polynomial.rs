@@ -75,6 +75,12 @@ impl EvalCompositionPolynomial {
     }
 }
 
+impl Default for EvalCompositionPolynomial {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for EvalCompositionPolynomial {
     fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
         &mut self,

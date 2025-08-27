@@ -8,11 +8,8 @@ use verifier::state::BidirectionalStackAccount;
 #[test]
 fn test_traces_commit_with_reference_values() {
     let mut stack = BidirectionalStackAccount::default();
-
-    // Create a StarkProof with reference trace commitments
     let mut proof = StarkProof::default();
 
-    // Reference values from the test output
     let original_commitment =
         Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
             .unwrap();
@@ -27,11 +24,9 @@ fn test_traces_commit_with_reference_values() {
 
     stack.proof = proof;
 
-    // Initial transcript state matching the reference test
     let initial_transcript_digest =
         Felt::from_hex("0x1b9182dce9dc1169fcd00c1f8c0b6acd6baad99ce578370ead5ca230b8fb8c6")
             .unwrap();
-    // let initial_transcript_counter = Felt::from_hex("0x1").unwrap();
 
     stack.push_task(TracesCommit::new(initial_transcript_digest));
 
@@ -48,17 +43,6 @@ fn test_traces_commit_with_reference_values() {
     let transcript_digest_final = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
     println!("transcript_digest_final: {:?}", transcript_digest_final);
-
-    // let interaction_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    // stack.pop_front();
-    // println!(
-    //     "interaction_commitment_hash: {:?}",
-    //     interaction_commitment_hash
-    // );
-
-    // let original_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    // stack.pop_front();
-    // println!("original_commitment_hash: {:?}", original_commitment_hash);
 
     let stark_commitment = stack.stark_commitment;
     let diluted_check_interaction_alpha = stark_commitment
@@ -118,12 +102,6 @@ fn test_traces_commit_with_reference_values() {
         memory_multi_column_perm_perm_interaction_elm
     );
 
-    let expected_original_commitment =
-        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
-            .unwrap();
-    let expected_interaction_commitment =
-        Felt::from_hex("0x7171ffc67e24fcbb2a7d1acd6244fa91c54dff15c96ca26d193907b716ce2c5")
-            .unwrap();
     // Expected interaction elements from the test output
     let expected_memory_multi_column_perm_perm_interaction_elm =
         Felt::from_hex("0x617916729dd4132da40d4c38330a344a4704c284a3c4b36924b4d7603522a62")
@@ -144,15 +122,6 @@ fn test_traces_commit_with_reference_values() {
         Felt::from_hex("0x7143d36ac29773e3194e4182dea5b4f49459a2c752df09095c0797d499f43b3")
             .unwrap();
 
-    // assert_eq!(
-    //     original_commitment_hash, expected_original_commitment,
-    //     "Original commitment mismatch"
-    // );
-    // assert_eq!(
-    //     interaction_commitment_hash, expected_interaction_commitment,
-    //     "Interaction commitment mismatch"
-    // );
-    // Assert all expected interaction elements
     assert_eq!(
         memory_multi_column_perm_perm_interaction_elm,
         expected_memory_multi_column_perm_perm_interaction_elm,

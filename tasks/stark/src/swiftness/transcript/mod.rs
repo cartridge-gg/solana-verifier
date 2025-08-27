@@ -93,6 +93,12 @@ impl TranscriptReadFelt {
     }
 }
 
+impl Default for TranscriptReadFelt {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Executable for TranscriptReadFelt {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
