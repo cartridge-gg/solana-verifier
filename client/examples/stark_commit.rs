@@ -323,16 +323,45 @@ async fn main() -> client::Result<()> {
     .await?;
     println!("StarkCommit task pushed: {signature}");
 
-    // Push digest to the stack
     let trace_generator =
         Felt::from_hex("0x57a797181c06d8427145cb66056f032751615d8617c5468258e96d2bb6422f9")
             .unwrap();
+    let push_trace_generator_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(trace_generator.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_trace_generator_ix],
+    )
+    .await?;
+    println!("Trace generator pushed to stack: {signature}");
+
     let trace_domain_size = Felt::from_hex("0x10000000").unwrap();
+    let push_trace_domain_size_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(trace_domain_size.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_trace_domain_size_ix],
+    )
+    .await?;
+    println!("Trace domain size pushed to stack: {signature}");
+
     let digest =
         Felt::from_hex("0x59496b8e649ff03c8e9f739e141bd82653fccb2fb1b1a51a71760ea3813ea35")
             .unwrap();
-    let counter = Felt::from_hex("0x0").unwrap();
-
     let push_digest_ix = Instruction::new_with_borsh(
         program_id,
         &VerifierInstruction::PushData(digest.to_bytes_be().to_vec()),
@@ -348,6 +377,23 @@ async fn main() -> client::Result<()> {
     )
     .await?;
     println!("Digest pushed to stack: {signature}");
+
+    let counter = Felt::from_hex("0x0").unwrap();
+    let push_counter_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(counter.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_counter_ix],
+    )
+    .await?;
+    println!("Counter pushed to stack: {signature}");
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
