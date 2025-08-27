@@ -72,9 +72,7 @@ impl Executable for ProofOfWork {
                 // Prepare data for final hash: init_hash || nonce
                 let init_hash: [u8; 32] = stack.borrow_front().try_into().unwrap();
                 stack.pop_front();
-                println!("init_hash: {:?}", init_hash);
                 let nonce_bytes = self.nonce.to_be_bytes();
-                println!("nonce_bytes: {:?}", nonce_bytes);
 
                 stack.push_front(&self.nonce.to_be_bytes()).unwrap();
                 stack.push_front(&init_hash).unwrap();
@@ -101,10 +99,7 @@ impl Executable for ProofOfWork {
 
                 // Check first 16 bytes (128 bits)
                 let work_value = Felt::from_bytes_be_slice(&final_hash[0..16]);
-                println!("work_value: {:?}", work_value);
                 let threshold = Felt::TWO.pow(128 - self.n_bits);
-                println!("n_bits: {}, threshold: {}", self.n_bits, threshold);
-                println!("work_value < threshold: {}", work_value < threshold);
 
                 assert!(work_value < threshold, "Proof of work verification failed");
                 self.step = ProofOfWorkStep::UpdateTranscript;
@@ -120,11 +115,6 @@ impl Executable for ProofOfWork {
                 vec![UpdateTranscriptU64::new().to_vec_with_type_tag()]
             }
             ProofOfWorkStep::CollectResults => {
-                // let _reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
-                // let digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
-                // self.digest = digest;
                 self.step = ProofOfWorkStep::Done;
 
                 vec![]
@@ -174,17 +164,6 @@ impl Executable for ComputeHash {
             stack.pop_front();
         }
 
-        println!(
-            "ComputeHash: input_length={}, actual_read={}",
-            self.input_length,
-            input_data.len()
-        );
-        println!(
-            "ComputeHash: input_data: {:?}",
-            &input_data[0..input_data.len().min(16)]
-        );
-
-        println!("input_data: {:?}", input_data);
         let hash_result = {
             use sha3::{Digest, Keccak256};
             let mut hasher = Keccak256::new();

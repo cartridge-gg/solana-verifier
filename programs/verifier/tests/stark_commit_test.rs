@@ -70,25 +70,9 @@ fn test_stark_commit_with_reference_values() {
 
     println!("StarkCommit completed in {} steps", steps);
 
-    // let result = Felt::from_bytes_be_slice(stack.borrow_front());
-    // stack.pop_front();
-    // println!("result: {:?}", result);
-    // let some_other_value = Felt::from_bytes_be_slice(stack.borrow_front());
-    // stack.pop_front();
-    // println!("some_other_value: {:?}", some_other_value);
-    // let some_other_value2 = Felt::from_bytes_be_slice(stack.borrow_front());
-    // stack.pop_front();
-    // println!("some_other_value2: {:?}", some_other_value2);
-    while !stack.is_empty_front() {
-        let value = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-        println!("value: {:?}", value);
-    }
-
     let stark_commitment = stack.stark_commitment;
-    println!("stark_commitment: {:?}", stark_commitment);
-
     let expected_stark_commitment = stark_commitment::get();
+
     assert_eq!(
         stark_commitment
             .traces

@@ -68,14 +68,6 @@ impl Executable for TracesCommit {
                 stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!(
-                    "transcript_digest after read original commitment: {:?}",
-                    transcript_digest
-                );
-                println!(
-                    "transcript_counter after read original commitment: {:?}",
-                    transcript_counter
-                );
 
                 stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
                 stack.push_front(&transcript_digest.to_bytes_be()).unwrap();

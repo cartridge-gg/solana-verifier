@@ -144,6 +144,9 @@ impl Executable for StarkCommit {
                     .vector_commitment
                     .commitment_hash = unsent_commitment.composition;
 
+                stark_commitment.oods_values =
+                    proof.unsent_commitment.oods_values.as_slice().to_vec();
+
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
 
                 vec![TracesCommit::new(initial_transcript_digest).to_vec_with_type_tag()]
@@ -348,10 +351,6 @@ impl Executable for StarkCommit {
                 stack.pop_front();
                 let _digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-
-                let (stark_commitment, proof) = stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
-                stark_commitment.oods_values =
-                    proof.unsent_commitment.oods_values.as_slice().to_vec();
 
                 self.step = StarkCommitStep::Done;
                 vec![]
