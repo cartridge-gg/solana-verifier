@@ -20,7 +20,7 @@ fn test_proof_of_work_with_reference_values() {
     let n_bits: u8 = 32;
 
     proof.unsent_commitment.proof_of_work.nonce = nonce;
-    proof.config.proof_of_work.n_bits = n_bits;
+    // proof.config.proof_of_work.n_bits = n_bits;
 
     stack.proof = proof;
 
@@ -40,6 +40,10 @@ fn test_proof_of_work_with_reference_values() {
     let digest = Felt::from_bytes_be_slice(stack.borrow_front());
     println!("digest: {:?}", digest);
     stack.pop_front();
+
+    let expected_digest = Felt::from_hex_unchecked("0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e");
+    assert_eq!(digest, expected_digest);
+    assert_eq!(reseted_counter, Felt::from_hex_unchecked("0x0"));
 
     assert!(steps > 0, "Should have executed at least one step");
     assert_eq!(stack.front_index, 0, "Stack should be empty");

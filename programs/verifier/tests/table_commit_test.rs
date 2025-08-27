@@ -30,8 +30,8 @@ fn test_table_commitment() {
 
     // Push transcript state (counter, digest) - same as in VectorCommit
     stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
-    stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
     stack.push_front(&unsent_commitment.to_bytes_be()).unwrap();
+    stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
 
     stack.push_task(TableCommit::new());
 

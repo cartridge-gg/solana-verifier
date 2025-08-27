@@ -120,26 +120,39 @@ impl Executable for StarkCommit {
                 // Get initial transcript state from stack (should be set by caller)
                 let initial_transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("initial_transcript_counter: {:?}", initial_transcript_counter);
                 let initial_transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                self.oods_point = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                println!("initial_transcript_digest: {:?}", initial_transcript_digest);
                 self.trace_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.trace_generator = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Push initial transcript state back to stack for TracesCommit
-                stack
-                    .push_front(&initial_transcript_digest.to_bytes_be())
-                    .unwrap();
-                stack
-                    .push_front(&initial_transcript_counter.to_bytes_be())
-                    .unwrap();
+                let (stark_commitment, proof) =
+                    stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
+
+                let unsent_commitment = &proof.unsent_commitment;
+
+                stark_commitment
+                    .traces
+                    .interaction
+                    .vector_commitment
+                    .commitment_hash = unsent_commitment.traces.interaction;
+
+                stark_commitment
+                    .traces
+                    .original
+                    .vector_commitment
+                    .commitment_hash = unsent_commitment.traces.original;
+
+                stark_commitment
+                    .composition
+                    .vector_commitment
+                    .commitment_hash = unsent_commitment.composition;
 
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
 
-                // Return TracesCommit task which will update transcript with trace commitments
                 vec![TracesCommit::new(initial_transcript_digest).to_vec_with_type_tag()]
             }
 
@@ -149,20 +162,14 @@ impl Executable for StarkCommit {
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let stark_commitment =
-                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
-                stark_commitment
-                    .traces
-                    .interaction
-                    .vector_commitment
-                    .commitment_hash = transcript_digest;
+                println!("transcript digest after traces commit: {:?}", transcript_digest);
+                println!("transcript counter after traces commit: {:?}", transcript_counter);
 
                 self.current_transcript_digest = transcript_digest;
                 self.current_transcript_counter = transcript_counter;
 
                 self.step = StarkCommitStep::GenerateTracesCoefficients;
 
-                // Use TranscriptRandomFelt to generate composition_alpha
                 vec![
                     TranscriptRandomFelt::new(transcript_digest, transcript_counter)
                         .to_vec_with_type_tag(),
@@ -175,6 +182,8 @@ impl Executable for StarkCommit {
                 stack.pop_front();
                 let composition_alpha = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("transcript digest after composition alpha: {:?}", composition_alpha);
+                println!("transcript counter after composition alpha: {:?}", updated_counter);
 
                 // Update transcript state from TranscriptRandomFelt result
                 self.current_transcript_counter = updated_counter;
@@ -185,24 +194,31 @@ impl Executable for StarkCommit {
 
                 self.step = StarkCommitStep::CompositionCommit;
 
+                println!("self.traces_coefficients_count: {:?}", self.traces_coefficients_count);
                 // Return PowersArray task to generate coefficients
                 vec![PowersArray::new(self.traces_coefficients_count).to_vec_with_type_tag()]
             }
 
             StarkCommitStep::CompositionCommit => {
-                // At this point, traces_coefficients are on the stack from PowersArray
-                // TableCommit will update transcript with composition commitment
+                // for _ in 0..self.traces_coefficients_count {
+                //     let coefficient = Felt::from_bytes_be_slice(stack.borrow_front());
+                //     stack.pop_front();
+                //     let constraint_coefficients = stack.get_constraint_coefficients_mut();
+                //     constraint_coefficients[self.traces_coefficients_count as usize - 1] = coefficient;
+                // }
 
+                let constraint_coefficients = stack.get_constraint_coefficients();
+                println!("constraint_coefficients: {:?}", constraint_coefficients);
                 // Use updated transcript state with incremented counter
                 stack
                     .push_front(&self.current_transcript_counter.to_bytes_be())
                     .unwrap();
-                stack
-                    .push_front(&self.current_transcript_digest.to_bytes_be())
-                    .unwrap();
                 let proof: &StarkProof = stack.get_proof_reference();
                 stack
                     .push_front(&proof.unsent_commitment.composition.to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&self.current_transcript_digest.to_bytes_be())
                     .unwrap();
 
                 self.step = StarkCommitStep::GenerateInteractionAfterComposition;
@@ -215,13 +231,8 @@ impl Executable for StarkCommit {
                 stack.pop_front();
                 let transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-
-                let stark_commitment =
-                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
-                stark_commitment
-                    .composition
-                    .vector_commitment
-                    .commitment_hash = transcript_digest;
+                println!("transcript_digest after composition commit: {:?}", transcript_digest);
+                println!("transcript_counter after composition commit: {:?}", transcript_counter);
 
                 // Store current transcript state
                 self.current_transcript_digest = transcript_digest;
@@ -242,14 +253,17 @@ impl Executable for StarkCommit {
                 stack.pop_front();
                 let interaction_after_composition = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("interaction_after_composition: {:?}", interaction_after_composition);
+                println!("updated_counter: {:?}", updated_counter);
+
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+                stark_commitment
+                    .interaction_after_composition = interaction_after_composition;
+                self.oods_point = interaction_after_composition;
 
                 // Update transcript state from TranscriptRandomFelt result
                 self.current_transcript_counter = updated_counter;
-
-                // Store interaction_after_composition for later use
-                stack
-                    .push_front(&interaction_after_composition.to_bytes_be())
-                    .unwrap();
 
                 let proof: &StarkProof = stack.get_proof_reference();
                 let oods_values = proof.unsent_commitment.oods_values.as_slice().to_vec();
@@ -314,8 +328,8 @@ impl Executable for StarkCommit {
                 self.current_transcript_counter = updated_counter;
 
                 // Store values for PowersArray: (initial=ONE, alpha=oods_alpha)
-                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
                 stack.push_front(&oods_alpha.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
 
                 self.step = StarkCommitStep::FriCommit;
 
@@ -333,17 +347,43 @@ impl Executable for StarkCommit {
                         .interaction_after_oods
                         .push(oods_coefficient);
                 }
+                
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+                stark_commitment.interaction_after_oods.reverse();
+
+                stack
+                    .push_front(&self.current_transcript_digest.to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&self.current_transcript_counter.to_bytes_be())
+                    .unwrap();
 
                 self.step = StarkCommitStep::ProofOfWork;
-
                 vec![FriCommit::new().to_vec_with_type_tag()]
             }
 
             StarkCommitStep::ProofOfWork => {
+                self.current_transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.current_transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                println!("current_transcript_counter after fri commit: {:?}", self.current_transcript_counter);
+                println!("current_transcript_digest after fri commit: {:?}", self.current_transcript_digest);
+
+                stack.push_front(&self.current_transcript_digest.to_bytes_be()).unwrap();
+
                 self.step = StarkCommitStep::Output;
                 vec![ProofOfWork::new().to_vec_with_type_tag()]
             }
             StarkCommitStep::Output => {
+                let reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                println!("reseted_counter: {:?}", reseted_counter);
+                stack.pop_front();
+                let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                println!("digest: {:?}", digest);
+                stack.pop_front();
+
                 let (stark_commitment, proof) = stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
                 stark_commitment.oods_values =
                     proof.unsent_commitment.oods_values.as_slice().to_vec();
@@ -352,8 +392,6 @@ impl Executable for StarkCommit {
                 vec![]
             }
             StarkCommitStep::Done => {
-                // All commitment data should now be on the stack
-                // The calling function will construct StarkCommitment from stack data
                 vec![]
             }
         }

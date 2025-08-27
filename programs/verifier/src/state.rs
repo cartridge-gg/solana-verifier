@@ -276,6 +276,14 @@ impl ProofData for BidirectionalStackAccount {
 
         (stark_commitment, proof)
     }
+
+    fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS] {
+        &self.constraint_coefficients
+    }
+
+    fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
+        &mut self.constraint_coefficients
+    }
 }
 
 #[cfg(test)]

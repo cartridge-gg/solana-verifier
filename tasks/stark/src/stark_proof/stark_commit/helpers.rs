@@ -30,8 +30,8 @@ impl Executable for PowersArray {
             let initial = Felt::from_bytes_be_slice(stack.borrow_front());
             stack.pop_front();
             let alpha = Felt::from_bytes_be_slice(stack.borrow_front());
-
             stack.pop_front();
+
             stack.push_front(&initial.to_bytes_be()).unwrap();
 
             let next_value = initial * alpha;

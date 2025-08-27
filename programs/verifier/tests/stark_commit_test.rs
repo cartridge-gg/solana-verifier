@@ -19,6 +19,7 @@ fn test_stark_commit_with_reference_values() {
     let config = fixtures::stark_config::get();
     let constraint_coefficients = fixtures::constraint_coefficients::get();
     let oods_values = fixtures::oods_values::get();
+    let stark_domains = fixtures::stark_domains::get();
 
     proof.unsent_commitment.oods_values = oods_values;
     proof.unsent_commitment.fri = unsent_commitment;
@@ -47,27 +48,6 @@ fn test_stark_commit_with_reference_values() {
     stack.oods_values = oods_values.as_slice().try_into().unwrap();
     stack.proof = proof;
 
-    // let stark_commitment = stark_commitment::get();
-
-    // stark_commitment.traces.interaction_elements.memory_multi_column_perm_perm_interaction_elm = Felt::from_hex_unchecked(
-    //     "0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64",
-    // );
-    // stark_commitment.traces.interaction_elements.memory_multi_column_perm_hash_interaction_elm0 = Felt::from_hex_unchecked(
-    //     "0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288",
-    // );
-    // stark_commitment.traces.interaction_elements.range_check16_perm_interaction_elm = Felt::from_hex_unchecked(
-    //     "0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c",
-    // );
-    // stark_commitment.traces.interaction_elements.diluted_check_permutation_interaction_elm = Felt::from_hex_unchecked(
-    //     "0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322",
-    // );
-    // stark_commitment.traces.interaction_elements.diluted_check_interaction_z = Felt::from_hex_unchecked(
-    //     "0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48",
-    // );
-    // stark_commitment.traces.interaction_elements.diluted_check_interaction_alpha = Felt::from_hex_unchecked(
-    //     "0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822",
-    // );
-
     // stack.stark_commitment = stark_commitment;
 
     let trace_generator =
@@ -77,10 +57,6 @@ fn test_stark_commit_with_reference_values() {
 
     let trace_domain_size = Felt::from_hex("0x10000000").unwrap();
     stack.push_front(&trace_domain_size.to_bytes_be()).unwrap();
-
-    let point = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
-        .unwrap();
-    stack.push_front(&point.to_bytes_be()).unwrap();
 
     let digest =
         Felt::from_hex("0x59496b8e649ff03c8e9f739e141bd82653fccb2fb1b1a51a71760ea3813ea35")
@@ -101,19 +77,43 @@ fn test_stark_commit_with_reference_values() {
 
     println!("StarkCommit completed in {} steps", steps);
 
-    let result = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    println!("result: {:?}", result);
-    let some_other_value = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    println!("some_other_value: {:?}", some_other_value);
-    let some_other_value2 = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    println!("some_other_value2: {:?}", some_other_value2);
+    // let result = Felt::from_bytes_be_slice(stack.borrow_front());
+    // stack.pop_front();
+    // println!("result: {:?}", result);
+    // let some_other_value = Felt::from_bytes_be_slice(stack.borrow_front());
+    // stack.pop_front();
+    // println!("some_other_value: {:?}", some_other_value);
+    // let some_other_value2 = Felt::from_bytes_be_slice(stack.borrow_front());
+    // stack.pop_front();
+    // println!("some_other_value2: {:?}", some_other_value2);
+    while !stack.is_empty_front() {
+        let value = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        println!("value: {:?}", value);
+    }
+
+    let stark_commitment = stack.stark_commitment;
+    println!("stark_commitment: {:?}", stark_commitment);
+
+    let expected_stark_commitment = stark_commitment::get();
+    assert_eq!(stark_commitment.traces.original.vector_commitment.commitment_hash, expected_stark_commitment.traces.original.vector_commitment.commitment_hash);
+    assert_eq!(stark_commitment.traces.interaction.vector_commitment.commitment_hash, expected_stark_commitment.traces.interaction.vector_commitment.commitment_hash);
+    assert_eq!(stark_commitment.traces.interaction_elements, expected_stark_commitment.traces.interaction_elements);
+    assert_eq!(stark_commitment.composition.vector_commitment.commitment_hash, expected_stark_commitment.composition.vector_commitment.commitment_hash);
+    assert_eq!(stark_commitment.interaction_after_composition, expected_stark_commitment.interaction_after_composition);
+    assert_eq!(stark_commitment.oods_values, expected_stark_commitment.oods_values);
+    assert_eq!(stark_commitment.interaction_after_oods, expected_stark_commitment.interaction_after_oods);
+    for i in 0..expected_stark_commitment.fri.inner_layers.len() {
+        assert_eq!(stark_commitment.fri.inner_layers[i].vector_commitment.commitment_hash, expected_stark_commitment.fri.inner_layers[i].vector_commitment.commitment_hash);
+    }
+    assert_eq!(stark_commitment.fri.eval_points, expected_stark_commitment.fri.eval_points);
+    assert_eq!(stark_commitment.fri.last_layer_coefficients, expected_stark_commitment.fri.last_layer_coefficients);
 
     // Check that stack is empty
     assert_eq!(stack.front_index, 0, "Stack should be empty");
     assert_eq!(stack.back_index, 65536, "Stack should be empty");
+
+
 
     println!("StarkCommit test completed successfully!");
 }

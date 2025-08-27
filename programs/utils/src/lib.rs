@@ -111,6 +111,8 @@ pub trait ProofData {
     fn set_global_values(&mut self, global_values: GlobalValues);
 
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
+    fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
+    fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
 }
 
 /// Trait for providing automatic type identification with cryptographic hashing

@@ -23,8 +23,8 @@ fn test_vector_commit() {
     let expected_counter = Felt::from_hex("0x0").unwrap(); // Counter should not change in this case
 
     // stack.push_front(&transcript_counter.to_bytes_be()).unwrap();
-    stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
     stack.push_front(&commitment.to_bytes_be()).unwrap();
+    stack.push_front(&transcript_digest.to_bytes_be()).unwrap();
 
     stack.push_task(VectorCommit::new());
 
