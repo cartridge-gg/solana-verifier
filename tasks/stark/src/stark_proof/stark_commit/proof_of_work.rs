@@ -94,7 +94,10 @@ impl Executable for ProofOfWork {
                 let final_hash: [u8; 32] = stack.borrow_front().try_into().unwrap();
                 stack.pop_front();
                 println!("final_hash: {:?}", final_hash);
-                println!("final_hash: {:?}", Felt::from_bytes_be_slice(&final_hash.as_slice()));
+                println!(
+                    "final_hash: {:?}",
+                    Felt::from_bytes_be_slice(&final_hash.as_slice())
+                );
 
                 // Check first 16 bytes (128 bits)
                 let work_value = Felt::from_bytes_be_slice(&final_hash[0..16]);

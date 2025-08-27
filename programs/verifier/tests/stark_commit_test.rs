@@ -17,17 +17,13 @@ fn test_stark_commit_with_reference_values() {
     let public_input = fixtures::public_input::get();
     let unsent_commitment = fixtures::fri_unsent_commitment::get();
     let config = fixtures::stark_config::get();
-    let constraint_coefficients = fixtures::constraint_coefficients::get();
     let oods_values = fixtures::oods_values::get();
-    let stark_domains = fixtures::stark_domains::get();
+    // let stark_domains = fixtures::stark_domains::get();
 
     proof.unsent_commitment.oods_values = oods_values;
     proof.unsent_commitment.fri = unsent_commitment;
     proof.config = config;
     proof.public_input = public_input;
-    // Set proof of work configuration
-    // proof.config.proof_of_work.n_bits = 32;
-    // proof.unsent_commitment.proof_of_work.nonce = 0xd5bee6b9;
 
     // Reference values from the test output
     let original_commitment =
@@ -44,11 +40,8 @@ fn test_stark_commit_with_reference_values() {
         Felt::from_hex("0x112367c6fef0963c09cd918c7d31159ae7effbf9e16ffe7cac15b7bb4074373")
             .unwrap();
 
-    stack.constraint_coefficients = constraint_coefficients.as_slice().try_into().unwrap();
     stack.oods_values = oods_values.as_slice().try_into().unwrap();
     stack.proof = proof;
-
-    // stack.stark_commitment = stark_commitment;
 
     let trace_generator =
         Felt::from_hex("0x57a797181c06d8427145cb66056f032751615d8617c5468258e96d2bb6422f9")
@@ -96,24 +89,78 @@ fn test_stark_commit_with_reference_values() {
     println!("stark_commitment: {:?}", stark_commitment);
 
     let expected_stark_commitment = stark_commitment::get();
-    assert_eq!(stark_commitment.traces.original.vector_commitment.commitment_hash, expected_stark_commitment.traces.original.vector_commitment.commitment_hash);
-    assert_eq!(stark_commitment.traces.interaction.vector_commitment.commitment_hash, expected_stark_commitment.traces.interaction.vector_commitment.commitment_hash);
-    assert_eq!(stark_commitment.traces.interaction_elements, expected_stark_commitment.traces.interaction_elements);
-    assert_eq!(stark_commitment.composition.vector_commitment.commitment_hash, expected_stark_commitment.composition.vector_commitment.commitment_hash);
-    assert_eq!(stark_commitment.interaction_after_composition, expected_stark_commitment.interaction_after_composition);
-    assert_eq!(stark_commitment.oods_values, expected_stark_commitment.oods_values);
-    assert_eq!(stark_commitment.interaction_after_oods, expected_stark_commitment.interaction_after_oods);
+    assert_eq!(
+        stark_commitment
+            .traces
+            .original
+            .vector_commitment
+            .commitment_hash,
+        expected_stark_commitment
+            .traces
+            .original
+            .vector_commitment
+            .commitment_hash
+    );
+    assert_eq!(
+        stark_commitment
+            .traces
+            .interaction
+            .vector_commitment
+            .commitment_hash,
+        expected_stark_commitment
+            .traces
+            .interaction
+            .vector_commitment
+            .commitment_hash
+    );
+    assert_eq!(
+        stark_commitment.traces.interaction_elements,
+        expected_stark_commitment.traces.interaction_elements
+    );
+    assert_eq!(
+        stark_commitment
+            .composition
+            .vector_commitment
+            .commitment_hash,
+        expected_stark_commitment
+            .composition
+            .vector_commitment
+            .commitment_hash
+    );
+    assert_eq!(
+        stark_commitment.interaction_after_composition,
+        expected_stark_commitment.interaction_after_composition
+    );
+    assert_eq!(
+        stark_commitment.oods_values,
+        expected_stark_commitment.oods_values
+    );
+    assert_eq!(
+        stark_commitment.interaction_after_oods,
+        expected_stark_commitment.interaction_after_oods
+    );
     for i in 0..expected_stark_commitment.fri.inner_layers.len() {
-        assert_eq!(stark_commitment.fri.inner_layers[i].vector_commitment.commitment_hash, expected_stark_commitment.fri.inner_layers[i].vector_commitment.commitment_hash);
+        assert_eq!(
+            stark_commitment.fri.inner_layers[i]
+                .vector_commitment
+                .commitment_hash,
+            expected_stark_commitment.fri.inner_layers[i]
+                .vector_commitment
+                .commitment_hash
+        );
     }
-    assert_eq!(stark_commitment.fri.eval_points, expected_stark_commitment.fri.eval_points);
-    assert_eq!(stark_commitment.fri.last_layer_coefficients, expected_stark_commitment.fri.last_layer_coefficients);
+    assert_eq!(
+        stark_commitment.fri.eval_points,
+        expected_stark_commitment.fri.eval_points
+    );
+    assert_eq!(
+        stark_commitment.fri.last_layer_coefficients,
+        expected_stark_commitment.fri.last_layer_coefficients
+    );
 
     // Check that stack is empty
     assert_eq!(stack.front_index, 0, "Stack should be empty");
     assert_eq!(stack.back_index, 65536, "Stack should be empty");
-
-
 
     println!("StarkCommit test completed successfully!");
 }

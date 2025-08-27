@@ -61,42 +61,58 @@ fn test_traces_commit_with_reference_values() {
     // println!("original_commitment_hash: {:?}", original_commitment_hash);
 
     let stark_commitment = stack.stark_commitment;
-    let diluted_check_interaction_alpha = stark_commitment.traces.interaction_elements.diluted_check_interaction_alpha;
+    let diluted_check_interaction_alpha = stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_alpha;
     println!(
         "diluted_check_interaction_alpha: {:?}",
         diluted_check_interaction_alpha
     );
 
-    let diluted_check_interaction_z = stark_commitment.traces.interaction_elements.diluted_check_interaction_z;
+    let diluted_check_interaction_z = stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_z;
     println!(
         "diluted_check_interaction_z: {:?}",
         diluted_check_interaction_z
     );
 
-    let diluted_check_permutation_interaction_elm = stark_commitment.traces.interaction_elements.diluted_check_permutation_interaction_elm;
-   
+    let diluted_check_permutation_interaction_elm = stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_permutation_interaction_elm;
+
     println!(
         "diluted_check_permutation_interaction_elm: {:?}",
         diluted_check_permutation_interaction_elm
     );
 
-    let range_check16_perm_interaction_elm = stark_commitment.traces.interaction_elements.range_check16_perm_interaction_elm;
-    
+    let range_check16_perm_interaction_elm = stark_commitment
+        .traces
+        .interaction_elements
+        .range_check16_perm_interaction_elm;
+
     println!(
         "range_check16_perm_interaction_elm: {:?}",
         range_check16_perm_interaction_elm
     );
 
-    let memory_multi_column_perm_hash_interaction_elm0 =
-        stark_commitment.traces.interaction_elements.memory_multi_column_perm_hash_interaction_elm0;
-    
+    let memory_multi_column_perm_hash_interaction_elm0 = stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_hash_interaction_elm0;
+
     println!(
         "memory_multi_column_perm_hash_interaction_elm0: {:?}",
         memory_multi_column_perm_hash_interaction_elm0
     );
 
-    let memory_multi_column_perm_perm_interaction_elm =
-        stark_commitment.traces.interaction_elements.memory_multi_column_perm_perm_interaction_elm;
+    let memory_multi_column_perm_perm_interaction_elm = stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_perm_interaction_elm;
     println!(
         "memory_multi_column_perm_perm_interaction_elm: {:?}",
         memory_multi_column_perm_perm_interaction_elm

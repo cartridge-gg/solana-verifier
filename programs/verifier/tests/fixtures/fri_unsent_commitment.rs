@@ -72,9 +72,7 @@ pub fn get_last_layer_coefficients() -> Vec<Felt> {
         Felt::from_hex_unchecked(
             "0x4741100133289117afd8d7f75191b8cdb60674b5e46fe337c590c1fe9d589e1",
         ),
-        Felt::from_hex_unchecked(
-            "0x4ce865332e2742b7294844916d0a5592adac0f2e574f7c726dd9ba0d16166",
-        ),
+        Felt::from_hex_unchecked("0x4ce865332e2742b7294844916d0a5592adac0f2e574f7c726dd9ba0d16166"),
         Felt::from_hex_unchecked(
             "0x521b6743607208f1e573da338e0528176563d60b458262ebd3bea3493140ef7",
         ),

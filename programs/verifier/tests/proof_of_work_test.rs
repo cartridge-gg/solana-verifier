@@ -41,7 +41,9 @@ fn test_proof_of_work_with_reference_values() {
     println!("digest: {:?}", digest);
     stack.pop_front();
 
-    let expected_digest = Felt::from_hex_unchecked("0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e");
+    let expected_digest = Felt::from_hex_unchecked(
+        "0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e",
+    );
     assert_eq!(digest, expected_digest);
     assert_eq!(reseted_counter, Felt::from_hex_unchecked("0x0"));
 
