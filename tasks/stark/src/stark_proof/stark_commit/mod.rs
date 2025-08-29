@@ -113,9 +113,106 @@ impl Executable for StarkCommit {
 
                 // Update configs in StarkCommitment with values from StarkConfig
                 stark_commitment.traces.original.config = proof.config.traces.original;
+                stark_commitment
+                    .traces
+                    .original
+                    .vector_commitment
+                    .config
+                    .height = proof.config.traces.original.vector.height;
+                stark_commitment
+                    .traces
+                    .original
+                    .vector_commitment
+                    .config
+                    .n_verifier_friendly_commitment_layers = proof
+                    .config
+                    .traces
+                    .original
+                    .vector
+                    .n_verifier_friendly_commitment_layers;
                 stark_commitment.traces.interaction.config = proof.config.traces.interaction;
+                stark_commitment
+                    .traces
+                    .interaction
+                    .vector_commitment
+                    .config
+                    .height = proof.config.traces.interaction.vector.height;
+                stark_commitment
+                    .traces
+                    .interaction
+                    .vector_commitment
+                    .config
+                    .n_verifier_friendly_commitment_layers = proof
+                    .config
+                    .traces
+                    .interaction
+                    .vector
+                    .n_verifier_friendly_commitment_layers;
                 stark_commitment.composition.config = proof.config.composition;
+                stark_commitment.composition.config.n_columns = proof.config.composition.n_columns;
+                stark_commitment.composition.config.vector.height =
+                    proof.config.composition.vector.height;
+                stark_commitment
+                    .composition
+                    .config
+                    .vector
+                    .n_verifier_friendly_commitment_layers = proof
+                    .config
+                    .composition
+                    .vector
+                    .n_verifier_friendly_commitment_layers;
+                stark_commitment.composition.vector_commitment.config.height =
+                    proof.config.composition.vector.height;
+                stark_commitment
+                    .composition
+                    .vector_commitment
+                    .config
+                    .n_verifier_friendly_commitment_layers = proof
+                    .config
+                    .composition
+                    .vector
+                    .n_verifier_friendly_commitment_layers;
                 stark_commitment.fri.config = proof.config.fri;
+
+                // Initialize inner_layers with the correct number of elements
+                let n_inner_layers = proof.config.fri.inner_layers.len();
+                // Set the size and get mutable slice to initialize
+                stark_commitment
+                    .fri
+                    .inner_layers
+                    .to_size_uninitialized(n_inner_layers);
+
+                for i in 0..stark_commitment.fri.inner_layers.len() {
+                    let target_layer = stark_commitment.fri.inner_layers.at_mut(i);
+                    let source_layer = &proof.config.fri.inner_layers.at(i);
+
+                    target_layer.config.n_columns = source_layer.n_columns;
+                    target_layer.config.vector.height = source_layer.vector.height;
+                    target_layer
+                        .config
+                        .vector
+                        .n_verifier_friendly_commitment_layers =
+                        source_layer.vector.n_verifier_friendly_commitment_layers;
+
+                    target_layer.vector_commitment.config.height = source_layer.vector.height;
+                    target_layer
+                        .vector_commitment
+                        .config
+                        .n_verifier_friendly_commitment_layers =
+                        source_layer.vector.n_verifier_friendly_commitment_layers;
+                }
+
+                for i in 0..stark_commitment.fri.config.inner_layers.len() {
+                    let target_layer = stark_commitment.fri.config.inner_layers.at_mut(i);
+                    let source_layer = &proof.config.fri.inner_layers.at(i);
+
+                    target_layer.n_columns = source_layer.n_columns;
+
+                    target_layer.vector.height = source_layer.vector.height;
+
+                    target_layer.vector.n_verifier_friendly_commitment_layers =
+                        source_layer.vector.n_verifier_friendly_commitment_layers;
+                }
 
                 self.step = StarkCommitStep::TracesCommit;
                 vec![]

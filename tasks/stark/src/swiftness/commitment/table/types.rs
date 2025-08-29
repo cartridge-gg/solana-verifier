@@ -6,7 +6,7 @@ use crate::{
 use felt::Felt;
 
 // Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Commitment {
     pub config: Config,
     pub vector_commitment: vector::types::Commitment,

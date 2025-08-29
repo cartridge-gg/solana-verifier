@@ -33,7 +33,8 @@ pub struct LayerWitness {
 pub struct Commitment {
     pub config: swiftness::fri::config::Config,
     // Array of size n_layers - 1 containing table commitments for each inner layer.
-    pub inner_layers: Vec<swiftness::commitment::table::types::Commitment>,
+    // pub inner_layers: Vec<swiftness::commitment::table::types::Commitment>,
+    pub inner_layers: FunVec<swiftness::commitment::table::types::Commitment, FUNVEC_LAYERS>,
     // Array of size n_layers, of one evaluation point for each layer.
     pub eval_points: Vec<Felt>,
     // Array of size 2**log_last_layer_degree_bound containing coefficients for the last layer

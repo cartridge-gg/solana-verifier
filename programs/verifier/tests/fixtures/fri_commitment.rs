@@ -83,7 +83,7 @@ pub fn get() -> FriCommitment {
             ]),
             log_last_layer_degree_bound: Felt::from_hex_unchecked("0x6"),
         },
-        inner_layers: vec![
+        inner_layers: FunVec::from_vec(vec![
             TableCommitment {
                 config: TableCommitmentConfig {
                     n_columns: Felt::from_hex_unchecked("0x8"),
@@ -228,7 +228,7 @@ pub fn get() -> FriCommitment {
                     ),
                 },
             },
-        ],
+        ]),
         eval_points: vec![
             Felt::from_hex_unchecked(
                 "0x496c968f1dac9c4e65716021ecbad75f43995e95232b76f9511f1c2bdb125e1",
