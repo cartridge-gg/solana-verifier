@@ -8,6 +8,7 @@ pub mod table_commit;
 pub mod traces_commit;
 pub mod verify_oods;
 
+use crate::poseidon::PoseidonHashMany;
 use crate::swiftness::air::recursive_with_poseidon::Layout;
 use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use crate::swiftness::commitment::table::config::Config as ConfigTable;
@@ -107,6 +108,15 @@ impl Executable for StarkCommit {
                 self.oods_coefficients_count =
                     (Layout::MASK_SIZE + Layout::CONSTRAINT_DEGREE) as u32;
 
+                let (stark_commitment, proof) =
+                    stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
+
+                // Update configs in StarkCommitment with values from StarkConfig
+                stark_commitment.traces.original.config = proof.config.traces.original;
+                stark_commitment.traces.interaction.config = proof.config.traces.interaction;
+                stark_commitment.composition.config = proof.config.composition;
+                stark_commitment.fri.config = proof.config.fri;
+
                 self.step = StarkCommitStep::TracesCommit;
                 vec![]
             }
@@ -144,8 +154,7 @@ impl Executable for StarkCommit {
                     .vector_commitment
                     .commitment_hash = unsent_commitment.composition;
 
-                stark_commitment.oods_values =
-                    proof.unsent_commitment.oods_values.as_slice().to_vec();
+                stark_commitment.oods_values = proof.unsent_commitment.oods_values;
 
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
 
@@ -244,18 +253,15 @@ impl Executable for StarkCommit {
                 self.current_transcript_counter = updated_counter;
 
                 let proof: &StarkProof = stack.get_proof_reference();
-                let oods_values = proof.unsent_commitment.oods_values.as_slice().to_vec();
+                let oods_values = proof.unsent_commitment.oods_values.as_slice();
+                let oods_values_len = oods_values.len();
 
-                // Use TranscriptReadFeltVector to implement read_felt_vector_from_prover
-                // This will: hash(digest + 1, oods_values), update digest, reset counter
-                TranscriptReadFeltVector::push_input(
-                    self.current_transcript_digest,
-                    &oods_values,
-                    stack,
-                );
+                let mut inputs = vec![self.current_transcript_digest + Felt::ONE];
+                inputs.extend_from_slice(oods_values);
+                PoseidonHashMany::push_input(&inputs, stack);
 
                 self.step = StarkCommitStep::VerifyOods;
-                vec![TranscriptReadFeltVector::new(oods_values.len()).to_vec_with_type_tag()]
+                vec![TranscriptReadFeltVector::new(oods_values_len).to_vec_with_type_tag()]
             }
 
             StarkCommitStep::VerifyOods => {
@@ -302,25 +308,27 @@ impl Executable for StarkCommit {
                 stack.push_front(&oods_alpha.to_bytes_be()).unwrap();
                 stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
 
+                let stark_commitment =
+                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+
+                stark_commitment
+                    .interaction_after_oods
+                    .to_size_uninitialized(self.oods_coefficients_count as usize);
+
                 self.step = StarkCommitStep::FriCommit;
 
                 vec![PowersArray::new(self.oods_coefficients_count).to_vec_with_type_tag()]
             }
 
             StarkCommitStep::FriCommit => {
-                for _ in 0..self.oods_coefficients_count {
+                for i in (0..self.oods_coefficients_count).rev() {
                     let oods_coefficient = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
+
                     let stark_commitment =
                         stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
-                    stark_commitment
-                        .interaction_after_oods
-                        .push(oods_coefficient);
+                    *stark_commitment.interaction_after_oods.at_mut(i as usize) = oods_coefficient;
                 }
-
-                let stark_commitment =
-                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
-                stark_commitment.interaction_after_oods.reverse();
 
                 stack
                     .push_front(&self.current_transcript_digest.to_bytes_be())

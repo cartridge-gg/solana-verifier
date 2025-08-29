@@ -69,8 +69,8 @@ pub struct StarkCommitment<InteractionElements> {
     pub traces: TracesCommitment<InteractionElements>,
     pub composition: TableCommitment,
     pub interaction_after_composition: Felt,
-    pub oods_values: Vec<Felt>,
-    pub interaction_after_oods: Vec<Felt>,
+    pub oods_values: FunVec<Felt, FUNVEC_OODS>,
+    pub interaction_after_oods: FunVec<Felt, FUNVEC_OODS>,
     pub fri: FriCommitment,
 }
 #[cfg(test)]

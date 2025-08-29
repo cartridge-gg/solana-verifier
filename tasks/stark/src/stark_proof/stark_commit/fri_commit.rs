@@ -178,9 +178,10 @@ impl Executable for FriCommit {
                 let stark_commitment =
                     stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
 
-                //this might overflow solana stack because to_vec() creates a new vector
-                stark_commitment.fri.last_layer_coefficients =
-                    last_layer_coefficients.as_slice().to_vec();
+                stark_commitment
+                    .fri
+                    .last_layer_coefficients
+                    .extend_from_slice(&last_layer_coefficients.as_slice());
 
                 TranscriptReadFeltVector::push_input(
                     self.current_transcript_digest,

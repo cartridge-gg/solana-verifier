@@ -1,5 +1,10 @@
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+pub mod vector_decommit;
+
+// Re-export the new task types
+// pub use vector_decommit::{VectorDecommit, VectorCommitmentDecommit, ComputeRootFromQueries};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
     Init,

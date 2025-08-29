@@ -2,6 +2,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use felt::Felt;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
@@ -13,7 +14,7 @@ use stark::stark_proof::stark_commit::proof_of_work::ProofOfWork;
 use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use utils::{AccountCast, Executable};
+use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;
@@ -228,5 +229,22 @@ async fn main() -> client::Result<()> {
     println!("All execution steps completed");
     println!("\nProofOfWork successfully executed on Solana!");
 
+    // Read and display the result
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+
+    let _digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let _counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    println!("Stack front index: {}", stack.front_index);
+    assert_eq!(stack.front_index, 0);
+    println!("Stack back index: {}", stack.back_index);
+    assert_eq!(stack.back_index, 65536);
+    println!("\nProofOfWork successfully executed on Solana!");
     Ok(())
 }

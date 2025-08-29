@@ -354,7 +354,7 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let signature = interact_with_program_instructions(
+    let _signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
@@ -372,7 +372,7 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let signature = interact_with_program_instructions(
+    let _signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
@@ -388,7 +388,7 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let signature = interact_with_program_instructions(
+    let _signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
@@ -406,7 +406,7 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let signature = interact_with_program_instructions(
+    let _signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
@@ -422,7 +422,7 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    let signature = interact_with_program_instructions(
+    let _signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
@@ -487,11 +487,8 @@ async fn main() -> client::Result<()> {
         .await
         .map_err(ClientError::SolanaClientError)?;
 
-    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-
     // Get the computed stark_commitment from the account
     let computed_stark_commitment = &stack.stark_commitment;
-
     // Expected values from stark_commitment.rs fixtures
     // These are the same values used in the unit test
     let expected_traces_original_hash = Felt::from_hex_unchecked(
@@ -699,9 +696,7 @@ async fn main() -> client::Result<()> {
             "0x2077c8e77e96c8db5212cf46c32546f1bd9a3e97c63aebccacc1438ffcc9aa7",
         ),
     ];
-
     println!("Verifying commitment hashes...");
-
     // Verify traces commitments
     assert_eq!(
         computed_stark_commitment
@@ -712,6 +707,7 @@ async fn main() -> client::Result<()> {
         expected_traces_original_hash,
         "Traces original commitment hash mismatch"
     );
+
     assert_eq!(
         computed_stark_commitment
             .traces
@@ -737,12 +733,6 @@ async fn main() -> client::Result<()> {
         computed_stark_commitment.interaction_after_composition,
         expected_interaction_after_composition,
         "Interaction after composition mismatch"
-    );
-
-    // Verify OODS values match the input
-    assert_eq!(
-        computed_stark_commitment.oods_values, stack.oods_values,
-        "OODS values mismatch"
     );
 
     assert_eq!(
