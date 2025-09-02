@@ -55,7 +55,7 @@ impl Executable for Verify {
             }
             VerifyStep::StarkVerify => {
                 self.step = VerifyStep::VerifyPublicInput;
-                vec![StarkVerify::new().to_vec_with_type_tag()]
+                vec![StarkVerify::new(0, 0).to_vec_with_type_tag()]
             }
             VerifyStep::VerifyPublicInput => {
                 self.step = VerifyStep::Done;
