@@ -1,5 +1,4 @@
 use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS};
-use crate::stark_proof::stark_verify::vector_decommit::VectorDecommitError;
 use crate::swiftness::commitment::vector::config::Config;
 use felt::Felt;
 use utils::BidirectionalStack;
@@ -59,23 +58,6 @@ impl Query {
         )
     }
 
-    /// Read multiple queries from stack with length
-    pub fn read_queries_from_stack<T: BidirectionalStack>(
-        stack: &mut T,
-    ) -> Result<Vec<Query>, VectorDecommitError> {
-        let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
-        println!("READ: Queries length: {:?}", queries_len);
-        stack.pop_front();
-
-        let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
-        for _ in 0..queries_len.to_biguint().try_into().unwrap() {
-            queries.push(Query::from_stack(stack));
-        }
-        stack.push_front(&queries_len.to_bytes_be()).unwrap();
-
-        Ok(queries)
-    }
-
     /// Push multiple queries to stack with length
     pub fn push_queries_to_stack<T: BidirectionalStack>(queries: &[Query], stack: &mut T) {
         // Push queries in reverse order for stack
@@ -97,6 +79,15 @@ pub struct QueryWithDepth {
     pub depth: Felt,
 }
 
+impl Default for QueryWithDepth {
+    fn default() -> Self {
+        Self {
+            index: Felt::ZERO,
+            value: Felt::ZERO,
+            depth: Felt::ZERO,
+        }
+    }
+}
 impl QueryWithDepth {
     pub fn from_query(query: &Query, depth: Felt) -> Self {
         Self {
@@ -113,4 +104,14 @@ impl QueryWithDepth {
             depth,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct PendingHashComputation {
+    pub is_active: bool,
+    pub parent_index: Felt,
+    pub parent_depth: Felt,
+    pub next_start: u128,
+    pub next_auth_start: u128,
 }

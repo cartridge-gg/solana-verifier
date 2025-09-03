@@ -1,6 +1,8 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+use crate::swiftness::commitment::vector::types::Query;
+
 // TableDecommit task
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -24,14 +26,14 @@ impl Default for TableDecommit {
 
 impl Executable for TableDecommit {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-        let queries = match super::Query::read_queries_from_stack(stack) {
-            Ok(queries) => queries,
-            Err(_) => {
-                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
-                self.processed = true;
-                return vec![];
-            }
-        };
+        let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+        println!("READ: Queries length: {:?}", queries_len);
+        stack.pop_front();
+
+        let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
+        for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+            queries.push(Query::from_stack(stack));
+        }
 
         // TODO: Implement actual table decommit logic:
         // 1. Read commitment from stack/proof data

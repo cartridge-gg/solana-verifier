@@ -1,9 +1,11 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+pub mod compute_root_recursive;
 pub mod eval_oods_boundary_poly_at_points;
 pub mod eval_oods_polynomial;
 pub mod fri_verify;
+pub mod hash_computation;
 pub mod table_decommit;
 pub mod traces_decommit;
 pub mod vector_decommit;
@@ -76,14 +78,14 @@ impl Executable for StarkVerify {
                     }
                 };
 
-                // Read queries using helper method
-                let queries = match Query::read_queries_from_stack(stack) {
-                    Ok(queries) => queries,
-                    Err(_) => {
-                        self.step = StarkVerifyStep::Done;
-                        return vec![];
-                    }
-                };
+                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                println!("READ: Queries length: {:?}", queries_len);
+                stack.pop_front();
+
+                let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
+                for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+                    queries.push(Query::from_stack(stack));
+                }
                 // Push queries back onto stack using helper method
                 Query::push_queries_to_stack(&queries, stack);
 
