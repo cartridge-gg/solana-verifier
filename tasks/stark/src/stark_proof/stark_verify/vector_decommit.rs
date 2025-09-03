@@ -2,6 +2,7 @@ use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
+use crate::swiftness::commitment::vector::config::ConfigTrait;
 use crate::swiftness::commitment::vector::types::{
     Commitment as VectorCommitment, Query, QueryWithDepth,
 };
@@ -42,12 +43,8 @@ impl Executable for VectorDecommit {
             VectorDecommitStep::VectorCommitmentDecommit => {
                 // Read vector commitment using trait method
                 let vector_commitment = VectorCommitment::from_stack(stack);
-                println!("Vector commitment: {:?}", vector_commitment);
 
                 self.reference_commitment_hash = vector_commitment.commitment_hash;
-                let n_verifier_friendly_layers = vector_commitment
-                    .config
-                    .n_verifier_friendly_commitment_layers;
                 let height = vector_commitment.config.height;
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -70,9 +67,8 @@ impl Executable for VectorDecommit {
                     authentications.push(auth);
                 }
 
-                stack
-                    .push_front(&n_verifier_friendly_layers.to_bytes_be())
-                    .unwrap();
+                // Push vector config using trait method
+                vector_commitment.config.push_to_stack(stack);
 
                 let shift = Felt::TWO.pow_felt(&height);
                 let mut shifted_queries = Vec::with_capacity(queries.len());

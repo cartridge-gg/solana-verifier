@@ -158,6 +158,33 @@ impl QueryWithDepth {
             .push_front(&Felt::from(queries.len()).to_bytes_be())
             .unwrap();
     }
+
+    /// Read multiple QueryWithDepth objects from stack
+    pub fn read_queries_with_depth_from_stack<T: BidirectionalStack>(
+        stack: &mut T,
+    ) -> Vec<QueryWithDepth> {
+        let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let mut queries = Vec::new();
+
+        let n_queries_usize: usize = n_queries.try_into().unwrap();
+
+        for _ in 0..n_queries_usize {
+            let index = Felt::from_bytes_be_slice(stack.borrow_front());
+            stack.pop_front();
+            let value = Felt::from_bytes_be_slice(stack.borrow_front());
+            stack.pop_front();
+            let depth = Felt::from_bytes_be_slice(stack.borrow_front());
+            stack.pop_front();
+            queries.push(QueryWithDepth {
+                index,
+                value,
+                depth,
+            });
+        }
+
+        queries
+    }
 }
 
 #[derive(Debug, Clone)]

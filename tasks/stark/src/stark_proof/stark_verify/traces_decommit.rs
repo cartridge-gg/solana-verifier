@@ -2,7 +2,10 @@ use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 use crate::stark_proof::stark_verify::table_decommit::TableDecommit;
-// use crate::swiftness::commitment::trace::types::{Commitment, Decommitment, Witness};
+use crate::swiftness::commitment::table::config::Config as TableConfig;
+use crate::swiftness::commitment::table::types::{Commitment, CommitmentTrait};
+use crate::swiftness::commitment::vector::config::Config as VectorConfig;
+use crate::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 
 // TracesDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,15 +93,21 @@ impl Executable for TracesDecommit {
                 // Store interaction data for later (read but keep on stack for later stages)
                 // We'll need to preserve this data across the original table decommit
 
-                // Push data for original TableDecommit
-                stack
-                    .push_front(&original_commitment_hash.to_bytes_be())
-                    .unwrap();
-                stack.push_front(&original_height.to_bytes_be()).unwrap();
-                stack
-                    .push_front(&original_n_verifier_friendly.to_bytes_be())
-                    .unwrap();
-                stack.push_front(&original_n_columns.to_bytes_be()).unwrap();
+                // Create table commitment and push using trait method
+                let vector_config = VectorConfig {
+                    height: original_height,
+                    n_verifier_friendly_commitment_layers: original_n_verifier_friendly,
+                };
+                let vector_commitment =
+                    VectorCommitment::new(vector_config, original_commitment_hash);
+                let table_config = TableConfig {
+                    n_columns: original_n_columns,
+                    vector: vector_config,
+                };
+                let table_commitment = Commitment::new(table_config, vector_commitment);
+
+                // Push table commitment using trait method
+                table_commitment.push_to_stack(stack);
 
                 stack.push_front(&queries_len.to_bytes_be()).unwrap();
                 for query in queries.iter() {
@@ -177,17 +186,22 @@ impl Executable for TracesDecommit {
                     queries.push(query);
                 }
 
-                // Push data for interaction TableDecommit
-                stack
-                    .push_front(&interaction_commitment_hash.to_bytes_be())
-                    .unwrap();
-                stack.push_front(&interaction_height.to_bytes_be()).unwrap();
-                stack
-                    .push_front(&interaction_n_verifier_friendly.to_bytes_be())
-                    .unwrap();
-                stack
-                    .push_front(&interaction_n_columns.to_bytes_be())
-                    .unwrap();
+                // Create interaction table commitment and push using trait method
+                let interaction_vector_config = VectorConfig {
+                    height: interaction_height,
+                    n_verifier_friendly_commitment_layers: interaction_n_verifier_friendly,
+                };
+                let interaction_vector_commitment =
+                    VectorCommitment::new(interaction_vector_config, interaction_commitment_hash);
+                let interaction_table_config = TableConfig {
+                    n_columns: interaction_n_columns,
+                    vector: interaction_vector_config,
+                };
+                let interaction_table_commitment =
+                    Commitment::new(interaction_table_config, interaction_vector_commitment);
+
+                // Push interaction table commitment using trait method
+                interaction_table_commitment.push_to_stack(stack);
 
                 stack.push_front(&queries_len.to_bytes_be()).unwrap();
                 for query in queries.iter() {

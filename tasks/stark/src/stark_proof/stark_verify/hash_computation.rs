@@ -147,25 +147,8 @@ impl Executable for HashComputationWithQueries {
                 } else {
                     let hash = keccak_hash(self.x, self.y);
 
-                    let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    let mut queue = Vec::new();
-
-                    let n_queries_usize: usize = n_queries.try_into().unwrap();
-
-                    for _ in 0..n_queries_usize {
-                        let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                        stack.pop_front();
-                        let value = Felt::from_bytes_be_slice(stack.borrow_front());
-                        stack.pop_front();
-                        let depth = Felt::from_bytes_be_slice(stack.borrow_front());
-                        stack.pop_front();
-                        queue.push(QueryWithDepth {
-                            index,
-                            value,
-                            depth,
-                        });
-                    }
+                    // Read queue using trait method
+                    let mut queue = QueryWithDepth::read_queries_with_depth_from_stack(stack);
 
                     queue.push(QueryWithDepth {
                         index: self.parent_index,
@@ -173,15 +156,8 @@ impl Executable for HashComputationWithQueries {
                         depth: self.parent_depth,
                     });
 
-                    for query in queue.iter().rev() {
-                        stack.push_front(&query.depth.to_bytes_be()).unwrap();
-                        stack.push_front(&query.value.to_bytes_be()).unwrap();
-                        stack.push_front(&query.index.to_bytes_be()).unwrap();
-                    }
-
-                    stack
-                        .push_front(&Felt::from(queue.len()).to_bytes_be())
-                        .unwrap();
+                    // Push queue using trait method
+                    QueryWithDepth::push_queries_with_depth_to_stack(&queue, stack);
 
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -195,26 +171,8 @@ impl Executable for HashComputationWithQueries {
                 stack.pop_front();
                 stack.pop_front();
 
-                // Read queue data from stack
-                let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let mut queue = Vec::new();
-
-                let n_queries_usize: usize = n_queries.try_into().unwrap();
-
-                for _ in 0..n_queries_usize {
-                    let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    let value = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    let depth = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    queue.push(QueryWithDepth {
-                        index,
-                        value,
-                        depth,
-                    });
-                }
+                // Read queue using trait method
+                let mut queue = QueryWithDepth::read_queries_with_depth_from_stack(stack);
 
                 queue.push(QueryWithDepth {
                     index: self.parent_index,
@@ -222,15 +180,8 @@ impl Executable for HashComputationWithQueries {
                     depth: self.parent_depth,
                 });
 
-                for query in queue.iter().rev() {
-                    stack.push_front(&query.depth.to_bytes_be()).unwrap();
-                    stack.push_front(&query.value.to_bytes_be()).unwrap();
-                    stack.push_front(&query.index.to_bytes_be()).unwrap();
-                }
-
-                stack
-                    .push_front(&Felt::from(queue.len()).to_bytes_be())
-                    .unwrap();
+                // Push queue using trait method
+                QueryWithDepth::push_queries_with_depth_to_stack(&queue, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 

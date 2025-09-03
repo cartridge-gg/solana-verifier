@@ -4,6 +4,7 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 use crate::stark_proof::stark_verify::hash_computation::{
     HashComputation, HashComputationWithQueries,
 };
+use crate::swiftness::commitment::vector::config::{Config as VectorConfig, ConfigTrait};
 use crate::swiftness::commitment::vector::types::QueryWithDepth;
 
 // ComputeRootRecursive task - handles one step of the recursive root computation
@@ -87,8 +88,10 @@ impl Executable for ComputeRootRecursive {
                     authentications.push(auth);
                 }
 
-                let n_verifier_friendly_layers = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                // Read vector config using trait method
+                let vector_config = VectorConfig::from_stack(stack);
+                let n_verifier_friendly_layers =
+                    vector_config.n_verifier_friendly_commitment_layers;
 
                 let current = &queue[start];
                 self.current = current.clone();
@@ -108,9 +111,8 @@ impl Executable for ComputeRootRecursive {
                             let next = &queue[start + 1];
 
                             if self.current.index + Felt::ONE == next.index {
-                                stack
-                                    .push_front(&n_verifier_friendly_layers.to_bytes_be())
-                                    .unwrap();
+                                // Push vector config using trait method
+                                vector_config.push_to_stack(stack);
 
                                 for auth in authentications.iter().rev() {
                                     stack.push_front(&auth.to_bytes_be()).unwrap();
@@ -148,9 +150,8 @@ impl Executable for ComputeRootRecursive {
                             }
                         }
 
-                        stack
-                            .push_front(&n_verifier_friendly_layers.to_bytes_be())
-                            .unwrap();
+                        // Push vector config using trait method
+                        vector_config.push_to_stack(stack);
 
                         for auth in authentications.iter().rev() {
                             stack.push_front(&auth.to_bytes_be()).unwrap();
@@ -183,9 +184,8 @@ impl Executable for ComputeRootRecursive {
                         )
                         .to_vec_with_type_tag()]
                     } else {
-                        stack
-                            .push_front(&n_verifier_friendly_layers.to_bytes_be())
-                            .unwrap();
+                        // Push vector config using trait method
+                        vector_config.push_to_stack(stack);
 
                         for auth in authentications.iter().rev() {
                             stack.push_front(&auth.to_bytes_be()).unwrap();
@@ -249,14 +249,8 @@ impl Executable for ComputeRootRecursive {
                     depth: self.current.depth - Felt::ONE,
                 });
 
-                for query in queue.iter().rev() {
-                    stack.push_front(&query.depth.to_bytes_be()).unwrap();
-                    stack.push_front(&query.value.to_bytes_be()).unwrap();
-                    stack.push_front(&query.index.to_bytes_be()).unwrap();
-                }
-                stack
-                    .push_front(&Felt::from(queue.len()).to_bytes_be())
-                    .unwrap();
+                // Push queue using trait method
+                QueryWithDepth::push_queries_with_depth_to_stack(&queue, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
