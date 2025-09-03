@@ -56,6 +56,65 @@ pub struct Decommitment {
     pub montgomery_values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
 }
 
+impl CommitmentTrait<Decommitment> for Decommitment {
+    fn from_stack<T: BidirectionalStack>(stack: &mut T) -> Self {
+        // Read values length
+        let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        println!("values_len: {:?}", values_len);
+        let len = values_len.to_biguint().try_into().unwrap();
+
+        // Read values
+        let mut values = FunVec::default();
+        for _ in 0..len {
+            let value = Felt::from_bytes_be_slice(stack.borrow_front());
+            stack.pop_front();
+            values.push(value);
+        }
+
+        // Read montgomery_values length
+        let montgomery_len = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        println!("montgomery_len: {:?}", montgomery_len);
+        let montgomery_len_usize = montgomery_len.to_biguint().try_into().unwrap();
+
+        // Read montgomery_values
+        let mut montgomery_values = FunVec::default();
+        for _ in 0..montgomery_len_usize {
+            let value = Felt::from_bytes_be_slice(stack.borrow_front());
+            stack.pop_front();
+            montgomery_values.push(value);
+        }
+
+        Self {
+            values,
+            montgomery_values,
+        }
+    }
+
+    fn push_to_stack<T: BidirectionalStack>(&self, stack: &mut T) {
+        // Push montgomery_values in reverse order
+        for value in self.montgomery_values.as_slice().iter().rev() {
+            stack.push_front(&value.to_bytes_be()).unwrap();
+        }
+        stack
+            .push_front(&Felt::from(self.montgomery_values.len()).to_bytes_be())
+            .unwrap();
+
+        // Push values in reverse order
+        for value in self.values.as_slice().iter().rev() {
+            stack.push_front(&value.to_bytes_be()).unwrap();
+        }
+        stack
+            .push_front(&Felt::from(self.values.len()).to_bytes_be())
+            .unwrap();
+    }
+
+    fn to_bytes_be(&self) -> Decommitment {
+        *self
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Witness {
     pub vector: vector::types::Witness,

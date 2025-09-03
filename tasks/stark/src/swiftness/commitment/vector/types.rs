@@ -146,6 +146,21 @@ impl Query {
             .push_front(&Felt::from(queries.len()).to_bytes_be())
             .unwrap();
     }
+
+    /// Read multiple queries from stack with length
+    pub fn read_queries_from_stack<T: BidirectionalStack>(stack: &mut T) -> Vec<Query> {
+        // Read length
+        let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let len = queries_len.to_biguint().try_into().unwrap();
+
+        // Read queries
+        let mut queries = Vec::with_capacity(len);
+        for _ in 0..len {
+            queries.push(Query::from_stack(stack));
+        }
+        queries
+    }
 }
 
 // QueryWithDepth extends Query with depth information for tree traversal
