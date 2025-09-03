@@ -1,5 +1,7 @@
 use felt::Felt;
 use stark::stark_proof::stark_verify::vector_decommit::VectorDecommit;
+use stark::swiftness::commitment::vector::config::Config as VectorConfig;
+use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 
@@ -190,13 +192,15 @@ fn test_vector_decommit() {
     let queries_length = Felt::from(queries.len() as u64);
     stack.push_front(&queries_length.to_bytes_be()).unwrap();
 
-    // Push data in the order expected by VectorDecommit::ReadCommitmentAndQueries
-    // 1. Push commitment data (height, n_verifier_friendly_layers, commitment_hash)
-    stack.push_front(&height.to_bytes_be()).unwrap();
-    stack
-        .push_front(&n_verifier_friendly_layers.to_bytes_be())
-        .unwrap();
-    stack.push_front(&commitment_hash.to_bytes_be()).unwrap();
+    // Create VectorCommitment and use push_to_stack method
+    let vector_config = VectorConfig {
+        height,
+        n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
+    };
+    let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
+
+    // Push vector commitment using trait method
+    vector_commitment.push_to_stack(&mut stack);
 
     // Push the VectorDecommit task
     stack.push_task(VectorDecommit::new());

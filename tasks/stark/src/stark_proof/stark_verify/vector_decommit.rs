@@ -2,7 +2,9 @@ use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
-use crate::swiftness::commitment::vector::types::{Query, QueryWithDepth};
+use crate::swiftness::commitment::vector::types::{
+    Commitment as VectorCommitment, Query, QueryWithDepth,
+};
 // Main VectorDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VectorDecommitStep {
@@ -38,12 +40,16 @@ impl Executable for VectorDecommit {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             VectorDecommitStep::VectorCommitmentDecommit => {
-                self.reference_commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let n_verifier_friendly_layers = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let height = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
+                // Read vector commitment using trait method
+                let vector_commitment = VectorCommitment::from_stack(stack);
+                println!("Vector commitment: {:?}", vector_commitment);
+
+                self.reference_commitment_hash = vector_commitment.commitment_hash;
+                let n_verifier_friendly_layers = vector_commitment
+                    .config
+                    .n_verifier_friendly_commitment_layers;
+                let height = vector_commitment.config.height;
+
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
@@ -86,14 +92,8 @@ impl Executable for VectorDecommit {
                 stack.push_front(&auth_start.to_bytes_be()).unwrap();
                 stack.push_front(&start.to_bytes_be()).unwrap();
 
-                for query in shifted_queries.iter().rev() {
-                    stack.push_front(&query.depth.to_bytes_be()).unwrap();
-                    stack.push_front(&query.value.to_bytes_be()).unwrap();
-                    stack.push_front(&query.index.to_bytes_be()).unwrap();
-                }
-                stack
-                    .push_front(&Felt::from(shifted_queries.len()).to_bytes_be())
-                    .unwrap();
+                // Use QueryWithDepth trait method to push queries
+                QueryWithDepth::push_queries_with_depth_to_stack(&shifted_queries, stack);
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();

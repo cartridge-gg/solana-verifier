@@ -1,5 +1,5 @@
 use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS};
-use crate::swiftness::commitment::vector::config::Config;
+use crate::swiftness::commitment::vector::config::{Config, ConfigTrait, VectorConfigBytes};
 use felt::Felt;
 use utils::BidirectionalStack;
 
@@ -8,6 +8,43 @@ use utils::BidirectionalStack;
 pub struct Commitment {
     pub config: Config,
     pub commitment_hash: Felt,
+}
+
+pub struct VectorCommitmentBytes {
+    pub config: VectorConfigBytes,
+    pub commitment_hash: [u8; 32],
+}
+
+impl Commitment {
+    pub fn new(config: Config, commitment_hash: Felt) -> Self {
+        Self {
+            config,
+            commitment_hash,
+        }
+    }
+
+    /// Read Query from stack: index first, then value
+    pub fn from_stack<T: BidirectionalStack>(stack: &mut T) -> Self {
+        let config = Config::from_stack(stack);
+        let commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        Self::new(config, commitment_hash)
+    }
+
+    /// Push Query to stack: value first, then index (reverse order for stack)
+    pub fn push_to_stack<T: BidirectionalStack>(&self, stack: &mut T) {
+        stack
+            .push_front(&self.commitment_hash.to_bytes_be())
+            .unwrap();
+        self.config.push_to_stack(stack);
+    }
+
+    pub fn to_bytes_be(&self) -> VectorCommitmentBytes {
+        VectorCommitmentBytes {
+            config: self.config.to_bytes_be(),
+            commitment_hash: self.commitment_hash.to_bytes_be(),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -103,6 +140,23 @@ impl QueryWithDepth {
             value: query.value,
             depth,
         }
+    }
+
+    /// Push multiple QueryWithDepth objects to stack with length
+    pub fn push_queries_with_depth_to_stack<T: BidirectionalStack>(
+        queries: &[QueryWithDepth],
+        stack: &mut T,
+    ) {
+        // Push queries in reverse order for stack
+        for query in queries.iter().rev() {
+            stack.push_front(&query.depth.to_bytes_be()).unwrap();
+            stack.push_front(&query.value.to_bytes_be()).unwrap();
+            stack.push_front(&query.index.to_bytes_be()).unwrap();
+        }
+        // Push length
+        stack
+            .push_front(&Felt::from(queries.len()).to_bytes_be())
+            .unwrap();
     }
 }
 
