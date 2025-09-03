@@ -88,7 +88,7 @@ impl Default for ComputeQueryPoints {
 }
 
 impl Executable for ComputeQueryPoints {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         // Compute query points based on original:
         // let points = queries_to_points(queries, stark_domains);
 

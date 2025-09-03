@@ -1,5 +1,3 @@
-use crate::stark_proof::stark_commit::CommitmentTable;
-use crate::stark_proof::stark_commit::ConfigTable;
 use crate::stark_proof::stark_commit::{TableCommit, TranscriptReadFeltVector};
 use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
 use crate::swiftness::transcript::TranscriptRandomFelt;
@@ -172,7 +170,7 @@ impl Executable for FriCommit {
                 stark_commitment
                     .fri
                     .last_layer_coefficients
-                    .extend_from_slice(&last_layer_coefficients.as_slice());
+                    .extend_from_slice(last_layer_coefficients.as_slice());
 
                 TranscriptReadFeltVector::push_input(
                     self.current_transcript_digest,

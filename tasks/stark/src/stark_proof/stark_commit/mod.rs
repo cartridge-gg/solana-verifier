@@ -11,8 +11,6 @@ pub mod verify_oods;
 use crate::poseidon::PoseidonHashMany;
 use crate::swiftness::air::recursive_with_poseidon::Layout;
 use crate::swiftness::air::recursive_with_poseidon::LayoutTrait;
-use crate::swiftness::commitment::table::config::Config as ConfigTable;
-use crate::swiftness::commitment::table::types::Commitment as CommitmentTable;
 use crate::swiftness::stark::types::StarkCommitment;
 use crate::swiftness::stark::types::StarkProof;
 use crate::swiftness::transcript::{TranscriptRandomFelt, TranscriptReadFeltVector};

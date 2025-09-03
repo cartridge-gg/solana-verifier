@@ -1,9 +1,7 @@
 use crate::poseidon::PoseidonHash;
 use crate::stark_proof::PoseidonHashMany;
-use crate::swiftness::stark::types::StarkProof;
-// use lambdaworks_math::traits::ByteConversion;
-use crate::swiftness::stark::config::StarkConfig;
 use crate::swiftness::stark::types::StarkCommitment;
+use crate::swiftness::stark::types::StarkProof;
 use felt::Felt;
 use utils::global_values::InteractionElements;
 use utils::StarkCommitmentTrait;

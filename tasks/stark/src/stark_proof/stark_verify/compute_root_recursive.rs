@@ -97,7 +97,7 @@ impl Executable for ComputeRootRecursive {
                     // We found the root - push it to stack and finish
                     stack.push_front(&self.current.value.to_bytes_be()).unwrap();
                     self.step = ComputeRootRecursiveStep::Done;
-                    return vec![];
+                    vec![]
                 } else {
                     let (parent, bit) = self.current.index.div_rem(&NonZeroFelt::TWO);
                     let is_verifier_friendly = n_verifier_friendly_layers >= self.current.depth;
@@ -176,12 +176,12 @@ impl Executable for ComputeRootRecursive {
                             .unwrap();
 
                         self.step = ComputeRootRecursiveStep::ReadHash;
-                        return vec![HashComputation::new(
+                        vec![HashComputation::new(
                             self.current.value,
                             authentications[auth_start],
                             is_verifier_friendly,
                         )
-                        .to_vec_with_type_tag()];
+                        .to_vec_with_type_tag()]
                     } else {
                         stack
                             .push_front(&n_verifier_friendly_layers.to_bytes_be())
@@ -211,14 +211,12 @@ impl Executable for ComputeRootRecursive {
 
                         self.step = ComputeRootRecursiveStep::ReadHash;
                         // Create hash computation task
-                        return vec![HashComputation::new(
+                        vec![HashComputation::new(
                             authentications[auth_start],
                             self.current.value,
                             is_verifier_friendly,
-                            // self.parent,
-                            // self.current.depth - Felt::ONE,
                         )
-                        .to_vec_with_type_tag()];
+                        .to_vec_with_type_tag()]
                     }
                 }
             }
