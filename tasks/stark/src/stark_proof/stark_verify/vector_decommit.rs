@@ -4,7 +4,8 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
 use crate::swiftness::commitment::vector::config::ConfigTrait;
 use crate::swiftness::commitment::vector::types::{
-    Commitment as VectorCommitment, Query, QueryWithDepth,
+    Commitment as VectorCommitment, CommitmentTrait, Query, QueryWithDepth,
+    Witness as VectorWitness,
 };
 // Main VectorDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,17 +56,8 @@ impl Executable for VectorDecommit {
                     queries.push(Query::from_stack(stack));
                 }
 
-                let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let mut authentications = Vec::new();
-
-                let n_auth_usize: usize = n_authentications.try_into().unwrap();
-
-                for _ in 0..n_auth_usize {
-                    let auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    authentications.push(auth);
-                }
+                // Read authentications using trait method
+                let witness = VectorWitness::from_stack(stack);
 
                 // Push vector config using trait method
                 vector_commitment.config.push_to_stack(stack);
@@ -78,10 +70,8 @@ impl Executable for VectorDecommit {
                         .push(QueryWithDepth::from_query_with_shift(query, height, shift));
                 }
 
-                for auth in authentications.iter().rev() {
-                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                }
-                stack.push_front(&n_authentications.to_bytes_be()).unwrap();
+                // Push authentications using trait method
+                witness.push_to_stack(stack);
 
                 let auth_start = Felt::ZERO;
                 let start = Felt::ZERO;
@@ -89,7 +79,7 @@ impl Executable for VectorDecommit {
                 stack.push_front(&start.to_bytes_be()).unwrap();
 
                 // Use QueryWithDepth trait method to push queries
-                QueryWithDepth::push_queries_with_depth_to_stack(&shifted_queries, stack);
+                QueryWithDepth::push_to_stack(&shifted_queries, stack);
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();

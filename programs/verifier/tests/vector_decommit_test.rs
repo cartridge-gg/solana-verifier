@@ -1,7 +1,10 @@
 use felt::Felt;
-use stark::stark_proof::stark_verify::vector_decommit::VectorDecommit;
 use stark::swiftness::commitment::vector::config::Config as VectorConfig;
 use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use stark::{
+    stark_proof::stark_verify::vector_decommit::VectorDecommit,
+    swiftness::commitment::vector::types::CommitmentTrait,
+};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 

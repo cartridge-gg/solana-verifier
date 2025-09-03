@@ -2,8 +2,10 @@ use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 use crate::stark_proof::stark_verify::vector_decommit::VectorDecommit;
-use crate::swiftness::commitment::table::types::{Commitment, CommitmentTrait};
-use crate::swiftness::commitment::vector::types::Query;
+use crate::swiftness::commitment::table::types::Commitment as TableCommitment;
+use crate::swiftness::commitment::vector::types::{
+    CommitmentTrait, Query, Witness as VectorWitness,
+};
 
 const MONTGOMERY_R: Felt =
     Felt::from_hex_unchecked("0x7FFFFFFFFFFFDF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1");
@@ -20,7 +22,7 @@ pub enum TableDecommitStep {
 #[repr(C)]
 pub struct TableDecommit {
     step: TableDecommitStep,
-    commitment: Commitment,
+    commitment: TableCommitment,
     n_columns: u32,
     is_bottom_layer_verifier_friendly: bool,
 }
@@ -31,7 +33,7 @@ impl TableDecommit {
     pub fn new() -> Self {
         Self {
             step: TableDecommitStep::PrepareVectorQueries,
-            commitment: Commitment::default(),
+            commitment: TableCommitment::default(),
             n_columns: 0,
             is_bottom_layer_verifier_friendly: false,
         }
@@ -49,7 +51,7 @@ impl Executable for TableDecommit {
         match self.step {
             TableDecommitStep::PrepareVectorQueries => {
                 // Read table commitment using trait
-                let table_commitment = Commitment::from_stack(stack);
+                let table_commitment = TableCommitment::from_stack(stack);
 
                 // Store commitment config
                 self.n_columns = table_commitment
@@ -98,16 +100,8 @@ impl Executable for TableDecommit {
                 // Generate vector queries
                 let vector_queries = self.generate_vector_queries(&queries, &montgomery_values);
 
-                // Read witness (authentications)
-                let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let mut authentications = Vec::new();
-
-                for _ in 0..n_authentications.to_biguint().try_into().unwrap() {
-                    let auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    authentications.push(auth);
-                }
+                // Read witness (authentications) using trait method
+                let witness = VectorWitness::from_stack(stack);
 
                 // Push data for VectorDecommit using trait methods
                 // Push vector commitment using its push_to_stack method
@@ -116,10 +110,8 @@ impl Executable for TableDecommit {
                 // Use Query trait method to push queries
                 Query::push_queries_to_stack(&vector_queries, stack);
 
-                stack.push_front(&n_authentications.to_bytes_be()).unwrap();
-                for auth in authentications.iter() {
-                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                }
+                // Push witness using trait method
+                witness.push_to_stack(stack);
 
                 self.step = TableDecommitStep::ExecuteVectorDecommit;
                 vec![VectorDecommit::new().to_vec_with_type_tag()]

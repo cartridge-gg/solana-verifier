@@ -3,9 +3,11 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 
 use crate::stark_proof::stark_verify::table_decommit::TableDecommit;
 use crate::swiftness::commitment::table::config::Config as TableConfig;
-use crate::swiftness::commitment::table::types::{Commitment, CommitmentTrait};
+use crate::swiftness::commitment::table::types::Commitment;
 use crate::swiftness::commitment::vector::config::Config as VectorConfig;
-use crate::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use crate::swiftness::commitment::vector::types::{
+    Commitment as VectorCommitment, CommitmentTrait, Witness as VectorWitness,
+};
 
 // TracesDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,16 +81,8 @@ impl Executable for TracesDecommit {
                     original_values.push(value);
                 }
 
-                // Read original witness authentications
-                let original_n_auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let mut original_authentications = Vec::new();
-
-                for _ in 0..original_n_auth.to_biguint().try_into().unwrap() {
-                    let auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    original_authentications.push(auth);
-                }
+                // Read original witness authentications using trait method
+                let original_witness = VectorWitness::from_stack(stack);
 
                 // Store interaction data for later (read but keep on stack for later stages)
                 // We'll need to preserve this data across the original table decommit
@@ -121,10 +115,8 @@ impl Executable for TracesDecommit {
                     stack.push_front(&value.to_bytes_be()).unwrap();
                 }
 
-                stack.push_front(&original_n_auth.to_bytes_be()).unwrap();
-                for auth in original_authentications.iter() {
-                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                }
+                // Push original witness using trait method
+                original_witness.push_to_stack(stack);
 
                 self.step = TracesDecommitStep::ExecuteOriginalTable;
                 vec![TableDecommit::new().to_vec_with_type_tag()]
@@ -168,16 +160,8 @@ impl Executable for TracesDecommit {
                     interaction_values.push(value);
                 }
 
-                // Read interaction witness authentications
-                let interaction_n_auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-                let mut interaction_authentications = Vec::new();
-
-                for _ in 0..interaction_n_auth.to_biguint().try_into().unwrap() {
-                    let auth = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    interaction_authentications.push(auth);
-                }
+                // Read interaction witness authentications using trait method
+                let interaction_witness = VectorWitness::from_stack(stack);
 
                 // Re-read queries for interaction table
                 for _ in 0..self.queries_count {
@@ -215,10 +199,8 @@ impl Executable for TracesDecommit {
                     stack.push_front(&value.to_bytes_be()).unwrap();
                 }
 
-                stack.push_front(&interaction_n_auth.to_bytes_be()).unwrap();
-                for auth in interaction_authentications.iter() {
-                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                }
+                // Push interaction witness using trait method
+                interaction_witness.push_to_stack(stack);
 
                 self.step = TracesDecommitStep::ExecuteInteractionTable;
                 vec![TableDecommit::new().to_vec_with_type_tag()]

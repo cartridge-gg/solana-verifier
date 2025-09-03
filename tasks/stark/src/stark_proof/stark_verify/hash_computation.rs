@@ -157,7 +157,7 @@ impl Executable for HashComputationWithQueries {
                     });
 
                     // Push queue using trait method
-                    QueryWithDepth::push_queries_with_depth_to_stack(&queue, stack);
+                    QueryWithDepth::push_to_stack(&queue, stack);
 
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -181,7 +181,7 @@ impl Executable for HashComputationWithQueries {
                 });
 
                 // Push queue using trait method
-                QueryWithDepth::push_queries_with_depth_to_stack(&queue, stack);
+                QueryWithDepth::push_to_stack(&queue, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
