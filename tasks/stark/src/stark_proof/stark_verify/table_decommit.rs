@@ -264,7 +264,7 @@ impl Executable for GenerateVectorQueries {
                     let slice = &values[(current_query_index * self.n_columns as usize)
                         ..((current_query_index + 1) * self.n_columns as usize)];
 
-                    PoseidonHashMany::push_input(&slice, stack);
+                    PoseidonHashMany::push_input(slice, stack);
                     self.step = GenerateVectorQueriesStep::WaitForPoseidonHash;
                     vec![PoseidonHashMany::new(slice.len()).to_vec_with_type_tag()]
                 } else {

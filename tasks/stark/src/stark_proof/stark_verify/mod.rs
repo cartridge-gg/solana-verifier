@@ -77,6 +77,8 @@ impl Executable for StarkVerify {
                         return vec![];
                     }
                 };
+                // Is this sanity check? why do we take n_queries from proof and then read from stack?
+                // Should we just read from stack? or assert they are equal?
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 println!("READ: Queries length: {:?}", queries_len);
@@ -92,7 +94,6 @@ impl Executable for StarkVerify {
                 self.step = StarkVerifyStep::TracesDecommit;
                 vec![TracesDecommit::new().to_vec_with_type_tag()]
             }
-
             StarkVerifyStep::TracesDecommit => {
                 // TracesDecommit finished, continue with table decommit
                 // Pass through queries for table_decommit
@@ -101,7 +102,7 @@ impl Executable for StarkVerify {
                 self.step = StarkVerifyStep::TableDecommit;
                 vec![TableDecommit::new().to_vec_with_type_tag()]
             }
-
+            //
             StarkVerifyStep::TableDecommit => {
                 // TableDecommit finished, compute query points
                 self.step = StarkVerifyStep::ComputeQueryPoints;

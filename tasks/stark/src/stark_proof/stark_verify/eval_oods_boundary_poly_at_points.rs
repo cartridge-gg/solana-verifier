@@ -1,6 +1,9 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
+const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
+
 // EvalOodsBoundaryPolyAtPoints task
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -87,18 +90,49 @@ impl Default for ComputeQueryPoints {
     }
 }
 
+// Stack layout pre-execution:
+// ┌──────────────────────────────┐
+// │ query_n                      │
+// │ query_n-1                    │
+// │   ...                        │
+// │ query_1                      │
+// │ query_0                      │
+// │ queries_len                  │
+// │ eval_generator               │
+// │ log_eval_domain_size         │
+// └──────────────────────────────┘  <- front (stack front)
+
 impl Executable for ComputeQueryPoints {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
-        // Compute query points based on original:
-        // let points = queries_to_points(queries, stark_domains);
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+        let log_eval_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
 
-        // TODO: Implement queries_to_points logic:
-        // 1. Read queries from previous task
-        // 2. Get stark_domains (trace_generator, etc.)
-        // 3. Convert queries to evaluation points
-        // 4. Push points to stack for OODS evaluation
+        let eval_generator = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
 
-        // For now, just placeholder
+        let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+
+        // Evaluation domains of size greater than 2**64 are not supported
+        assert!(log_eval_domain_size <= MAX_DOMAIN_SIZE);
+
+        let shift = Felt::TWO.pow_felt(&(MAX_DOMAIN_SIZE - log_eval_domain_size));
+
+        let mut points = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
+
+        for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+            let query = Felt::from_bytes_be_slice(stack.borrow_front());
+            let index: u64 = (query * shift).to_biguint().try_into().unwrap();
+            let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
+            points.push(point);
+            stack.pop_front();
+        }
+
+        for point in points.iter().rev() {
+            stack.push_front(&point.to_bytes_be()).unwrap();
+        }
+        stack.push_front(&queries_len.to_bytes_be()).unwrap();
+
         self.processed = true;
         vec![]
     }

@@ -12,3 +12,5 @@ pub mod stark_config;
 pub mod stark_domains;
 pub mod unsent_commitment;
 pub mod witness;
+
+pub mod queries;
