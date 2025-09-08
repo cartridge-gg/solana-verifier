@@ -1,19 +1,21 @@
 use super::config::StarkConfig;
-use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES};
+use crate::funvec::{
+    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES,
+};
 use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
 use crate::swiftness::commitment::table;
 use crate::swiftness::{fri, pow::pow};
 use felt::Felt;
+use fri::types::Witness as FriWitness;
 use swiftness::air::trace::Commitment as TracesCommitment;
 use swiftness::commitment::table::types::Commitment as TableCommitment;
 use swiftness::fri::types::Commitment as FriCommitment;
+use table::types::Decommitment as TableDecommitment;
+use table::types::Witness as TableWitness;
 use trace::Decommitment as TracesDecommitment;
 use trace::Witness as TracesWitness;
-use table::types::Witness as TableWitness;
-use table::types::Decommitment as TableDecommitment;
-use fri::types::Witness as FriWitness;
 
 pub fn cast_slice_to_struct<T>(slice: &[u8]) -> &T
 where

@@ -2,8 +2,8 @@ use crate::funvec::{FunVec, FUNVEC_DECOMMITMENT_VALUES};
 use crate::swiftness::commitment::table::config::{Config, TableConfigBytes};
 use crate::swiftness::commitment::vector::config::ConfigTrait;
 use crate::swiftness::commitment::vector::types::{CommitmentTrait, VectorCommitmentBytes};
-use crate::swiftness::stark::types::VerifyVariables;
 use crate::swiftness::commitment::vector::{self, types::Commitment as VectorCommitment};
+use crate::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice, VerifyVariables};
 use felt::Felt;
 use utils::{BidirectionalStack, StarkVerifyTrait};
 
@@ -30,14 +30,21 @@ pub struct TableCommitmentBytes {
 
 impl CommitmentTrait<TableCommitmentBytes> for Commitment {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Self {
-        let config = Config::from_stack(stack);
-        let vector_commitment = VectorCommitment::from_stack(stack);
-        Self::new(config, vector_commitment)
+        let mut data = stack.borrow_front();
+        let commitment_ref = cast_slice_to_struct::<Self>(&mut data);
+        let commitment = *commitment_ref; // Copy only when needed
+        stack.pop_front();
+        commitment
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
-        self.vector_commitment.push_to_stack(stack);
-        self.config.push_to_stack(stack);
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self {
+        let data = stack.borrow_front();
+        cast_slice_to_struct::<Self>(&data)
+    }
+
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+        let commitment_bytes = cast_struct_to_slice(self);
+        stack.push_front(commitment_bytes).unwrap();
     }
 
     fn to_bytes_be(&self) -> TableCommitmentBytes {
@@ -79,12 +86,12 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
         }
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
         // Get count first
         let count = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
         let count_usize: usize = count.to_biguint().try_into().unwrap();
-        
+
         // Push montgomery_values in reverse order - no allocation
         for i in (0..count_usize).rev() {
             let value_bytes = {
@@ -93,7 +100,9 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
             };
             stack.push_front(&value_bytes).unwrap();
         }
-        stack.push_front(&Felt::from(count_usize).to_bytes_be()).unwrap();
+        stack
+            .push_front(&Felt::from(count_usize).to_bytes_be())
+            .unwrap();
 
         // Push decommitment_values in reverse order - no allocation
         for i in (0..count_usize).rev() {
@@ -103,7 +112,14 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
             };
             stack.push_front(&value_bytes).unwrap();
         }
-        stack.push_front(&Felt::from(count_usize).to_bytes_be()).unwrap();
+        stack
+            .push_front(&Felt::from(count_usize).to_bytes_be())
+            .unwrap();
+    }
+
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
+        // For Decommitment, data is stored in VerifyVariables, use from_stack instead
+        unimplemented!("Decommitment data is stored in VerifyVariables, use from_stack instead")
     }
 
     fn to_bytes_be(&self) -> Decommitment {
@@ -121,7 +137,12 @@ impl CommitmentTrait<Witness, ()> for Witness {
         vector::types::Witness::from_stack(stack);
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
+        // For Witness, data is stored in VerifyVariables, use from_stack instead
+        unimplemented!("Witness data is stored in VerifyVariables, use from_stack instead")
+    }
+
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
         self.vector.push_to_stack(stack);
     }
 

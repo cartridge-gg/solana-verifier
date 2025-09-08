@@ -1,7 +1,10 @@
 use std::vec;
 
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
+    TypeIdentifiable,
+};
 
 pub mod compute_root_recursive;
 pub mod eval_oods_boundary_poly_at_points;
@@ -62,7 +65,10 @@ impl Default for StarkVerify {
 }
 
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::Init => {
                 // Read queries from stack (should be pushed by caller)
@@ -91,7 +97,7 @@ impl Executable for StarkVerify {
                     queries.push(Query::from_stack(stack));
                 }
                 // Push queries back onto stack using helper method
-                Query::push_queries_to_stack(&queries, stack);
+                Query::push_queries_to_stack(queries.len(), stack);
 
                 self.step = StarkVerifyStep::TracesDecommit;
                 // vec![TracesDecommit::new().to_vec_with_type_tag()]

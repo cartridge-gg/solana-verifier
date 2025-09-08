@@ -1,5 +1,8 @@
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
+    TypeIdentifiable,
+};
 
 use crate::funvec::{FunVec, FUNVEC_QUERIES};
 use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
@@ -41,7 +44,10 @@ impl Default for VectorDecommit {
 }
 
 impl Executable for VectorDecommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             VectorDecommitStep::VectorCommitmentDecommit => {
                 // Read vector commitment using trait method
@@ -55,26 +61,33 @@ impl Executable for VectorDecommit {
                 stack.pop_front();
 
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
-                assert!(queries_count <= FUNVEC_QUERIES, "Too many queries: {} > {}", queries_count, FUNVEC_QUERIES);
-                
+                assert!(
+                    queries_count <= FUNVEC_QUERIES,
+                    "Too many queries: {} > {}",
+                    queries_count,
+                    FUNVEC_QUERIES
+                );
+
                 // Read queries into pre-allocated array
                 let mut count = queries_count;
                 Query::read_queries_from_stack(stack, &mut count);
 
                 // Read witness (authentications) into pre-allocated array
-                println!("DEBUG: About to call VectorWitness::from_stack(), stack front: {:?}", 
-                    Felt::from_bytes_be_slice(stack.borrow_front()));
+                println!(
+                    "DEBUG: About to call VectorWitness::from_stack(), stack front: {:?}",
+                    Felt::from_bytes_be_slice(stack.borrow_front())
+                );
                 VectorWitness::from_stack(stack);
 
                 // Push vector config using trait method
                 vector_commitment.config.push_to_stack(stack);
 
                 let shift = Felt::TWO.pow_felt(&height);
-                
+
                 // Convert from temp_queries (index, value pairs) to queries (QueryWithDepth format)
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    
+
                     // Convert to QueryWithDepth format (index + shift, value, height)
                     for i in 0..queries_count {
                         let index = verify_variables.temp_queries[i * 2];
@@ -96,24 +109,26 @@ impl Executable for VectorDecommit {
                             real_count = i + 1;
                         }
                     }
-                    
+
                     println!("DEBUG vector_decommit: real_count = {}", real_count);
-                    
+
                     // Przygotuj bytes do pushowania
                     let mut auth_bytes = Vec::new();
                     for i in (0..real_count).rev() {
                         auth_bytes.push(authentications_slice[i].to_bytes_be());
                     }
-                    
+
                     (real_count, auth_bytes)
                 };
-                
+
                 // Push authentications w odwrotnej kolejności
                 for auth_bytes in auth_bytes {
                     stack.push_front(&auth_bytes).unwrap();
                 }
                 // Push liczbę authentications
-                stack.push_front(&Felt::from(real_count).to_bytes_be()).unwrap();
+                stack
+                    .push_front(&Felt::from(real_count).to_bytes_be())
+                    .unwrap();
 
                 let auth_start = Felt::ZERO;
                 let start = Felt::ZERO;

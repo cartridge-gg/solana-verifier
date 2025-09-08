@@ -2,14 +2,14 @@ use crate::error::VerifierError;
 use felt::Felt;
 use stark::funvec::FUNVEC_AUTHENTICATIONS;
 use stark::funvec::FUNVEC_QUERIES;
-use stark::swiftness::commitment::vector::types::Query;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
+use stark::swiftness::commitment::vector::types::Query;
 use stark::swiftness::stark::types::cast_struct_to_slice_mut;
 use stark::swiftness::stark::types::StarkCommitment;
+use stark::swiftness::stark::types::VerifyVariables;
 use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::global_values::InteractionElements;
 use utils::ProofData;
-use stark::swiftness::stark::types::VerifyVariables;
 use utils::StarkCommitmentTrait;
 use utils::StarkVerifyTrait;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
@@ -222,16 +222,10 @@ impl StarkVerifyTrait for BidirectionalStackAccount {
                 std::mem::size_of::<T>(),
             )
         };
-        assert_eq!(
-            bytes.len(),
-            std::mem::size_of::<VerifyVariables>()
-        );
-        self.verify_variables = unsafe {
-            std::ptr::read(bytes.as_ptr() as *const VerifyVariables)
-        };
+        assert_eq!(bytes.len(), std::mem::size_of::<VerifyVariables>());
+        self.verify_variables = unsafe { std::ptr::read(bytes.as_ptr() as *const VerifyVariables) };
     }
 }
-
 
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {

@@ -200,7 +200,7 @@ fn test_vector_decommit() {
         height,
         n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
     };
-    let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
+    let mut vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
 
     // Push vector commitment using trait method
     vector_commitment.push_to_stack(&mut stack);

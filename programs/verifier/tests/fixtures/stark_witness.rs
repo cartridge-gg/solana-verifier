@@ -1,25 +1,25 @@
+use crate::fixtures::{
+    commitment, fri_config, fri_unsent_commitment, fri_witness, oods_values, public_input, queries,
+    stark_config, stark_domains, trace_decommitment, witness,
+};
 use felt::Felt;
+use stark::funvec::FunVec;
 use stark::swiftness::air::trace::Decommitment as TracesDecommitment;
 use stark::swiftness::air::trace::Witness as TracesWitness;
+use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use stark::swiftness::commitment::table::types::Witness as TableWitness;
 use stark::swiftness::commitment::vector::types::Witness as VectorWitness;
-use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use stark::swiftness::fri::types::Witness as FriWitness;
 use stark::swiftness::stark::types::StarkWitness;
-use stark::funvec::FunVec;
-use crate::fixtures::{fri_config, fri_unsent_commitment, oods_values, public_input, stark_config, stark_domains, witness, commitment, queries, fri_witness, trace_decommitment};
-
 
 pub fn get() -> StarkWitness {
     StarkWitness {
         traces_decommitment: trace_decommitment::get(),
         traces_witness: witness::get(),
         composition_decommitment: TableDecommitment {
-            montgomery_values: FunVec::from_vec(vec![
-                Felt::from_hex_unchecked(
-                    "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
-                ),
-            ]),
+            montgomery_values: FunVec::from_vec(vec![Felt::from_hex_unchecked(
+                "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
+            )]),
             values: FunVec::from_vec(vec![
                 Felt::from_hex_unchecked(
                     "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",

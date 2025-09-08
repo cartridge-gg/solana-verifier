@@ -1,16 +1,14 @@
 use felt::Felt;
 use stark::funvec::FunVec;
-use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use stark::swiftness::air::trace::Decommitment as TraceDecommitment;
+use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 
 pub fn get() -> TraceDecommitment {
     TraceDecommitment {
         original: TableDecommitment {
-            montgomery_values: FunVec::from_vec(vec![
-                Felt::from_hex_unchecked(
-                    "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
-                ),
-            ]),
+            montgomery_values: FunVec::from_vec(vec![Felt::from_hex_unchecked(
+                "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
+            )]),
             values: FunVec::from_vec(vec![
                 Felt::from_hex_unchecked(
                     "0x5a81cfa7b8ba1dd722ce2bcaf78476fd0e0b7fda53287ed2632c2c32ab4f42c",
@@ -225,11 +223,9 @@ pub fn get() -> TraceDecommitment {
             ]),
         },
         interaction: TableDecommitment {
-            montgomery_values: FunVec::from_vec(vec![
-                Felt::from_hex_unchecked(
-                    "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
-                ),
-            ]),
+            montgomery_values: FunVec::from_vec(vec![Felt::from_hex_unchecked(
+                "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
+            )]),
             values: FunVec::from_vec(vec![
                 Felt::from_hex_unchecked(
                     "0x5bf29218811908115445900bc8f367dcf29cf113bfe0e29f3c669b396e12da6",

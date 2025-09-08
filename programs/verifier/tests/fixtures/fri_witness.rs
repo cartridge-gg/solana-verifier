@@ -1,9 +1,9 @@
 use felt::Felt;
 use stark::funvec::FunVec;
-use stark::swiftness::fri::types::Witness as FriWitness;
 use stark::swiftness::commitment::table::types::Witness as TableWitness;
 use stark::swiftness::commitment::vector::types::Witness as VectorWitness;
 use stark::swiftness::fri::types::LayerWitness as FriLayerWitness;
+use stark::swiftness::fri::types::Witness as FriWitness;
 
 pub fn get() -> FriWitness {
     FriWitness {

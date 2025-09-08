@@ -12,7 +12,10 @@ use swiftness_proof_parser::transform::MONTGOMERY_R;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use fixtures::{fri_config, fri_unsent_commitment, oods_values, public_input, stark_config, stark_domains, witness, commitment, queries};
+use fixtures::{
+    commitment, fri_config, fri_unsent_commitment, oods_values, public_input, queries,
+    stark_config, stark_domains, witness,
+};
 
 #[test]
 fn test_table_decommit() {
@@ -280,7 +283,6 @@ fn test_table_decommit() {
         Felt::from_hex("0x608a4544987ef3599043e9a8b4aa0598f8d71dee81e46104ca6ac186e2c8044")
             .unwrap(),
     ];
-
 
     println!("Test setup:");
     println!("  Commitment hash: {:?}", commitment_hash);

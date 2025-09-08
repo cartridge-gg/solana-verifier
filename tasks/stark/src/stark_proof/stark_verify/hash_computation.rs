@@ -1,6 +1,9 @@
 use felt::Felt;
 use sha3::{Digest, Keccak256};
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
+    TypeIdentifiable,
+};
 
 use crate::poseidon::PoseidonHash;
 use crate::swiftness::commitment::vector::types::QueryWithDepth;
@@ -138,7 +141,10 @@ impl Default for HashComputationWithQueries {
 impl_type_identifiable!(HashComputationWithQueries);
 
 impl Executable for HashComputationWithQueries {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             HashComputationWithQueriesStep::Init => {
                 if self.is_verifier_friendly {
@@ -150,20 +156,27 @@ impl Executable for HashComputationWithQueries {
 
                     // Read queue using trait method
                     QueryWithDepth::read_queries_with_depth_from_stack(stack);
-                    
+
                     // Add new query to pre-allocated array
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
-                    
+
                     // Find next available slot
                     let mut next_slot = 0;
-                    while next_slot < queries_slice.len() / 3 && queries_slice[next_slot * 3] != Felt::ZERO {
+                    while next_slot < queries_slice.len() / 3
+                        && queries_slice[next_slot * 3] != Felt::ZERO
+                    {
                         next_slot += 1;
                     }
-                    
+
                     // Check if we found a free slot
-                    assert!(next_slot < queries_slice.len() / 3, "No free slot for query, next_slot: {}, max: {}", next_slot, queries_slice.len() / 3);
-                    
+                    assert!(
+                        next_slot < queries_slice.len() / 3,
+                        "No free slot for query, next_slot: {}, max: {}",
+                        next_slot,
+                        queries_slice.len() / 3
+                    );
+
                     // Add new query
                     queries_slice[next_slot * 3] = self.parent_index;
                     queries_slice[next_slot * 3 + 1] = hash;
@@ -171,7 +184,8 @@ impl Executable for HashComputationWithQueries {
 
                     // Push queue using trait method - calculate actual count
                     let actual_count = {
-                        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                        let verify_variables: &mut VerifyVariables =
+                            stack.get_verify_variables_mut();
                         let queries_slice = &mut verify_variables.queries;
                         let mut count = 0;
                         for i in 0..(queries_slice.len() / 3) {
@@ -201,16 +215,23 @@ impl Executable for HashComputationWithQueries {
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                 let queries_slice = &mut verify_variables.queries;
-                
+
                 // Find next available slot
                 let mut next_slot = 0;
-                while next_slot < queries_slice.len() / 3 && queries_slice[next_slot * 3] != Felt::ZERO {
+                while next_slot < queries_slice.len() / 3
+                    && queries_slice[next_slot * 3] != Felt::ZERO
+                {
                     next_slot += 1;
                 }
-                
+
                 // Check if we found a free slot
-                assert!(next_slot < queries_slice.len() / 3, "No free slot for query, next_slot: {}, max: {}", next_slot, queries_slice.len() / 3);
-                
+                assert!(
+                    next_slot < queries_slice.len() / 3,
+                    "No free slot for query, next_slot: {}, max: {}",
+                    next_slot,
+                    queries_slice.len() / 3
+                );
+
                 // Add new query
                 queries_slice[next_slot * 3] = self.parent_index;
                 queries_slice[next_slot * 3 + 1] = hash;
