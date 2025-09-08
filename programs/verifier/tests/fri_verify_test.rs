@@ -1,47 +1,43 @@
 mod fixtures;
-
-use felt::Felt;
+use stark::swiftness::commitment;
+use stark::swiftness::fri;
+use stark::swiftness::stark::types::cast_struct_to_slice;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
+
 #[test]
 fn test_fri_verify() {
-    let mut stack = BidirectionalStackAccount::default();
+    let mut stack: BidirectionalStackAccount = BidirectionalStackAccount::default();
     let task = stark::stark_proof::stark_verify::FriVerify::new();
-
+    push_data(&mut stack);
     stack.push_task(task);
 
     while !stack.is_empty_back() {
         stack.execute();
     }
+    assert_eq!(stack.front_index, 0);
+    assert_eq!(stack.back_index, 65536);
 }
 
-// Stack layout post-execution:
-// ┌──────────────────────────────┐
-// │ point_n                      │
-// │ point_n-1                    │
-// │   ...                        │
-// │ point_1                      │
-// │ point_0                      │
-// │ point_len                    │
-// └──────────────────────────────┘  <- front (stack front)
-
 // Stack layout pre-execution:
-// ┌──────────────────────────────┐
-// │ query_n                      │
-// │ query_n-1                    │
-// │   ...                        │
-// │ query_1                      │
-// │ query_0                      │
-// │ queries_len                  │
-// │ eval_generator               │
-// │ log_eval_domain_size         │
-// └──────────────────────────────┘  <- front (stack front)
-
+// ┌────────────────────────────────────────────────────────────┐
+// │ Witness        (stark::swiftness::stark::types::Witness)   │  <- back (stack back)
+// │ FRI Decommitment (stark::swiftness::fri::types::Decommitment)
+// │ FRI Commitment   (stark::swiftness::fri::types::Commitment)|
+// │ Queries         (stark::swiftness::fri::types::Queries)    │
+// └────────────────────────────────────────────────────────────┘  <- front (stack front)
 fn push_data(stack: &mut BidirectionalStackAccount) {
     let queries = fixtures::queries::get();
-    let queries_len = Felt::from(queries.len());
-    let fri_commitment = fixtures::fri_commitment::get();
-    let fri_decommitment = fixtures::fri_decommitment::get();
-    let witness = fixtures::witness::get();
+    let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
+    let fri_decommitment: commitment::types::Decommitment = fixtures::fri_decommitment::get();
+    let witness: commitment::types::Witness = fixtures::witness::get();
+    let mut fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
+        queries: queries.clone(),
+        fri_commitment: fri_commitment,
+        fri_decommitment: fri_decommitment,
+        witness: witness.clone(),
+    };
+    let fri_verify_data_bytes = cast_struct_to_slice(&mut fri_verify_data);
+    stack.push_front(fri_verify_data_bytes).unwrap();
 }
