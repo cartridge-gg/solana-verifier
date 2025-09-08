@@ -65,21 +65,26 @@ impl Executable for FriVerify {
         match self.stage {
             FriVerifyStep::Init => {
                 self.stage = FriVerifyStep::ComputeFirstLayer;
+                println!("Transitioning to ComputeFirstLayer");
                 vec![]
             }
             FriVerifyStep::ComputeFirstLayer => {
                 self.stage = FriVerifyStep::ComputeFriGroup;
+                println!("Transitioning to ComputeFriGroup");
                 vec![]
             }
             FriVerifyStep::ComputeFriGroup => {
                 self.stage = FriVerifyStep::VerifyInnerLayers;
+                println!("Transitioning to VerifyInnerLayers");
                 vec![]
             }
             FriVerifyStep::VerifyInnerLayers => {
                 self.stage = FriVerifyStep::VerifyLastLayer;
+                println!("Transitioning to VerifyLastLayer");
                 vec![]
             }
             FriVerifyStep::VerifyLastLayer => {
+                println!("FRI Verification completed");
                 vec![]
             }
         }
