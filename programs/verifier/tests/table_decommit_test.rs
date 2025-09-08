@@ -8,11 +8,20 @@ use stark::{
     stark_proof::stark_verify::table_decommit::TableDecommit,
     swiftness::commitment::vector::types::CommitmentTrait,
 };
+use swiftness_proof_parser::transform::MONTGOMERY_R;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
+mod fixtures;
+use fixtures::{fri_config, fri_unsent_commitment, oods_values, public_input, stark_config, stark_domains, witness, commitment, queries};
 
 #[test]
 fn test_table_decommit() {
+    // let public_input = public_input::get();
+    // let queries = queries::get();
+    // let commitment = commitment::get();
+    // let witness = witness::get();
+    // let stark_domains = stark_domains::get();
+
     let mut stack = BidirectionalStackAccount::default();
 
     // Original test data from the working implementation
@@ -272,6 +281,7 @@ fn test_table_decommit() {
             .unwrap(),
     ];
 
+
     println!("Test setup:");
     println!("  Commitment hash: {:?}", commitment_hash);
     println!("  Height: {:?}", height);
@@ -298,10 +308,9 @@ fn test_table_decommit() {
     for value in decommitment_values {
         decommitment_values_funvec.push(value);
     }
-    let decommitment = Decommitment {
-        values: decommitment_values_funvec,
-        montgomery_values: FunVec::default(), // Will be computed in the task
-    };
+
+    let decommitment_len = Felt::from(authentications.len() as u64);
+    stack.push_front(&decommitment_len.to_bytes_be()).unwrap();
     decommitment.push_to_stack(&mut stack);
 
     // Create Query objects and push using trait

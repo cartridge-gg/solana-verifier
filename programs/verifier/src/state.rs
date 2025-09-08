@@ -1,12 +1,17 @@
 use crate::error::VerifierError;
 use felt::Felt;
+use stark::funvec::FUNVEC_AUTHENTICATIONS;
+use stark::funvec::FUNVEC_QUERIES;
+use stark::swiftness::commitment::vector::types::Query;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use stark::swiftness::stark::types::cast_struct_to_slice_mut;
 use stark::swiftness::stark::types::StarkCommitment;
 use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::global_values::InteractionElements;
 use utils::ProofData;
+use stark::swiftness::stark::types::VerifyVariables;
 use utils::StarkCommitmentTrait;
+use utils::StarkVerifyTrait;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE, POWS_SIZE};
 
@@ -25,6 +30,7 @@ pub struct BidirectionalStackAccount {
     pub constraint_coefficients: [Felt; N_CONSTRAINTS],
     pub column_values: [Felt; COLUMN_VALUES_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
+    pub verify_variables: VerifyVariables,
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -40,6 +46,7 @@ impl Default for BidirectionalStackAccount {
             constraint_coefficients: [Felt::ZERO; N_CONSTRAINTS],
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
             stark_commitment: StarkCommitment::default(),
+            verify_variables: VerifyVariables::default(),
         }
     }
 }
@@ -194,6 +201,37 @@ impl StarkCommitmentTrait for BidirectionalStackAccount {
         };
     }
 }
+
+impl StarkVerifyTrait for BidirectionalStackAccount {
+    fn get_verify_variables<T: Sized>(&self) -> &T {
+        let bytes = cast_struct_to_slice(&self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &*(bytes.as_ptr() as *const T) }
+    }
+
+    fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T {
+        let bytes = cast_struct_to_slice_mut(&mut self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
+    }
+
+    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T) {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                (verify_variables as *const T) as *const u8,
+                std::mem::size_of::<T>(),
+            )
+        };
+        assert_eq!(
+            bytes.len(),
+            std::mem::size_of::<VerifyVariables>()
+        );
+        self.verify_variables = unsafe {
+            std::ptr::read(bytes.as_ptr() as *const VerifyVariables)
+        };
+    }
+}
+
 
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {

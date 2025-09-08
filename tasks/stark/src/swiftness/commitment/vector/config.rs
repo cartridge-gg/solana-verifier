@@ -20,7 +20,7 @@ pub struct VectorConfigBytes {
 }
 
 impl Config {
-    fn new(height: Felt, n_verifier_friendly_commitment_layers: Felt) -> Self {
+    pub fn new(height: Felt, n_verifier_friendly_commitment_layers: Felt) -> Self {
         Self {
             height,
             n_verifier_friendly_commitment_layers,
@@ -36,14 +36,12 @@ impl ConfigTrait<VectorConfigBytes> for Config {
         stack.pop_front();
         Self::new(height, n_verifier_friendly_commitment_layers)
     }
-
     fn push_to_stack<T: BidirectionalStack>(&self, stack: &mut T) {
         stack
             .push_front(&self.n_verifier_friendly_commitment_layers.to_bytes_be())
             .unwrap();
         stack.push_front(&self.height.to_bytes_be()).unwrap();
     }
-
     fn to_bytes_be(&self) -> VectorConfigBytes {
         VectorConfigBytes {
             height: self.height.to_bytes_be(),

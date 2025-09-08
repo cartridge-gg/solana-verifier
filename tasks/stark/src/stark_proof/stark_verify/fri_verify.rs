@@ -1,5 +1,5 @@
-use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+// use felt::Felt;
+// use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 // FriVerify task
 #[derive(Debug, Clone)]
@@ -30,11 +30,11 @@ impl FriVerify {
     }
 }
 
-impl Default for FriVerify {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl Default for FriVerify {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
 impl Executable for FriVerify {
     /// data we need atp: queries: &[Felt], commitment: FriCommitment,    decommitment: FriDecommitment, witness: Witness.
@@ -47,16 +47,16 @@ impl Executable for FriVerify {
         //     witness.fri_witness.to_owned()
         // )?
 
-        // TODO: Implement actual FRI verification logic:
-        // 1. Read queries from stack
-        // 2. Get FRI commitment from StarkCommitment
-        // 3. Get FRI decommitment data (values, points)
-        // 4. Get FRI witness from witness
-        // 5. Perform FRI verification protocol
-        // 6. This will likely involve multiple sub-tasks for:
-        //    - Inner layer verification
-        //    - Last layer verification
-        //    - Vector commitment decommitments
+//         // TODO: Implement actual FRI verification logic:
+//         // 1. Read queries from stack
+//         // 2. Get FRI commitment from StarkCommitment
+//         // 3. Get FRI decommitment data (values, points)
+//         // 4. Get FRI witness from witness
+//         // 5. Perform FRI verification protocol
+//         // 6. This will likely involve multiple sub-tasks for:
+//         //    - Inner layer verification
+//         //    - Last layer verification
+//         //    - Vector commitment decommitments
 
         // For now, just return success
 

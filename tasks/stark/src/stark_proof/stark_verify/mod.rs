@@ -1,5 +1,7 @@
+use std::vec;
+
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable};
 
 pub mod compute_root_recursive;
 pub mod eval_oods_boundary_poly_at_points;
@@ -11,11 +13,11 @@ pub mod traces_decommit;
 pub mod vector_decommit;
 
 // Re-export the new task types
-pub use eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
-pub use eval_oods_polynomial::EvalOodsPolynomial;
-pub use fri_verify::FriVerify;
-pub use table_decommit::TableDecommit;
-pub use traces_decommit::TracesDecommit;
+// pub use eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
+// pub use eval_oods_polynomial::EvalOodsPolynomial;
+// pub use fri_verify::FriVerify;
+// pub use table_decommit::TableDecommit;
+// pub use traces_decommit::TracesDecommit;
 pub use vector_decommit::VectorDecommit;
 
 use crate::swiftness::commitment::vector::types::Query;
@@ -60,7 +62,7 @@ impl Default for StarkVerify {
 }
 
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::Init => {
                 // Read queries from stack (should be pushed by caller)
@@ -92,7 +94,8 @@ impl Executable for StarkVerify {
                 Query::push_queries_to_stack(&queries, stack);
 
                 self.step = StarkVerifyStep::TracesDecommit;
-                vec![TracesDecommit::new().to_vec_with_type_tag()]
+                // vec![TracesDecommit::new().to_vec_with_type_tag()]
+                vec![]
             }
             StarkVerifyStep::TracesDecommit => {
                 // TracesDecommit finished, continue with table decommit
@@ -100,29 +103,33 @@ impl Executable for StarkVerify {
                 // Queries should already be on stack in correct format from previous task
 
                 self.step = StarkVerifyStep::TableDecommit;
-                vec![TableDecommit::new().to_vec_with_type_tag()]
+                // vec![TableDecommit::new().to_vec_with_type_tag()]
+                vec![]
             }
             //
             StarkVerifyStep::TableDecommit => {
                 // TableDecommit finished, compute query points
                 self.step = StarkVerifyStep::ComputeQueryPoints;
-                vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
+                // vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
+                vec![]
             }
 
             StarkVerifyStep::ComputeQueryPoints => {
                 // Query points computed, evaluate OODS boundary poly
                 self.step = StarkVerifyStep::EvalOodsBoundaryPoly;
-                vec![EvalOodsBoundaryPolyAtPoints::new(
-                    self.n_original_columns,
-                    self.n_interaction_columns,
-                )
-                .to_vec_with_type_tag()]
+                // vec![EvalOodsBoundaryPolyAtPoints::new(
+                //     self.n_original_columns,
+                //     self.n_interaction_columns,
+                // )
+                // .to_vec_with_type_tag()]
+                vec![]
             }
 
             StarkVerifyStep::EvalOodsBoundaryPoly => {
                 // OODS evaluation finished, start FRI verification
                 self.step = StarkVerifyStep::FriVerify;
-                vec![FriVerify::new().to_vec_with_type_tag()]
+                // vec![FriVerify::new().to_vec_with_type_tag()]
+                vec![]
             }
 
             StarkVerifyStep::FriVerify => {

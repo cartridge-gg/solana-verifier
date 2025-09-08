@@ -1,5 +1,5 @@
 use super::config::StarkConfig;
-use crate::funvec::{FunVec, FUNVEC_OODS};
+use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES};
 use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
@@ -9,6 +9,11 @@ use felt::Felt;
 use swiftness::air::trace::Commitment as TracesCommitment;
 use swiftness::commitment::table::types::Commitment as TableCommitment;
 use swiftness::fri::types::Commitment as FriCommitment;
+use trace::Decommitment as TracesDecommitment;
+use trace::Witness as TracesWitness;
+use table::types::Witness as TableWitness;
+use table::types::Decommitment as TableDecommitment;
+use fri::types::Witness as FriWitness;
 
 pub fn cast_slice_to_struct<T>(slice: &[u8]) -> &T
 where
@@ -57,11 +62,11 @@ pub struct StarkUnsentCommitment {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct StarkWitness {
-    pub traces_decommitment: trace::Decommitment,
-    pub traces_witness: trace::Witness,
-    pub composition_decommitment: table::types::Decommitment,
-    pub composition_witness: table::types::Witness,
-    pub fri_witness: fri::types::Witness,
+    pub traces_decommitment: TracesDecommitment,
+    pub traces_witness: TracesWitness,
+    pub composition_decommitment: TableDecommitment,
+    pub composition_witness: TableWitness,
+    pub fri_witness: FriWitness,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -72,6 +77,28 @@ pub struct StarkCommitment<InteractionElements> {
     pub oods_values: FunVec<Felt, FUNVEC_OODS>,
     pub interaction_after_oods: FunVec<Felt, FUNVEC_OODS>,
     pub fri: FriCommitment,
+}
+#[repr(C)]
+#[derive(Debug)]
+pub struct VerifyVariables {
+    // Store queries as pairs of (index, value, depth) - each query takes 3 Felts
+    pub queries: [Felt; FUNVEC_QUERIES],
+    pub authentications: [Felt; FUNVEC_AUTHENTICATIONS],
+    pub decommitment_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
+    pub montgomery_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
+    pub temp_queries: [Felt; FUNVEC_QUERIES],
+}
+
+impl Default for VerifyVariables {
+    fn default() -> Self {
+        Self {
+            queries: [Felt::ZERO; FUNVEC_QUERIES],
+            authentications: [Felt::ZERO; FUNVEC_AUTHENTICATIONS],
+            decommitment_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
+            montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
+            temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
+        }
+    }
 }
 #[cfg(test)]
 mod test {
