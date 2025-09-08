@@ -4,7 +4,7 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::funvec::{FunVec, FUNVEC_QUERIES};
+use crate::funvec::FUNVEC_QUERIES;
 use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
 use crate::swiftness::commitment::vector::config::ConfigTrait;
 use crate::swiftness::commitment::vector::types::{
@@ -104,6 +104,7 @@ impl Executable for VectorDecommit {
                     let authentications_slice = &verify_variables.authentications;
                     // Znajdź rzeczywistą liczbę authentications (nie-zero elementów)
                     let mut real_count = 0;
+                    #[allow(clippy::needless_range_loop)]
                     for i in 0..authentications_slice.len() {
                         if authentications_slice[i] != Felt::ZERO {
                             real_count = i + 1;

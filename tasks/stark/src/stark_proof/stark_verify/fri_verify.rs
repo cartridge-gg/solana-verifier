@@ -8,6 +8,7 @@ pub struct FriVerify {
     stage: FriVerifyStep,
 }
 
+#[allow(dead_code)]
 const FIELD_GENERATOR_INVERSE: Felt =
     Felt::from_hex_unchecked("0x2AAAAAAAAAAAAB0555555555555555555555555555555555555555555555556");
 
@@ -38,7 +39,7 @@ impl Default for FriVerify {
 
 impl Executable for FriVerify {
     /// data we need atp: queries: &[Felt], commitment: FriCommitment,    decommitment: FriDecommitment, witness: Witness.
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         // FRI verify logic based on original:
         // fri_verify(
         //     queries,

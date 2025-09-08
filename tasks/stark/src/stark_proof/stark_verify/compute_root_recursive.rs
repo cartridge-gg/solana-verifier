@@ -142,7 +142,7 @@ impl Executable for ComputeRootRecursive {
 
                     if bit == Felt::ZERO {
                         if start + 1 < n_queries_usize {
-                            let (next_index, next_value, next_depth) = {
+                            let (next_index, next_value, _next_depth) = {
                                 let verify_variables: &mut VerifyVariables =
                                     stack.get_verify_variables_mut();
                                 let queries_slice = &mut verify_variables.queries;

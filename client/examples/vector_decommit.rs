@@ -597,52 +597,6 @@ async fn main() -> client::Result<()> {
     let height = Felt::from_hex("0x9").unwrap(); // 9
     let n_verifier_friendly_layers = Felt::from_hex("0x64").unwrap(); // 100
 
-    // // Push vector commitment data
-    // let push_commitment_hash_ix = Instruction::new_with_borsh(
-    //     program_id,
-    //     &VerifierInstruction::PushData(commitment_hash.to_bytes_be().to_vec()),
-    //     vec![AccountMeta::new(stack_account.pubkey(), false)],
-    // );
-
-    // let _signature = interact_with_program_instructions(
-    //     &client,
-    //     &payer,
-    //     &program_id,
-    //     &stack_account,
-    //     &[push_commitment_hash_ix],
-    // )
-    // .await?;
-
-    // let push_layers_ix = Instruction::new_with_borsh(
-    //     program_id,
-    //     &VerifierInstruction::PushData(n_verifier_friendly_layers.to_bytes_be().to_vec()),
-    //     vec![AccountMeta::new(stack_account.pubkey(), false)],
-    // );
-
-    // let _signature = interact_with_program_instructions(
-    //     &client,
-    //     &payer,
-    //     &program_id,
-    //     &stack_account,
-    //     &[push_layers_ix],
-    // )
-    // .await?;
-
-    // let push_height_ix = Instruction::new_with_borsh(
-    //     program_id,
-    //     &VerifierInstruction::PushData(height.to_bytes_be().to_vec()),
-    //     vec![AccountMeta::new(stack_account.pubkey(), false)],
-    // );
-
-    // let _signature = interact_with_program_instructions(
-    //     &client,
-    //     &payer,
-    //     &program_id,
-    //     &stack_account,
-    //     &[push_height_ix],
-    // )
-    // .await?;
-
     // Create VectorCommitment and use push_to_stack method
     let vector_config = VectorConfig {
         height,

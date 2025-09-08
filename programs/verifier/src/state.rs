@@ -1,9 +1,6 @@
 use crate::error::VerifierError;
 use felt::Felt;
-use stark::funvec::FUNVEC_AUTHENTICATIONS;
-use stark::funvec::FUNVEC_QUERIES;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::commitment::vector::types::Query;
 use stark::swiftness::stark::types::cast_struct_to_slice_mut;
 use stark::swiftness::stark::types::StarkCommitment;
 use stark::swiftness::stark::types::VerifyVariables;

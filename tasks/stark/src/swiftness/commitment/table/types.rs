@@ -2,7 +2,7 @@ use crate::funvec::{FunVec, FUNVEC_DECOMMITMENT_VALUES};
 use crate::swiftness::commitment::table::config::{Config, TableConfigBytes};
 use crate::swiftness::commitment::vector::config::ConfigTrait;
 use crate::swiftness::commitment::vector::types::{CommitmentTrait, VectorCommitmentBytes};
-use crate::swiftness::commitment::vector::{self, types::Commitment as VectorCommitment};
+use crate::swiftness::commitment::vector::{self};
 use crate::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice, VerifyVariables};
 use felt::Felt;
 use utils::{BidirectionalStack, StarkVerifyTrait};
@@ -30,8 +30,8 @@ pub struct TableCommitmentBytes {
 
 impl CommitmentTrait<TableCommitmentBytes> for Commitment {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Self {
-        let mut data = stack.borrow_front();
-        let commitment_ref = cast_slice_to_struct::<Self>(&mut data);
+        let data = stack.borrow_front();
+        let commitment_ref = cast_slice_to_struct::<Self>(data);
         let commitment = *commitment_ref; // Copy only when needed
         stack.pop_front();
         commitment
@@ -39,7 +39,7 @@ impl CommitmentTrait<TableCommitmentBytes> for Commitment {
 
     fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self {
         let data = stack.borrow_front();
-        cast_slice_to_struct::<Self>(&data)
+        cast_slice_to_struct::<Self>(data)
     }
 
     fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
@@ -62,7 +62,7 @@ pub struct Decommitment {
 }
 
 impl CommitmentTrait<Decommitment, ()> for Decommitment {
-    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> () {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
         // Read values length
         let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
@@ -133,7 +133,7 @@ pub struct Witness {
 }
 
 impl CommitmentTrait<Witness, ()> for Witness {
-    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> () {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
         vector::types::Witness::from_stack(stack);
     }
 

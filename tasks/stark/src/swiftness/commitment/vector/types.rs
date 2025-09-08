@@ -37,8 +37,8 @@ impl Commitment {
 impl CommitmentTrait<VectorCommitmentBytes> for Commitment {
     // #[inline(always)]
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Self {
-        let mut data = stack.borrow_front();
-        let commitment_ref = cast_slice_to_struct::<Self>(&mut data);
+        let data = stack.borrow_front();
+        let commitment_ref = cast_slice_to_struct::<Self>(data);
         let commitment = *commitment_ref; // Copy only when needed
         stack.pop_front();
         commitment
@@ -47,7 +47,7 @@ impl CommitmentTrait<VectorCommitmentBytes> for Commitment {
     // #[inline(always)]
     fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self {
         let data = stack.borrow_front();
-        cast_slice_to_struct::<Self>(&data)
+        cast_slice_to_struct::<Self>(data)
     }
 
     #[inline(always)]
@@ -72,7 +72,7 @@ pub struct Witness {
 }
 
 impl CommitmentTrait<Witness, ()> for Witness {
-    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> () {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
         let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
 
@@ -298,9 +298,7 @@ impl QueryWithDepth {
         {
             let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
             let queries_slice = &mut verify_variables.queries;
-            for i in 0..queries_slice.len() {
-                queries_slice[i] = Felt::ZERO;
-            }
+            queries_slice.fill(Felt::ZERO);
         }
 
         for i in 0..n_queries_usize {
