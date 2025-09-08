@@ -52,6 +52,7 @@ impl Executable for ComputeRootRecursive {
                 let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let n_queries_usize: usize = n_queries.try_into().unwrap();
+                println!("DEBUG: n_queries_usize = {}", n_queries_usize);
                 assert!(n_queries_usize <= FUNVEC_QUERIES, "Too many queries: {} > {}", n_queries_usize, FUNVEC_QUERIES);
                 // Read queries into pre-allocated array
                 for i in 0..n_queries_usize {
@@ -82,7 +83,6 @@ impl Executable for ComputeRootRecursive {
 
                 let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                // let mut authentications = FunVec::<Felt, FUNVEC_AUTHENTICATIONS>::default();
 
                 let n_auth_usize: usize = n_authentications.try_into().unwrap();
                 assert!(n_auth_usize <= FUNVEC_AUTHENTICATIONS, "Too many authentications: {} > {}", n_auth_usize, FUNVEC_AUTHENTICATIONS);
@@ -258,11 +258,13 @@ impl Executable for ComputeRootRecursive {
                 
                 // Find next available slot
                 let mut next_slot = 0;
-                while next_slot < queries_slice.len() / 3 && queries_slice[next_slot * 3] != Felt::ZERO {
+                let max_slots = queries_slice.len() / 3;
+                while next_slot < max_slots && queries_slice[next_slot * 3] != Felt::ZERO {
                     next_slot += 1;
                 }
                 
-                // Add new query
+                // Add new query with bounds checking
+                assert!(next_slot < max_slots, "Queries array full: next_slot={}, max_slots={}", next_slot, max_slots);
                 queries_slice[next_slot * 3] = self.parent;
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.current.depth - Felt::ONE;

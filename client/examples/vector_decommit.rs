@@ -10,7 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::{stark_proof::stark_verify::VectorDecommit, swiftness::stark::types::cast_struct_to_slice};
+use stark::{stark_proof::stark_verify::VectorDecommit, swiftness::stark::types::{cast_struct_to_slice, VerifyVariables}};
 use stark::swiftness::stark::types::StarkCommitment;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
@@ -93,6 +93,7 @@ async fn main() -> client::Result<()> {
     let constraint_coefficients_offset = global_values_offset + global_values_size; // After global_values
     let column_values_offset = constraint_coefficients_offset + 6208; // After constraint_coefficients (N_CONSTRAINTS * 32 = 194 * 32)
     let stark_commitment_offset = column_values_offset + 320; // After column_values (COLUMN_VALUES_SIZE * 32 = 10 * 32)
+    let verify_variables_offset = stark_commitment_offset + stark_commitment_size; // After stark_commitment
 
     println!(
         "  Total account size: {} bytes",
@@ -220,6 +221,24 @@ async fn main() -> client::Result<()> {
         .collect();
     instructions.extend(stark_commitment_chunks);
 
+    let verify_variables_size = std::mem::size_of::<VerifyVariables>();
+    let empty_verify_variables = vec![0u8; verify_variables_size];
+    let verify_variables_chunks: Vec<_> = empty_verify_variables
+        .chunks(CHUNK_SIZE)
+        .enumerate()
+        .map(|(i, chunk)| {
+            Instruction::new_with_borsh(
+                program_id,
+                &VerifierInstruction::SetAccountData(
+                    verify_variables_offset + (i * CHUNK_SIZE),
+                    chunk.to_vec(),
+                ),
+                vec![AccountMeta::new(stack_account.pubkey(), false)],
+            )
+        })
+        .collect();
+    instructions.extend(verify_variables_chunks);
+
     // 8. Set OODS values from proof data (194 * 32 = 6208 bytes) - these are precomputed values needed for verification
     let oods_values = proof_verifier.unsent_commitment.oods_values.clone();
     let oods_values_bytes = cast_struct_to_slice(&mut oods_values.clone()).to_vec();
@@ -312,6 +331,7 @@ async fn main() -> client::Result<()> {
         "    - stark_commitment ({} bytes) - will be computed during execution",
         stark_commitment_size
     );
+    println!("    - verify_variables ({} bytes) - will be computed during execution", verify_variables_size);
     println!("  ✓ Proof data set from JSON file");
     println!("  ✓ OODS values set from proof data");
     println!("  ✓ Account ready for VectorDecommit task execution");
@@ -329,77 +349,6 @@ async fn main() -> client::Result<()> {
     }
     send_and_confirm_transactions(&client, &transactions).await?;
     println!("All data set successfully");
-
-    // Create and push vector commitment first
-    let commitment_hash = Felt::from_hex("0x1e9b0fa29ebe52b9c9a43a1d44e555ce42da3199370134d758735bfe9f40269").unwrap();
-    let height = Felt::from_hex("0x9").unwrap(); // 9
-    let n_verifier_friendly_layers = Felt::from_hex("0x64").unwrap(); // 100
-
-    // Push vector commitment data
-    let push_commitment_hash_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushData(commitment_hash.to_bytes_be().to_vec()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let _signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[push_commitment_hash_ix],
-    )
-    .await?;
-
-    let push_layers_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushData(n_verifier_friendly_layers.to_bytes_be().to_vec()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let _signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[push_layers_ix],
-    )
-    .await?;
-
-    let push_height_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushData(height.to_bytes_be().to_vec()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let _signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[push_height_ix],
-    )
-    .await?;
-
-    // Push the VectorDecommit task to the stack
-    let stark_commit_task = VectorDecommit::new();
-
-    println!("Using VectorDecommit with TYPE_TAG: {}", VectorDecommit::TYPE_TAG);
-
-    let push_task_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushTask(stark_commit_task.to_vec_with_type_tag()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let _signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[push_task_ix],
-    )
-    .await?;
 
     // Push authentications data
     let authentications = vec![
@@ -495,7 +444,7 @@ async fn main() -> client::Result<()> {
     ];
 
     // Push authentications data
-    for auth in &authentications {
+    for auth in authentications.iter().rev() {
         let push_auth_ix = Instruction::new_with_borsh(
             program_id,
             &VerifierInstruction::PushData(auth.to_bytes_be().to_vec()),
@@ -584,22 +533,7 @@ async fn main() -> client::Result<()> {
     ];
 
     // Push queries data
-    for (query_index, query_value) in &queries {
-        let push_query_index_ix = Instruction::new_with_borsh(
-            program_id,
-            &VerifierInstruction::PushData(query_index.to_bytes_be().to_vec()),
-            vec![AccountMeta::new(stack_account.pubkey(), false)],
-        );
-
-        let _signature = interact_with_program_instructions(
-            &client,
-            &payer,
-            &program_id,
-            &stack_account,
-            &[push_query_index_ix],
-        )
-        .await?;
-
+    for (query_index, query_value) in queries.iter().rev() {
         let push_query_value_ix = Instruction::new_with_borsh(
             program_id,
             &VerifierInstruction::PushData(query_value.to_bytes_be().to_vec()),
@@ -612,6 +546,21 @@ async fn main() -> client::Result<()> {
             &program_id,
             &stack_account,
             &[push_query_value_ix],
+        )
+        .await?;
+    
+        let push_query_index_ix = Instruction::new_with_borsh(
+            program_id,
+            &VerifierInstruction::PushData(query_index.to_bytes_be().to_vec()),
+            vec![AccountMeta::new(stack_account.pubkey(), false)],
+        );
+
+        let _signature = interact_with_program_instructions(
+            &client,
+            &payer,
+            &program_id,
+            &stack_account,
+            &[push_query_index_ix],
         )
         .await?;
     }
@@ -630,6 +579,77 @@ async fn main() -> client::Result<()> {
         &program_id,
         &stack_account,
         &[push_queries_len_ix],
+    )
+    .await?;
+
+    // Create and push vector commitment first
+    let commitment_hash = Felt::from_hex("0x1e9b0fa29ebe52b9c9a43a1d44e555ce42da3199370134d758735bfe9f40269").unwrap();
+    let height = Felt::from_hex("0x9").unwrap(); // 9
+    let n_verifier_friendly_layers = Felt::from_hex("0x64").unwrap(); // 100
+
+    // Push vector commitment data
+    let push_commitment_hash_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(commitment_hash.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_commitment_hash_ix],
+    )
+    .await?;
+
+    let push_layers_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(n_verifier_friendly_layers.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_layers_ix],
+    )
+    .await?;
+
+    let push_height_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(height.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_height_ix],
+    )
+    .await?;
+
+    // Push the VectorDecommit task to the stack
+    let stark_commit_task = VectorDecommit::new();
+
+    println!("Using VectorDecommit with TYPE_TAG: {}", VectorDecommit::TYPE_TAG);
+
+    let push_task_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushTask(stark_commit_task.to_vec_with_type_tag()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _signature = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_task_ix],
     )
     .await?;
 
