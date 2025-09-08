@@ -79,6 +79,52 @@ impl Processor {
         Ok(())
     }
 
+    pub fn process_push_data_chunk(accounts: &[AccountInfo], data_chunk: Vec<u8>) -> ProgramResult {
+        msg!("Processing PushDataChunk instruction");
+
+        // Get the account to push data to
+        let accounts_iter = &mut accounts.iter();
+        let account = next_account_info(accounts_iter)?;
+
+        // Push the data to the bidirectional stack
+        let mut data = account.try_borrow_mut_data()?;
+        let stack_account = BidirectionalStackAccount::cast_mut(*data);
+
+        // Push the data to the front of the stack
+        stack_account
+            .push_front_without_length(&data_chunk)
+            .map_err(|e| {
+                msg!("Error pushing data chunk: {:?}", e);
+                ProgramError::InvalidInstructionData
+            })?;
+        msg!("Data chunk pushed successfully");
+        Ok(())
+    }
+
+    pub fn process_push_data_chunk_complete(
+        accounts: &[AccountInfo],
+        total_data_size: u32,
+    ) -> ProgramResult {
+        msg!("Processing PushDataChunkComplete instruction");
+        // Get the account to push data to
+        let accounts_iter = &mut accounts.iter();
+        let account = next_account_info(accounts_iter)?;
+
+        // Push the data to the bidirectional stack
+        let mut data = account.try_borrow_mut_data()?;
+        let stack_account = BidirectionalStackAccount::cast_mut(*data);
+
+        // Finalize the push by updating the front index to account for the length field
+        stack_account
+            .append_front_length(total_data_size as usize)
+            .map_err(|e| {
+                msg!("Error finalizing push data chunk: {:?}", e);
+                ProgramError::InvalidInstructionData
+            })?;
+        msg!("Push data chunk complete");
+        Ok(())
+    }
+
     /// Process the execute instruction
     pub fn process_execute(accounts: &[AccountInfo], nonce: u32) -> ProgramResult {
         msg!("Processing Execute instruction, nonce: {}", nonce);
@@ -163,7 +209,12 @@ pub fn process_instruction(
             Processor::process_push_data(accounts, data_payload)
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
-
+        VerifierInstruction::PushDataChunk(data_chunk) => {
+            Processor::process_push_data_chunk(accounts, data_chunk)
+        }
+        VerifierInstruction::PushDataChunkComplete(total_data_size) => {
+            Processor::process_push_data_chunk_complete(accounts, total_data_size)
+        }
         VerifierInstruction::Close => Processor::close(accounts),
     }
 }

@@ -45,6 +45,24 @@ impl Default for BidirectionalStackAccount {
 }
 
 impl BidirectionalStackAccount {
+    /// Push data to the front without appending the length.
+    pub fn push_front_without_length(&mut self, data: &[u8]) -> Result<(), VerifierError> {
+        for byte in data {
+            self.buffer[self.front_index] = *byte;
+            self.front_index = self.front_index.saturating_add(1);
+        }
+        Ok(())
+    }
+
+    /// Append the length for the previously pushed front data.
+    pub fn append_front_length(&mut self, data_length: usize) -> Result<(), VerifierError> {
+        for i in 0..LENGTH_SIZE {
+            self.buffer[self.front_index] = ((data_length >> (i * 8)) & 0xFF).try_into()?;
+            self.front_index = self.front_index.saturating_add(1);
+        }
+        Ok(())
+    }
+
     pub fn simulate(&mut self) -> u128 {
         let mut simulation_steps = 0;
         while !self.is_empty_back() {
@@ -290,6 +308,29 @@ impl ProofData for BidirectionalStackAccount {
 mod tests {
     use crate::state::{BidirectionalStackAccount, CAPACITY};
     use utils::BidirectionalStack;
+
+    #[test]
+    fn test_push_front_without_length_and_append_front_length() {
+        let mut stack = BidirectionalStackAccount::default();
+
+        // Simulate pushing large data in chunks
+        let chunk1 = [10, 20, 30];
+        let chunk2 = [40, 50];
+        stack.push_front_without_length(&chunk1).unwrap();
+        stack.push_front_without_length(&chunk2).unwrap();
+
+        // Now append the length for the whole data
+        let total_length = chunk1.len() + chunk2.len();
+        stack.append_front_length(total_length).unwrap();
+
+        // The borrow_front should return the concatenated data
+        let borrowed = stack.borrow_front();
+        assert_eq!(borrowed, &[10, 20, 30, 40, 50]);
+
+        // Pop and check front_index returns to initial state
+        stack.pop_front();
+        assert_eq!(stack.front_index, 0);
+    }
 
     #[test]
     fn test_default() {

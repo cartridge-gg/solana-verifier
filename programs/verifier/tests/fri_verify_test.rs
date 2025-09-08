@@ -1,6 +1,8 @@
 mod fixtures;
 
-use felt::Felt;
+use std::fs;
+
+use stark::swiftness::stark::types::cast_struct_to_slice;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
@@ -10,38 +12,26 @@ fn test_fri_verify() {
     let task = stark::stark_proof::stark_verify::FriVerify::new();
 
     stack.push_task(task);
-
+    push_data(&mut stack);
     while !stack.is_empty_back() {
         stack.execute();
     }
 }
 
-// Stack layout post-execution:
-// ┌──────────────────────────────┐
-// │ point_n                      │
-// │ point_n-1                    │
-// │   ...                        │
-// │ point_1                      │
-// │ point_0                      │
-// │ point_len                    │
-// └──────────────────────────────┘  <- front (stack front)
-
-// Stack layout pre-execution:
-// ┌──────────────────────────────┐
-// │ query_n                      │
-// │ query_n-1                    │
-// │   ...                        │
-// │ query_1                      │
-// │ query_0                      │
-// │ queries_len                  │
-// │ eval_generator               │
-// │ log_eval_domain_size         │
-// └──────────────────────────────┘  <- front (stack front)
-
 fn push_data(stack: &mut BidirectionalStackAccount) {
     let queries = fixtures::queries::get();
-    let queries_len = Felt::from(queries.len());
-    let fri_commitment = fixtures::fri_commitment::get();
-    let fri_decommitment = fixtures::fri_decommitment::get();
-    let witness = fixtures::witness::get();
+    let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
+    let fri_decommitment: stark::swiftness::commitment::types::Decommitment =
+        fixtures::fri_decommitment::get();
+    let witness: stark::swiftness::commitment::types::Witness = fixtures::witness::get();
+    let mut input = stark::swiftness::fri::types::FriVerifyInput {
+        queries,
+        fri_commitment,
+        fri_decommitment,
+        witness,
+    };
+    let bytes = cast_struct_to_slice(&mut input);
+    stack
+        .push_front(bytes)
+        .expect("Failed to push data onto the stack")
 }

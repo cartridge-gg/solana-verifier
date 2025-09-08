@@ -62,10 +62,20 @@ impl Default for StarkVerify {
 impl Executable for StarkVerify {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
+            // If i understand correctly this step is just taking queries from stack and pushing them back?
             StarkVerifyStep::Init => {
                 // Read queries from stack (should be pushed by caller)
-                // Expected stack format: [query_n, query_n-1, ..., query_1, query_0, queries_len]
+                // Stack layout:
+                // ┌───────────────┐  <- front (stack front)
+                // │ queries_len   │
+                // │ query_0       │
+                // │ query_1       │
+                // │   ...         │
+                // │ query_n-1     │
+                // │ query_n       │
+                // └───────────────┘  <- back (stack back)
                 // Each query is a Query struct: [index, value] (64 bytes total)
+
                 let proof: &StarkProof = stack.get_proof_reference();
 
                 self.queries_len = match proof.config.n_queries.to_biguint().try_into() {

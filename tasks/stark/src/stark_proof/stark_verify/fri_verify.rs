@@ -1,6 +1,8 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+use crate::swiftness::{fri::types::FriVerifyInput, stark::types::cast_slice_to_struct};
+
 // FriVerify task
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -8,7 +10,7 @@ pub struct FriVerify {
     stage: FriVerifyStep,
 }
 
-const FIELD_GENERATOR_INVERSE: Felt =
+const _FIELD_GENERATOR_INVERSE: Felt =
     Felt::from_hex_unchecked("0x2AAAAAAAAAAAAB0555555555555555555555555555555555555555555555556");
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,31 +41,17 @@ impl Default for FriVerify {
 impl Executable for FriVerify {
     /// data we need atp: queries: &[Felt], commitment: FriCommitment,    decommitment: FriDecommitment, witness: Witness.
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-        // FRI verify logic based on original:
-        // fri_verify(
-        //     queries,
-        //     commitment.fri,
-        //     fri_decommitment,
-        //     witness.fri_witness.to_owned()
-        // )?
-
-        // TODO: Implement actual FRI verification logic:
-        // 1. Read queries from stack
-        // 2. Get FRI commitment from StarkCommitment
-        // 3. Get FRI decommitment data (values, points)
-        // 4. Get FRI witness from witness
-        // 5. Perform FRI verification protocol
-        // 6. This will likely involve multiple sub-tasks for:
-        //    - Inner layer verification
-        //    - Last layer verification
-        //    - Vector commitment decommitments
-
-        // For now, just return success
-
-        // stack.push_front(&Felt::ONE.to_bytes_be()).unwrap(); // Success indicator
-
         match self.stage {
             FriVerifyStep::Init => {
+                let data = stack.borrow_front();
+                let input = cast_slice_to_struct::<FriVerifyInput>(data);
+                let queries_len = input.queries.len();
+                let decommitment_len = input.fri_decommitment.values.len();
+                assert_eq!(
+                    queries_len, decommitment_len,
+                    "Queries length and decommitment length must be equal"
+                );
+                stack.pop_front();
                 self.stage = FriVerifyStep::ComputeFirstLayer;
                 println!("Transitioning to ComputeFirstLayer");
                 vec![]

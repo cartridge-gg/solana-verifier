@@ -1,6 +1,10 @@
 use crate::{
     funvec::{FunVec, FUNVEC_LAST_LAYER, FUNVEC_LAYERS, FUNVEC_LEAVES},
-    swiftness::{self, commitment::table},
+    swiftness::{
+        self,
+        commitment::{self, table},
+        fri,
+    },
 };
 use felt::Felt;
 
@@ -40,4 +44,11 @@ pub struct Commitment {
     // Array of size 2**log_last_layer_degree_bound containing coefficients for the last layer
     // polynomial.
     pub last_layer_coefficients: Vec<Felt>,
+}
+
+pub struct FriVerifyInput {
+    pub queries: Vec<Felt>,
+    pub fri_commitment: fri::types::Commitment,
+    pub fri_decommitment: commitment::types::Decommitment,
+    pub witness: commitment::types::Witness,
 }
