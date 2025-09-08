@@ -5,14 +5,28 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct FriVerify {
-    processed: bool,
+    stage: FriVerifyStep,
 }
 
+const FIELD_GENERATOR_INVERSE: Felt =
+    Felt::from_hex_unchecked("0x2AAAAAAAAAAAAB0555555555555555555555555555555555555555555555556");
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(C)]
+pub enum FriVerifyStep {
+    Init,
+    ComputeFirstLayer,
+    ComputeFriGroup,
+    VerifyInnerLayers,
+    VerifyLastLayer,
+}
 impl_type_identifiable!(FriVerify);
 
 impl FriVerify {
     pub fn new() -> Self {
-        Self { processed: false }
+        Self {
+            stage: FriVerifyStep::Init,
+        }
     }
 }
 
@@ -23,6 +37,7 @@ impl Default for FriVerify {
 }
 
 impl Executable for FriVerify {
+    /// data we need atp: queries: &[Felt], commitment: FriCommitment,    decommitment: FriDecommitment, witness: Witness.
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         // FRI verify logic based on original:
         // fri_verify(
@@ -44,13 +59,33 @@ impl Executable for FriVerify {
         //    - Vector commitment decommitments
 
         // For now, just return success
-        stack.push_front(&Felt::ONE.to_bytes_be()).unwrap(); // Success indicator
 
-        self.processed = true;
-        vec![]
+        // stack.push_front(&Felt::ONE.to_bytes_be()).unwrap(); // Success indicator
+
+        match self.stage {
+            FriVerifyStep::Init => {
+                self.stage = FriVerifyStep::ComputeFirstLayer;
+                vec![]
+            }
+            FriVerifyStep::ComputeFirstLayer => {
+                self.stage = FriVerifyStep::ComputeFriGroup;
+                vec![]
+            }
+            FriVerifyStep::ComputeFriGroup => {
+                self.stage = FriVerifyStep::VerifyInnerLayers;
+                vec![]
+            }
+            FriVerifyStep::VerifyInnerLayers => {
+                self.stage = FriVerifyStep::VerifyLastLayer;
+                vec![]
+            }
+            FriVerifyStep::VerifyLastLayer => {
+                vec![]
+            }
+        }
     }
 
     fn is_finished(&mut self) -> bool {
-        self.processed
+        self.stage == FriVerifyStep::VerifyLastLayer
     }
 }
