@@ -13,7 +13,7 @@ pub const FUNVEC_LAST_LAYER: usize = 256;
 pub const FUNVEC_DECOMMITMENT_VALUES: usize = 256;
 pub const FUNVEC_PAGES: usize = 1024;
 pub const FUNVEC_SEGMENTS: usize = 12;
-pub const FUNVEC_QUERIES: usize = 256;
+pub const FUNVEC_QUERIES: usize = 600;
 pub const FUNVEC_COLUMN_VALUES: usize = 15;
 pub fn print_address<T>(address: &T, label: u64) {
     sol_log_64(

@@ -1,312 +1,367 @@
-// use felt::Felt;
-// use sha3::{Digest, Keccak256};
-// use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use felt::Felt;
+use sha3::{Digest, Keccak256};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
+    TypeIdentifiable,
+};
 
-// use crate::poseidon::PoseidonHashMany;
-// use crate::stark_proof::stark_verify::vector_decommit::VectorDecommit;
-// use crate::swiftness::commitment::table::types::{Commitment as TableCommitment, Decommitment};
-// use crate::swiftness::commitment::vector::types::{
-//     CommitmentTrait, Query, Witness as VectorWitness,
-// };
+use crate::poseidon::PoseidonHashMany;
+use crate::stark_proof::stark_verify::vector_decommit::VectorDecommit;
+use crate::swiftness::commitment::table::types::{Commitment as TableCommitment, Decommitment};
+use crate::swiftness::commitment::vector::types::{
+    CommitmentTrait, Query, Witness as VectorWitness,
+};
+use crate::swiftness::stark::types::VerifyVariables;
 
-// // TableDecommit task phases
-// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// pub enum TableDecommitStep {
-//     PrepareVectorQueries,
-//     HashQueries,
-//     ProcessHashResult,
-//     ExecuteVectorDecommit,
-//     Done,
-// }
+// TableDecommit task phases
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TableDecommitStep {
+    PrepareVectorQueries,
+    HashSingleQuery,   // Dla verifier-friendly multi-column
+    CollectHashResult, // Zbieranie wyniku z GenerateVectorQueries
+    PrepareVectorDecommit,
+    ExecuteVectorDecommit,
+    Done,
+}
 
-// #[derive(Debug, Clone)]
-// #[repr(C)]
-// pub struct TableDecommit {
-//     step: TableDecommitStep,
-//     commitment: TableCommitment,
-//     n_columns: u32,
-//     is_bottom_layer_verifier_friendly: bool,
-//     current_query_index: usize,
-//     total_queries: usize,
-// }
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct TableDecommit {
+    step: TableDecommitStep,
+    commitment: TableCommitment,
+    n_columns: u32,
+    is_bottom_layer_verifier_friendly: bool,
+    current_query_index: usize,
+    total_queries: usize,
+    n_authentications: usize,
+    // Tymczasowe przechowywanie vector queries
+    vector_queries: Vec<Query>,
+}
 
-// impl_type_identifiable!(TableDecommit);
+impl_type_identifiable!(TableDecommit);
 
-// impl TableDecommit {
-//     pub fn new() -> Self {
-//         Self {
-//             step: TableDecommitStep::PrepareVectorQueries,
-//             commitment: TableCommitment::default(),
-//             n_columns: 0,
-//             is_bottom_layer_verifier_friendly: false,
-//             current_query_index: 0,
-//             total_queries: 0,
-//         }
-//     }
-// }
+impl TableDecommit {
+    pub fn new() -> Self {
+        Self {
+            step: TableDecommitStep::PrepareVectorQueries,
+            commitment: TableCommitment::default(),
+            n_columns: 0,
+            is_bottom_layer_verifier_friendly: false,
+            current_query_index: 0,
+            total_queries: 0,
+            n_authentications: 0,
+            vector_queries: Vec::new(),
+        }
+    }
+}
 
-// impl Default for TableDecommit {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
+impl Default for TableDecommit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-// impl Executable for TableDecommit {
-//     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-//         match self.step {
-//             TableDecommitStep::PrepareVectorQueries => {
-//                 // Read table commitment using trait
-//                 let table_commitment = TableCommitment::from_stack(stack);
-//                 println!("Table commitment: {:?}", table_commitment);
+impl Executable for TableDecommit {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
+        match self.step {
+            TableDecommitStep::PrepareVectorQueries => {
+                // Read table commitment
+                let table_commitment = TableCommitment::from_stack(stack);
+                println!("Table commitment: {:?}", table_commitment);
+                self.commitment = table_commitment;
 
-//                 // Store commitment config
-//                 self.n_columns = table_commitment
-//                     .config
-//                     .n_columns
-//                     .to_biguint()
-//                     .try_into()
-//                     .unwrap();
+                // Store commitment config
+                self.n_columns = table_commitment
+                    .config
+                    .n_columns
+                    .to_biguint()
+                    .try_into()
+                    .unwrap();
 
-//                 // An extra layer is added to the height since the table is considered as a layer
-//                 let bottom_layer_depth = table_commitment.config.vector.height + Felt::ONE;
-//                 self.is_bottom_layer_verifier_friendly = table_commitment
-//                     .config
-//                     .vector
-//                     .n_verifier_friendly_commitment_layers
-//                     >= bottom_layer_depth;
+                // An extra layer is added to the height since the table is considered as a layer
+                let bottom_layer_depth = table_commitment.config.vector.height + Felt::ONE;
+                self.is_bottom_layer_verifier_friendly = table_commitment
+                    .config
+                    .vector
+                    .n_verifier_friendly_commitment_layers
+                    >= bottom_layer_depth;
 
-//                 // Read queries using trait method
-//                 let queries = Query::read_queries_from_stack(stack);
-//                 self.total_queries = queries.len();
-//                 self.current_query_index = 0;
+                // Read queries
+                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
 
-//                 // Read decommitment using trait method
-//                 let decommitment = Decommitment::from_stack(stack);
+                // Store queries indices
+                let mut query_indices = Vec::new();
+                for _ in 0..queries_count {
+                    let index = Felt::from_bytes_be_slice(stack.borrow_front());
+                    stack.pop_front();
+                    query_indices.push(index);
+                }
 
-//                 // Convert values to Montgomery form
-//                 let montgomery_values = decommitment.montgomery_values.as_slice();
+                self.total_queries = queries_count;
+                println!("Total queries: {}", self.total_queries);
 
-//                 assert!(
-//                     self.n_columns as usize * self.total_queries == montgomery_values.len(),
-//                     "Invalid decommitment length"
-//                 );
+                // Read decommitment
+                Decommitment::from_stack(stack);
 
-//                 //that should be deleted as we do not modify witness data
-//                 let witness = VectorWitness::from_stack(stack);
-//                 witness.push_to_stack(stack);
+                // Validate montgomery values length
+                let montgomery_values_len = {
+                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                    verify_variables.montgomery_values.len()
+                };
 
-//                 decommitment.push_to_stack(stack);
+                assert!(
+                    self.n_columns as usize * self.total_queries <= montgomery_values_len,
+                    "Invalid decommitment length: expected {} values, got {}",
+                    self.n_columns as usize * self.total_queries,
+                    montgomery_values_len
+                );
 
-//                 Query::push_queries_to_stack(&queries, stack);
+                // Read witness
+                self.n_authentications = VectorWitness::from_stack(stack);
 
-//                 self.step = TableDecommitStep::HashQueries;
-//                 vec![]
-//             }
+                // Initialize vector queries with indices
+                self.vector_queries = query_indices
+                    .into_iter()
+                    .map(|index| Query {
+                        index,
+                        value: Felt::ZERO,
+                    })
+                    .collect();
 
-//             TableDecommitStep::HashQueries => {
-//                 let queries = Query::read_queries_from_stack(stack);
-//                 println!("Queries: {:?}", queries);
+                self.current_query_index = 0;
+                // Decide next step based on configuration
+                if self.n_columns > 1 && self.is_bottom_layer_verifier_friendly {
+                    // Need to hash each query with Poseidon
+                    self.step = TableDecommitStep::HashSingleQuery;
+                } else {
+                    // Can compute all hashes directly
+                    self.compute_all_hashes(stack);
+                    self.step = TableDecommitStep::PrepareVectorDecommit;
+                }
 
-//                 if self.current_query_index < self.total_queries {
-//                     let current_query = &queries[self.current_query_index];
+                vec![]
+            }
 
-//                     if self.n_columns == 1 {
-//                         // For single column, just use the value directly
-//                         let decommitment = Decommitment::from_stack(stack);
-//                         let value = decommitment.values.as_slice()[self.current_query_index];
-//                         println!("Value: {:?}", value);
-//                         decommitment.push_to_stack(stack);
-//                         Query::push_queries_to_stack(&queries, stack);
+            TableDecommitStep::HashSingleQuery => {
+                if self.current_query_index < self.total_queries {
+                    // Push query index for GenerateVectorQueries
+                    stack
+                        .push_front(&Felt::from(self.current_query_index).to_bytes_be())
+                        .unwrap();
 
-//                         stack.push_front(&value.to_bytes_be()).unwrap();
-//                     } else {
-//                         Query::push_queries_to_stack(&queries, stack);
+                    self.step = TableDecommitStep::CollectHashResult;
+                    vec![GenerateVectorQueries::new(
+                        self.n_columns,
+                        self.is_bottom_layer_verifier_friendly,
+                        self.total_queries,
+                    )
+                    .to_vec_with_type_tag()]
+                } else {
+                    // All queries hashed, proceed to vector decommit
+                    self.step = TableDecommitStep::PrepareVectorDecommit;
+                    vec![]
+                }
+            }
 
-//                         stack
-//                             .push_front(&Felt::from(self.current_query_index).to_bytes_be())
-//                             .unwrap();
+            TableDecommitStep::CollectHashResult => {
+                // Get hash result from GenerateVectorQueries
+                let hash = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-//                         self.step = TableDecommitStep::ProcessHashResult;
-//                         return vec![GenerateVectorQueries::new(
-//                             self.n_columns,
-//                             self.is_bottom_layer_verifier_friendly,
-//                         )
-//                         .to_vec_with_type_tag()];
-//                     };
+                // Store hash in corresponding vector query
+                self.vector_queries[self.current_query_index].value = hash;
+                println!("Query {} hash: {:?}", self.current_query_index, hash);
 
-//                     stack
-//                         .push_front(&current_query.index.to_bytes_be())
-//                         .unwrap();
+                self.current_query_index += 1;
 
-//                     self.current_query_index += 1;
-//                     vec![]
-//                 } else {
-//                     // Push vector queries to stack (they are already on stack from hash results)
-//                     // We need to collect them and push using trait method
-//                     let mut vector_queries = Vec::new();
-//                     for _ in 0..self.total_queries {
-//                         let index = Felt::from_bytes_be_slice(stack.borrow_front());
-//                         stack.pop_front();
-//                         let hash = Felt::from_bytes_be_slice(stack.borrow_front());
-//                         stack.pop_front();
-//                         vector_queries.push(Query { index, value: hash });
-//                     }
-//                     Query::push_queries_to_stack(&vector_queries, stack);
+                // Move to next query or finish
+                self.step = TableDecommitStep::HashSingleQuery;
+                vec![]
+            }
 
-//                     // All queries processed, move to VectorDecommit
-//                     // Push data for VectorDecommit using trait methods
-//                     // Push vector commitment using its push_to_stack method
-//                     self.commitment.vector_commitment.push_to_stack(stack);
+            TableDecommitStep::PrepareVectorDecommit => {
+                VectorWitness::push_to_stack_static(stack, self.n_authentications);
+                println!("DEBUG: n_authentications = {}", self.n_authentications);
 
-//                     // Witness is already on stack from PrepareVectorQueries step
+                // Push all vector queries to stack
+                for query in self.vector_queries.iter().rev() {
+                    stack.push_front(&query.value.to_bytes_be()).unwrap();
+                    stack.push_front(&query.index.to_bytes_be()).unwrap();
+                }
+                stack
+                    .push_front(&Felt::from(self.total_queries).to_bytes_be())
+                    .unwrap();
+                println!("DEBUG: total_queries = {}", self.total_queries);
 
-//                     self.step = TableDecommitStep::ExecuteVectorDecommit;
-//                     vec![VectorDecommit::new().to_vec_with_type_tag()]
-//                 }
-//             }
+                // Push vector commitment
+                self.commitment.vector_commitment.push_to_stack(stack);
 
-//             TableDecommitStep::ProcessHashResult => {
-//                 // Get hash result from HashComputationMany
-//                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
-//                 stack.pop_front();
+                self.step = TableDecommitStep::ExecuteVectorDecommit;
+                vec![VectorDecommit::new().to_vec_with_type_tag()]
+            }
 
-//                 // We need to get the original query index - this is tricky since we don't store it
-//                 // For now, let's use the current_query_index as a workaround
-//                 // In a real implementation, we'd need to store the original query index
-//                 let original_index = Felt::from(self.current_query_index);
+            TableDecommitStep::ExecuteVectorDecommit => {
+                // VectorDecommit completed successfully
+                self.step = TableDecommitStep::Done;
+                vec![]
+            }
 
-//                 // Push hash result to stack for later use (with original query index)
-//                 stack.push_front(&hash.to_bytes_be()).unwrap();
-//                 stack.push_front(&original_index.to_bytes_be()).unwrap();
+            TableDecommitStep::Done => {
+                vec![]
+            }
+        }
+    }
 
-//                 self.current_query_index += 1;
-//                 self.step = TableDecommitStep::HashQueries;
-//                 vec![]
-//             }
+    fn is_finished(&mut self) -> bool {
+        self.step == TableDecommitStep::Done
+    }
+}
 
-//             TableDecommitStep::ExecuteVectorDecommit => {
-//                 // VectorDecommit completed successfully
-//                 self.step = TableDecommitStep::Done;
-//                 vec![]
-//             }
+impl TableDecommit {
+    // Helper method to compute all hashes at once (for single column or Keccak cases)
+    fn compute_all_hashes<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) {
+        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+        let montgomery_values = &verify_variables.montgomery_values;
 
-//             TableDecommitStep::Done => {
-//                 vec![]
-//             }
-//         }
-//     }
+        for i in 0..self.total_queries {
+            let hash = if self.n_columns == 1 {
+                // Single column: use value directly
+                montgomery_values[i]
+            } else {
+                // Multiple columns with Keccak256
+                let slice = &montgomery_values
+                    [(i * self.n_columns as usize)..((i + 1) * self.n_columns as usize)];
 
-//     fn is_finished(&mut self) -> bool {
-//         self.step == TableDecommitStep::Done
-//     }
-// }
+                let mut hasher = Keccak256::new();
+                for &value in slice {
+                    hasher.update(value.to_bytes_be());
+                }
+                Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+            };
 
-// // HashComputationMany task for hashing multiple values
-// #[derive(Debug, Clone)]
-// #[repr(C)]
-// pub struct GenerateVectorQueries {
-//     step: GenerateVectorQueriesStep,
-//     pub n_columns: u32,
-//     pub is_verifier_friendly: bool,
-//     pub result: Felt,
-// }
+            self.vector_queries[i].value = hash;
+        }
+    }
+}
 
-// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// pub enum GenerateVectorQueriesStep {
-//     Init,
-//     WaitForPoseidonHash,
-//     Done,
-// }
+// GenerateVectorQueries task for hashing multiple values
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct GenerateVectorQueries {
+    step: GenerateVectorQueriesStep,
+    pub n_columns: u32,
+    pub is_verifier_friendly: bool,
+    pub queries_count: usize,
+}
 
-// impl GenerateVectorQueries {
-//     pub fn new(n_columns: u32, is_verifier_friendly: bool) -> Self {
-//         Self {
-//             step: GenerateVectorQueriesStep::Init,
-//             n_columns,
-//             is_verifier_friendly,
-//             result: Felt::ZERO,
-//         }
-//     }
-// }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GenerateVectorQueriesStep {
+    Init,
+    WaitForPoseidonHash,
+    Done,
+}
 
-// impl Default for GenerateVectorQueries {
-//     fn default() -> Self {
-//         Self::new(0, false)
-//     }
-// }
+impl GenerateVectorQueries {
+    pub fn new(n_columns: u32, is_verifier_friendly: bool, queries_count: usize) -> Self {
+        Self {
+            step: GenerateVectorQueriesStep::Init,
+            n_columns,
+            is_verifier_friendly,
+            queries_count,
+        }
+    }
+}
 
-// impl_type_identifiable!(GenerateVectorQueries);
+impl Default for GenerateVectorQueries {
+    fn default() -> Self {
+        Self::new(0, false, 0)
+    }
+}
 
-// impl Executable for GenerateVectorQueries {
-//     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
-//         match self.step {
-//             GenerateVectorQueriesStep::Init => {
-//                 let current_query_index = Felt::from_bytes_be_slice(stack.borrow_front());
-//                 stack.pop_front();
-//                 let current_query_index: usize =
-//                     current_query_index.to_biguint().try_into().unwrap();
+impl_type_identifiable!(GenerateVectorQueries);
 
-//                 let queries = Query::read_queries_from_stack(stack);
+impl Executable for GenerateVectorQueries {
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
+        match self.step {
+            GenerateVectorQueriesStep::Init => {
+                // Get current query index
+                let current_query_index = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let current_query_index: usize =
+                    current_query_index.to_biguint().try_into().unwrap();
 
-//                 let decommitment = Decommitment::from_stack(stack);
-//                 let values = decommitment.values.as_slice();
+                if self.is_verifier_friendly {
+                    // Use Poseidon for verifier-friendly hashing
+                    let inputs: Vec<Felt> = {
+                        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                        verify_variables.montgomery_values[(current_query_index
+                            * self.n_columns as usize)
+                            ..((current_query_index + 1) * self.n_columns as usize)]
+                            .to_vec()
+                    };
 
-//                 if self.is_verifier_friendly {
-//                     let slice = &values[(current_query_index * self.n_columns as usize)
-//                         ..((current_query_index + 1) * self.n_columns as usize)];
-//                     decommitment.push_to_stack(stack);
-//                     Query::push_queries_to_stack(&queries, stack);
+                    PoseidonHashMany::push_input(&inputs, stack);
 
-//                     PoseidonHashMany::push_input(&slice, stack);
-//                     self.step = GenerateVectorQueriesStep::WaitForPoseidonHash;
-//                     vec![PoseidonHashMany::new(slice.len()).to_vec_with_type_tag()]
-//                 } else {
-//                     // Use Keccak256 for non-verifier-friendly hashing (matching original logic)
-//                     let slice = &values[(current_query_index * self.n_columns as usize)
-//                         ..((current_query_index + 1) * self.n_columns as usize)];
-//                     let mut data = Vec::new();
-//                     data.extend(slice.iter().flat_map(|x| x.to_bytes_be().to_vec()));
+                    self.step = GenerateVectorQueriesStep::WaitForPoseidonHash;
+                    vec![PoseidonHashMany::new(inputs.len()).to_vec_with_type_tag()]
+                } else {
+                    // Use Keccak256 for non-verifier-friendly hashing
+                    let result = {
+                        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                        let values = &verify_variables.montgomery_values;
+                        let slice = &values[(current_query_index * self.n_columns as usize)
+                            ..((current_query_index + 1) * self.n_columns as usize)];
 
-//                     let mut hasher = Keccak256::new();
-//                     hasher.update(&data);
+                        let mut hasher = Keccak256::new();
+                        for &value in slice {
+                            hasher.update(value.to_bytes_be());
+                        }
 
-//                     // Use the same slice as in the original: [12..32] for 160-bit output
-//                     self.result = Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32]);
+                        Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+                    };
 
-//                     // Push result to stack for TableDecommit to consume
-//                     decommitment.push_to_stack(stack);
-//                     Query::push_queries_to_stack(&queries, stack);
-//                     stack.push_front(&self.result.to_bytes_be()).unwrap();
+                    // Push result to stack
+                    stack.push_front(&result.to_bytes_be()).unwrap();
 
-//                     self.step = GenerateVectorQueriesStep::Done;
-//                     vec![]
-//                 }
-//             }
-//             GenerateVectorQueriesStep::WaitForPoseidonHash => {
-//                 // Get result from PoseidonHashMany
-//                 self.result = Felt::from_bytes_be_slice(stack.borrow_front());
-//                 stack.pop_front();
-//                 stack.pop_front();
-//                 stack.pop_front();
+                    self.step = GenerateVectorQueriesStep::Done;
+                    vec![]
+                }
+            }
 
-//                 println!("Poseidon hash result: {:?}", self.result);
+            GenerateVectorQueriesStep::WaitForPoseidonHash => {
+                // Get result from PoseidonHashMany
+                let result = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
 
-//                 let some_value = Felt::from_bytes_be_slice(stack.borrow_front());
-//                 println!("Some value is still on stack its probably decommitment values: {:?}", some_value);
+                println!("Poseidon hash result: {:?}", result);
 
-//                 // Push result back to stack for TableDecommit to consume
-//                 stack.push_front(&self.result.to_bytes_be()).unwrap();
+                // Push result to stack for TableDecommit to collect
+                stack.push_front(&result.to_bytes_be()).unwrap();
 
-//                 self.step = GenerateVectorQueriesStep::Done;
-//                 vec![]
-//             }
-//             GenerateVectorQueriesStep::Done => {
-//                 vec![]
-//             }
-//         }
-//     }
+                self.step = GenerateVectorQueriesStep::Done;
+                vec![]
+            }
 
-//     fn is_finished(&mut self) -> bool {
-//         self.step == GenerateVectorQueriesStep::Done
-//     }
-// }
+            GenerateVectorQueriesStep::Done => {
+                vec![]
+            }
+        }
+    }
+
+    fn is_finished(&mut self) -> bool {
+        self.step == GenerateVectorQueriesStep::Done
+    }
+}

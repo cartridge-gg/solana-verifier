@@ -477,6 +477,10 @@ async fn main() -> client::Result<()> {
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
+    // // Push authentications length - its not ready yet as transaction exceeds solana limit
+    // let witness = Witness::new(FunVec::from_vec(authentications));
+    // let witness_bytes = cast_struct_to_slice(&witness);
+
     let _signature = interact_with_program_instructions(
         &client,
         &payer,

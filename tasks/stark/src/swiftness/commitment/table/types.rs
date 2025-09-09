@@ -7,6 +7,9 @@ use crate::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice,
 use felt::Felt;
 use utils::{BidirectionalStack, StarkVerifyTrait};
 
+const MONTGOMERY_R: Felt =
+    Felt::from_hex_unchecked("0x7FFFFFFFFFFFDF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1");
+
 // Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Commitment {
@@ -61,65 +64,55 @@ pub struct Decommitment {
     pub montgomery_values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
 }
 
+impl Decommitment {
+    pub fn new(
+        values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
+        montgomery_values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
+    ) -> Self {
+        Self {
+            values,
+            montgomery_values,
+        }
+    }
+}
+
 impl CommitmentTrait<Decommitment, ()> for Decommitment {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
-        // Read values length
+        // Read values length first (back to original approach for transaction size)
         let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
-        let count = values_len.to_biguint().try_into().unwrap();
-        println!("count: {:?}", count);
+        let count: usize = values_len.to_biguint().try_into().unwrap();
 
-        // Read decommitment_values
+        // Read decommitment_values and convert to Montgomery form
         for i in 0..count {
             let value = Felt::from_bytes_be_slice(stack.borrow_front());
             stack.pop_front();
             let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
             verify_variables.decommitment_values[i] = value;
-        }
-
-        // Read montgomery_values
-        for i in 0..count {
-            let value = Felt::from_bytes_be_slice(stack.borrow_front());
-            stack.pop_front();
-            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-            verify_variables.montgomery_values[i] = value;
+            // Convert to Montgomery form for commitment verification
+            verify_variables.montgomery_values[i] = value * MONTGOMERY_R;
         }
     }
 
     fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
-        // Get count first
         let count = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
-        let count_usize: usize = count.to_biguint().try_into().unwrap();
+        let count: usize = count.to_biguint().try_into().unwrap();
 
-        // Push montgomery_values in reverse order - no allocation
-        for i in (0..count_usize).rev() {
+        // Push decommitment_values in reverse order
+        for i in (0..count).rev() {
             let value_bytes = {
-                let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                verify_variables.montgomery_values[i].to_bytes_be()
-            };
-            stack.push_front(&value_bytes).unwrap();
-        }
-        stack
-            .push_front(&Felt::from(count_usize).to_bytes_be())
-            .unwrap();
-
-        // Push decommitment_values in reverse order - no allocation
-        for i in (0..count_usize).rev() {
-            let value_bytes = {
-                let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                let verify_variables: &VerifyVariables = stack.get_verify_variables();
                 verify_variables.decommitment_values[i].to_bytes_be()
             };
             stack.push_front(&value_bytes).unwrap();
         }
-        stack
-            .push_front(&Felt::from(count_usize).to_bytes_be())
-            .unwrap();
+        stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
     }
 
-    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
-        // For Decommitment, data is stored in VerifyVariables, use from_stack instead
-        unimplemented!("Decommitment data is stored in VerifyVariables, use from_stack instead")
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self {
+        let data = stack.borrow_front();
+        cast_slice_to_struct::<Self>(data)
     }
 
     fn to_bytes_be(&self) -> Decommitment {

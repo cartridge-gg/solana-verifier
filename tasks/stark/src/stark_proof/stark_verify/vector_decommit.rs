@@ -24,6 +24,7 @@ pub enum VectorDecommitStep {
 pub struct VectorDecommit {
     step: VectorDecommitStep,
     reference_commitment_hash: Felt,
+    n_authentications: usize,
 }
 
 impl_type_identifiable!(VectorDecommit);
@@ -33,6 +34,7 @@ impl VectorDecommit {
         Self {
             step: VectorDecommitStep::VectorCommitmentDecommit,
             reference_commitment_hash: Felt::ZERO,
+            n_authentications: 0,
         }
     }
 }
@@ -59,8 +61,10 @@ impl Executable for VectorDecommit {
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("DEBUG: queries_len: {:?}", queries_len);
 
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
+                println!("DEBUG: queries_count: {:?}", queries_count);
                 assert!(
                     queries_count <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",
@@ -71,13 +75,7 @@ impl Executable for VectorDecommit {
                 // Read queries into pre-allocated array
                 let mut count = queries_count;
                 Query::read_queries_from_stack(stack, &mut count);
-
-                // Read witness (authentications) into pre-allocated array
-                println!(
-                    "DEBUG: About to call VectorWitness::from_stack(), stack front: {:?}",
-                    Felt::from_bytes_be_slice(stack.borrow_front())
-                );
-                VectorWitness::from_stack(stack);
+                self.n_authentications = VectorWitness::from_stack(stack);
 
                 // Push vector config using trait method
                 vector_commitment.config.push_to_stack(stack);
@@ -99,36 +97,23 @@ impl Executable for VectorDecommit {
                 }
 
                 // Push authentications using trait method
-                let (real_count, auth_bytes) = {
+                let auth_bytes = {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let authentications_slice = &verify_variables.authentications;
-                    // Znajdź rzeczywistą liczbę authentications (nie-zero elementów)
-                    let mut real_count = 0;
-                    #[allow(clippy::needless_range_loop)]
-                    for i in 0..authentications_slice.len() {
-                        if authentications_slice[i] != Felt::ZERO {
-                            real_count = i + 1;
-                        }
-                    }
 
-                    println!("DEBUG vector_decommit: real_count = {}", real_count);
-
-                    // Przygotuj bytes do pushowania
                     let mut auth_bytes = Vec::new();
-                    for i in (0..real_count).rev() {
+                    for i in (0..self.n_authentications).rev() {
                         auth_bytes.push(authentications_slice[i].to_bytes_be());
                     }
 
-                    (real_count, auth_bytes)
+                    auth_bytes
                 };
 
-                // Push authentications w odwrotnej kolejności
                 for auth_bytes in auth_bytes {
                     stack.push_front(&auth_bytes).unwrap();
                 }
-                // Push liczbę authentications
                 stack
-                    .push_front(&Felt::from(real_count).to_bytes_be())
+                    .push_front(&Felt::from(self.n_authentications).to_bytes_be())
                     .unwrap();
 
                 let auth_start = Felt::ZERO;
