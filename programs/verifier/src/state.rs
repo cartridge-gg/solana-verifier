@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::error::VerifierError;
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
@@ -28,6 +30,7 @@ pub struct BidirectionalStackAccount {
     pub column_values: [Felt; COLUMN_VALUES_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
     pub verify_variables: VerifyVariables,
+    pub executed_tasks: HashMap<String, usize>,
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -44,6 +47,7 @@ impl Default for BidirectionalStackAccount {
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
             stark_commitment: StarkCommitment::default(),
             verify_variables: VerifyVariables::default(),
+            executed_tasks: HashMap::new(),
         }
     }
 }
