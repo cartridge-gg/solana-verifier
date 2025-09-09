@@ -71,8 +71,25 @@ pub struct Witness {
     pub authentications: FunVec<Felt, FUNVEC_AUTHENTICATIONS>,
 }
 
-impl CommitmentTrait<Witness, ()> for Witness {
-    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+impl Witness {
+    pub fn push_to_stack_static<T: BidirectionalStack + StarkVerifyTrait>(
+        stack: &mut T,
+        count: usize,
+    ) {
+        // Push authentications in reverse order (for stack) - no allocation
+        for i in (0..count).rev() {
+            let auth_bytes = {
+                let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                verify_variables.authentications[i].to_bytes_be()
+            };
+            stack.push_front(&auth_bytes).unwrap();
+        }
+        stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
+    }
+}
+
+impl CommitmentTrait<Witness, usize> for Witness {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> usize {
         let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
 
@@ -95,6 +112,7 @@ impl CommitmentTrait<Witness, ()> for Witness {
             let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
             verify_variables.authentications[i] = auth;
         }
+        n_auth_usize
     }
 
     fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
@@ -127,6 +145,57 @@ impl CommitmentTrait<Witness, ()> for Witness {
         *self
     }
 }
+
+//HERE IS VERSION WHICH IS BETTER BUT NOT WORKING DUE TO SOLANA TRANSACTION LIMITS - WORK IN PROGRESS
+
+// impl CommitmentTrait<Witness, ()> for Witness {
+//     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+//         // Get reference from cast_slice_to_struct and count
+//         let count = {
+//             let data = stack.borrow_front();
+//             let witness = cast_slice_to_struct::<Self>(data);
+//             witness.authentications.len()
+//         };
+
+//         assert!(
+//             count <= FUNVEC_AUTHENTICATIONS,
+//             "Too many authentications: {} > {}",
+//             count,
+//             FUNVEC_AUTHENTICATIONS
+//         );
+//         println!("DEBUG VectorWitness::from_stack: count = {}", count);
+
+//         // Copy elements one by one to avoid large allocations
+//         for i in 0..count {
+//             let auth = {
+//                 let data = stack.borrow_front();
+//                 let witness = cast_slice_to_struct::<Self>(data);
+//                 witness.authentications.as_slice()[i]
+//             };
+
+//             let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+//             verify_variables.authentications[i] = auth;
+//         }
+
+//         stack.pop_front();
+//     }
+
+//     fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
+//         // For Witness, we don't return a reference since data is stored in VerifyVariables
+//         // This is a placeholder - in practice, use from_stack for Witness
+//         unimplemented!("Witness data is stored in VerifyVariables, use from_stack instead")
+//     }
+
+//     #[inline(always)]
+//     fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+//         let witness_bytes = cast_struct_to_slice(self);
+//         stack.push_front(witness_bytes).unwrap();
+//     }
+
+//     fn to_bytes_be(&self) -> Witness {
+//         *self
+//     }
+// }
 
 // Query represents a single query to the vector commitment
 #[derive(Debug, Clone, Copy)]
@@ -324,6 +393,7 @@ impl QueryWithDepth {
         count: usize,
         stack: &mut T,
     ) {
+        println!("DEBUG: push_queries_with_depth_to_stack: count = {}", count);
         // Push queries in reverse order - no allocation
         for i in (0..count).rev() {
             let (depth_bytes, value_bytes, index_bytes) = {

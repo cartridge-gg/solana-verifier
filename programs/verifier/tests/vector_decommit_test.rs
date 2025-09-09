@@ -184,6 +184,8 @@ fn test_vector_decommit() {
     let n_authentications = Felt::from(authentications.len() as u64);
     stack.push_front(&n_authentications.to_bytes_be()).unwrap();
 
+    //Witness::new(FunVec::from_vec(authentications)).push_to_stack(&mut stack); IT'S NOT WORKING DUE TO SOLANA TRANSACTION LIMITS
+
     // Push queries in reverse order (for stack)
     for (index, value) in queries.iter().rev() {
         // Query: index first, then value

@@ -65,6 +65,15 @@ impl Executable for ComputeRootRecursive {
                     n_queries_usize,
                     FUNVEC_QUERIES
                 );
+                // Clear the entire queries array first (new instance starts fresh)
+                {
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    let queries_slice = &mut verify_variables.queries;
+                    let temp_queries_slice = &mut verify_variables.temp_queries;
+                    queries_slice.fill(Felt::ZERO);
+                    temp_queries_slice.fill(Felt::ZERO);
+                }
+
                 // Read queries into pre-allocated array
                 for i in 0..n_queries_usize {
                     let index = Felt::from_bytes_be_slice(stack.borrow_front());
