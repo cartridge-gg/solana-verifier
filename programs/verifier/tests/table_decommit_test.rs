@@ -1,5 +1,4 @@
 use felt::Felt;
-use stark::funvec::FUNVEC_DECOMMITMENT_VALUES;
 use stark::swiftness::commitment::table::config::Config as TableConfig;
 use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
 use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
@@ -13,10 +12,6 @@ use stark::{
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use fixtures::{
-    fri_config, fri_unsent_commitment, oods_values, public_input, queries, stark_config,
-    stark_domains, witness,
-};
 
 #[test]
 fn test_table_decommit() {
