@@ -1,13 +1,14 @@
 mod fixtures;
 
 use felt::Felt;
+use stark::stark_proof::stark_verify::eval_oods_boundary_poly_at_points::ComputeQueryPoints;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
 #[test]
 fn test_compute_query_points() {
     let mut stack = BidirectionalStackAccount::default();
-    let task = stark::stark_proof::stark_verify::ComputeQueryPoints::new();
+    let task = ComputeQueryPoints::new();
 
     push_data(&mut stack);
     stack.push_task(task);

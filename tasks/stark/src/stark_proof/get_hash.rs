@@ -248,13 +248,14 @@ impl Executable for GetHash {
             }
             GetHashStep::Program => {
                 let bytes = stack.borrow_front().to_owned();
-                // clear stack
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
-
                 stack.push_front(&bytes).unwrap();
-
+                println!(
+                    "GetHash completed. Hash: {:?}",
+                    Felt::from_bytes_be_slice(&bytes)
+                );
                 self.step = GetHashStep::Done;
                 vec![]
             }

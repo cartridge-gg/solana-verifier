@@ -125,102 +125,7 @@ async fn main() -> client::Result<()> {
     );
     instructions.push(stack_ix);
 
-    // 2. Initialize buffer with zeros (65536 bytes) - will be filled during push/pop operations
-    let buffer_size = 65536; // CAPACITY - preallocated space for stack operations
-    let empty_buffer = vec![0u8; buffer_size];
-    let buffer_chunks: Vec<_> = empty_buffer
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    buffer_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(buffer_chunks);
-
-    // 3. Set proof data (moved to after OODS values setup)
-
-    // 4. Initialize global values with zeros - will be computed and set during task execution
-    let empty_global_values = vec![0u8; global_values_size];
-    let global_chunks: Vec<_> = empty_global_values
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    global_values_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(global_chunks);
-
-    // 5. Initialize constraint coefficients with zeros (194 * 32 = 6208 bytes) - will be computed during execution
-    let constraint_coefficients_size = 6208; // N_CONSTRAINTS * 32 = 194 * 32 bytes
-    let empty_constraint_coefficients = vec![0u8; constraint_coefficients_size];
-    let constraint_coefficients_chunks: Vec<_> = empty_constraint_coefficients
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    constraint_coefficients_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(constraint_coefficients_chunks);
-
-    // 6. Initialize column values with zeros (10 * 32 = 320 bytes) - will be computed during execution
-    let column_values_size = 320; // COLUMN_VALUES_SIZE * 32 = 10 * 32 bytes
-    let empty_column_values = vec![0u8; column_values_size];
-    let column_values_chunks: Vec<_> = empty_column_values
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    column_values_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(column_values_chunks);
-
-    // 7. Initialize stark commitment with zeros - will be filled with computed commitments during execution
-    let empty_stark_commitment = vec![0u8; stark_commitment_size];
-    let stark_commitment_chunks: Vec<_> = empty_stark_commitment
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    stark_commitment_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(stark_commitment_chunks);
-
-    // 8. Set OODS values from proof data (194 * 32 = 6208 bytes) - these are precomputed values needed for verification
+    // 2. Set OODS values from proof data (194 * 32 = 6208 bytes) - these are precomputed values needed for verification
     let oods_values = proof_verifier.unsent_commitment.oods_values.clone();
     let oods_values_bytes = cast_struct_to_slice(&mut oods_values.clone()).to_vec();
     let oods_values_chunks: Vec<_> = oods_values_bytes
@@ -239,7 +144,7 @@ async fn main() -> client::Result<()> {
         .collect();
     instructions.extend(oods_values_chunks);
 
-    // 9. Set proof data - the actual STARK proof that will be verified
+    // 3. Set proof data - the actual STARK proof that will be verified
     let proof_bytes = cast_struct_to_slice(&mut proof_verifier).to_vec();
     let proof_chunks: Vec<_> = proof_bytes
         .chunks(CHUNK_SIZE)
@@ -255,45 +160,8 @@ async fn main() -> client::Result<()> {
             )
         })
         .collect();
+
     instructions.extend(proof_chunks);
-
-    // 10. Initialize autogenerated_pows with zeros (134 * 32 = 4288 bytes) - will be computed during task execution
-    let autogenerated_pows_size = 4288; // POWS_SIZE * 32 = 134 * 32 bytes
-    let empty_autogenerated_pows = vec![0u8; autogenerated_pows_size];
-    let autogenerated_pows_chunks: Vec<_> = empty_autogenerated_pows
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    autogenerated_pows_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(autogenerated_pows_chunks);
-
-    // 11. Initialize domains with zeros (31 * 32 = 992 bytes) - will be computed during task execution
-    let domains_size = 992; // DOMAINS_SIZE * 32 = 31 * 32 bytes
-    let empty_domains = vec![0u8; domains_size];
-    let domains_chunks: Vec<_> = empty_domains
-        .chunks(CHUNK_SIZE)
-        .enumerate()
-        .map(|(i, chunk)| {
-            Instruction::new_with_borsh(
-                program_id,
-                &VerifierInstruction::SetAccountData(
-                    domains_offset + (i * CHUNK_SIZE),
-                    chunk.to_vec(),
-                ),
-                vec![AccountMeta::new(stack_account.pubkey(), false)],
-            )
-        })
-        .collect();
-    instructions.extend(domains_chunks);
 
     println!("Total instructions: {}", instructions.len());
     println!("\nAccount initialization summary:");

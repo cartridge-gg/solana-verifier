@@ -1,8 +1,7 @@
 use crate::fixtures::stark_commitment;
 use felt::Felt;
-use stark::stark_proof::stark_commit::StarkCommit;
-use stark::swiftness::air::trace::UnsentCommitment;
-use stark::swiftness::stark::types::StarkProof;
+use stark::{stark_proof::stark_commit::StarkCommit, swiftness::air::domains::StarkDomains};
+use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
@@ -11,53 +10,33 @@ mod fixtures;
 fn test_stark_commit_with_reference_values() {
     let mut stack = BidirectionalStackAccount::default();
 
-    // Create a StarkProof with reference trace commitments
-    let mut proof = StarkProof::default();
+    let input = include_str!("../../../example_proof/saya.json");
+    let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
+    let proof = StarkProofParser::try_from(proof_json).unwrap();
 
-    let public_input = fixtures::public_input::get();
-    let unsent_commitment = fixtures::fri_unsent_commitment::get();
-    let config = fixtures::stark_config::get();
-    let oods_values = fixtures::oods_values::get();
-    // let stark_domains = fixtures::stark_domains::get();
+    let proof_verifier = proof.transform_to();
 
-    proof.unsent_commitment.oods_values = oods_values;
-    proof.unsent_commitment.fri = unsent_commitment;
-    proof.config = config;
-    proof.public_input = public_input;
-
-    // Reference values from the test output
-    let original_commitment =
-        Felt::from_hex("0x305f1ee7c0b38a403b2fa7ec86a3d11c8a174891194a2c656147268b59e876d")
-            .unwrap();
-    let interaction_commitment =
-        Felt::from_hex("0x6d41514e4a6e39f5b4e5f18f234525df1d2d92393c11ce11bd885615c88406").unwrap();
-
-    proof.unsent_commitment.traces = UnsentCommitment {
-        original: original_commitment,
-        interaction: interaction_commitment,
-    };
-    proof.unsent_commitment.composition =
-        Felt::from_hex("0x112367c6fef0963c09cd918c7d31159ae7effbf9e16ffe7cac15b7bb4074373")
-            .unwrap();
+    let oods_values = proof_verifier.unsent_commitment.oods_values.clone();
 
     stack.oods_values = oods_values.as_slice().try_into().unwrap();
-    stack.proof = proof;
+    stack.proof = proof_verifier.clone();
 
-    let trace_generator =
-        Felt::from_hex("0x57a797181c06d8427145cb66056f032751615d8617c5468258e96d2bb6422f9")
-            .unwrap();
+    let stark_domains = StarkDomains::new(
+        proof_verifier.config.log_trace_domain_size,
+        proof_verifier.config.log_n_cosets,
+    );
+
+    let trace_generator = stark_domains.trace_generator;
     stack.push_front(&trace_generator.to_bytes_be()).unwrap();
 
-    let trace_domain_size = Felt::from_hex("0x10000000").unwrap();
+    let trace_domain_size = stark_domains.trace_domain_size;
     stack.push_front(&trace_domain_size.to_bytes_be()).unwrap();
 
+    // Result of GetHash
     let digest =
         Felt::from_hex("0x59496b8e649ff03c8e9f739e141bd82653fccb2fb1b1a51a71760ea3813ea35")
             .unwrap();
     stack.push_front(&digest.to_bytes_be()).unwrap();
-
-    let counter = Felt::from_hex("0x0").unwrap();
-    stack.push_front(&counter.to_bytes_be()).unwrap();
 
     // Push StarkCommit task
     stack.push_task(StarkCommit::new());
