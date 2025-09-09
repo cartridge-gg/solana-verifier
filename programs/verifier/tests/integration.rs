@@ -28,6 +28,6 @@ pub fn test_proof_verification() {
     while !stack.is_empty_back() {
         stack.execute();
     }
-    let executed_task = &stack.executed_tasks;
-    println!("Executed tasks and their counts: {:#?}", executed_task);
+    // let executed_task = &stack.executed_tasks;
+    // println!("Executed tasks and their counts: {:#?}", executed_task);
 }

@@ -1,28 +1,32 @@
 use felt::Felt;
 use stark::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::stark::types::StarkProof;
+use swiftness_proof_parser::json_parser;
 use utils::global_values::EcPoint;
-use utils::{BidirectionalStack, Scheduler, OODS_VALUES_SIZE};
+use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use fixtures::{fri_config, fri_unsent_commitment, oods_values, stark_config};
 
 use crate::fixtures::constraint_coefficients;
+use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 
 #[test]
 fn test_eval_composition_polynomial_inner() {
     let mut stack = BidirectionalStackAccount::default();
-    let mut proof = StarkProof::default();
 
-    proof.config.fri = fri_config::get();
-    proof.unsent_commitment.fri = fri_unsent_commitment::get();
-    proof.config = stark_config::get();
-    stack.proof = proof;
-    let oods_values = oods_values::get();
-    let oods_slice = &oods_values.as_slice()[0..OODS_VALUES_SIZE];
-    stack.oods_values = oods_slice.try_into().unwrap();
+    let proof_str = include_str!("../../../example_proof/saya.json");
+    let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
+    let proof = StarkProofParser::try_from(proof_json).unwrap();
+    let proof_verifier = proof.transform_to();
+    stack.proof = proof_verifier.clone();
+
     stack.constraint_coefficients = constraint_coefficients::get()
+        .as_slice()
+        .try_into()
+        .unwrap();
+    stack.oods_values = proof_verifier
+        .unsent_commitment
+        .oods_values
         .as_slice()
         .try_into()
         .unwrap();

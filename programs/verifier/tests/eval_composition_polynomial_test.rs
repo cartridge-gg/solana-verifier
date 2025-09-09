@@ -1,29 +1,34 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial;
-use stark::swiftness::stark::types::StarkProof;
-use utils::{BidirectionalStack, Scheduler, OODS_VALUES_SIZE};
+use stark::{
+    stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial,
+    swiftness::stark::types::StarkCommitment,
+};
+use swiftness_proof_parser::json_parser;
+use utils::global_values::InteractionElements;
+use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use fixtures::{fri_config, fri_unsent_commitment, oods_values, public_input, stark_config};
-
 use crate::fixtures::constraint_coefficients;
+use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
+use utils::StarkCommitmentTrait;
 
 #[test]
 fn test_eval_composition_polynomial() {
     let mut stack = BidirectionalStackAccount::default();
-    let mut proof = StarkProof::default();
 
-    // Setup proof configuration
-    proof.config.fri = fri_config::get();
-    proof.unsent_commitment.fri = fri_unsent_commitment::get();
-    proof.config = stark_config::get();
-    proof.public_input = public_input::get();
-    stack.proof = proof;
+    let proof_str = include_str!("../../../example_proof/saya.json");
+    let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
+    let proof = StarkProofParser::try_from(proof_json).unwrap();
+    let proof_verifier = proof.transform_to();
+    stack.proof = proof_verifier.clone();
 
-    let oods_values = oods_values::get();
-    let oods_slice = &oods_values.as_slice()[0..OODS_VALUES_SIZE];
-    stack.oods_values = oods_slice.try_into().unwrap();
     stack.constraint_coefficients = constraint_coefficients::get()
+        .as_slice()
+        .try_into()
+        .unwrap();
+    stack.oods_values = proof_verifier
+        .unsent_commitment
+        .oods_values
         .as_slice()
         .try_into()
         .unwrap();
@@ -36,45 +41,49 @@ fn test_eval_composition_polynomial() {
             .unwrap();
     let trace_domain_size = Felt::from_hex("0x10000000").unwrap(); // 2^24
 
-    // Push interaction elements (these would normally come from StarkCommit::GenerateCompositionAlpha)
-    let memory_multi_column_perm_perm_interaction_elm =
-        Felt::from_hex("0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64")
-            .unwrap();
-    let memory_multi_column_perm_hash_interaction_elm0 =
-        Felt::from_hex("0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288")
-            .unwrap();
-    let range_check16_perm_interaction_elm =
-        Felt::from_hex("0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c")
-            .unwrap();
-    let diluted_check_permutation_interaction_elm =
-        Felt::from_hex("0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322")
-            .unwrap();
-    let diluted_check_interaction_z =
-        Felt::from_hex("0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48")
-            .unwrap();
-    let diluted_check_interaction_alpha =
+    // Set interaction elements (these would normally come from StarkCommit::GenerateCompositionAlpha)
+
+    let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_alpha =
         Felt::from_hex("0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822")
             .unwrap();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_interaction_z =
+        Felt::from_hex("0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48")
+            .unwrap();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .diluted_check_permutation_interaction_elm =
+        Felt::from_hex("0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322")
+            .unwrap();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_perm_interaction_elm =
+        Felt::from_hex("0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64")
+            .unwrap();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .memory_multi_column_perm_hash_interaction_elm0 =
+        Felt::from_hex("0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288")
+            .unwrap();
 
-    // Push parameters in the order expected by EvalCompositionPolynomial
-    stack
-        .push_front(&diluted_check_interaction_alpha.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&diluted_check_interaction_z.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&diluted_check_permutation_interaction_elm.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&range_check16_perm_interaction_elm.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&memory_multi_column_perm_hash_interaction_elm0.to_bytes_be())
-        .unwrap();
-    stack
-        .push_front(&memory_multi_column_perm_perm_interaction_elm.to_bytes_be())
-        .unwrap();
+    stark_commitment
+        .traces
+        .interaction_elements
+        .range_check16_perm_interaction_elm =
+        Felt::from_hex("0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c")
+            .unwrap();
+
+    stack.set_stark_commitment(&stark_commitment);
+
     stack.push_front(&trace_domain_size.to_bytes_be()).unwrap();
     stack.push_front(&trace_generator.to_bytes_be()).unwrap();
     stack.push_front(&point.to_bytes_be()).unwrap();
@@ -88,7 +97,6 @@ fn test_eval_composition_polynomial() {
         stack.execute();
         steps += 1;
     }
-
     println!("Executed {} steps", steps);
 
     let result = Felt::from_bytes_be_slice(stack.borrow_front());

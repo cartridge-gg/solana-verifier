@@ -1,15 +1,9 @@
-use crate::fixtures::{
-    commitment, fri_config, fri_unsent_commitment, fri_witness, oods_values, public_input, queries,
-    stark_config, stark_domains, trace_decommitment, witness,
-};
+use crate::fixtures::{fri_witness, trace_decommitment, witness};
 use felt::Felt;
 use stark::funvec::FunVec;
-use stark::swiftness::air::trace::Decommitment as TracesDecommitment;
-use stark::swiftness::air::trace::Witness as TracesWitness;
 use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use stark::swiftness::commitment::table::types::Witness as TableWitness;
 use stark::swiftness::commitment::vector::types::Witness as VectorWitness;
-use stark::swiftness::fri::types::Witness as FriWitness;
 use stark::swiftness::stark::types::StarkWitness;
 
 pub fn get() -> StarkWitness {

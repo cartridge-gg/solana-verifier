@@ -50,9 +50,8 @@ impl Executable for Verify {
                     stack.get_proof_reference::<crate::swiftness::stark::types::StarkProof>();
                 let n_verifier_friendly_commitment_layers =
                     proof.config.n_verifier_friendly_commitment_layers;
-                assert_eq!(
+                assert!(
                     stack.is_empty_front(),
-                    true,
                     "Stack back should be empty before GetHash"
                 );
                 self.step = VerifyStep::StarkCommit;
@@ -62,9 +61,8 @@ impl Executable for Verify {
                 let result = stack.borrow_front().to_owned();
                 stack.pop_front();
 
-                assert_eq!(
+                assert!(
                     stack.is_empty_front(),
-                    true,
                     "Stack back should be empty after GetHash"
                 );
 
@@ -94,9 +92,8 @@ impl Executable for Verify {
                 vec![StarkVerify::new(0, 0).to_vec_with_type_tag()]
             }
             VerifyStep::VerifyPublicInput => {
-                assert_eq!(
+                assert!(
                     stack.is_empty_front(),
-                    true,
                     "Stack should be empty before verifying public input"
                 );
                 self.step = VerifyStep::Done;
