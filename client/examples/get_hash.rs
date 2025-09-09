@@ -209,22 +209,19 @@ async fn main() -> client::Result<()> {
 
     // Clean up the stack (remove the result)
     stack.pop_front();
-    stack.pop_front();
-    stack.pop_front();
-
-    println!("\nGetHash result: {:?}", result);
-    println!("Stack front index: {}", stack.front_index);
-    println!("Stack back index: {}", stack.back_index);
 
     let expected_result = calculate_expected_get_hash(
         &proof_verifier.public_input,
         n_verifier_friendly_commitment_layers,
     );
-
     println!("Expected result: {:?}", expected_result);
-
+    println!("\nGetHash result: {:?}", result);
+    println!("Stack front index: {}", stack.front_index);
+    println!("Stack back index: {}", stack.back_index);
     // Verify the result matches
     assert_eq!(result, expected_result);
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
     println!("\nGetHash successfully executed on Solana!");
 
     Ok(())

@@ -247,10 +247,15 @@ impl Executable for GetHash {
                 vec![PoseidonHashMany::new(total_elements).to_vec_with_type_tag()]
             }
             GetHashStep::Program => {
-                let bytes = stack.borrow_front();
-                let poseidon_result = Felt::from_bytes_be_slice(bytes);
-                println!("GetHash result: {:?}", poseidon_result);
-
+                let bytes = stack.borrow_front().to_owned();
+                stack.pop_front();
+                stack.pop_front();
+                stack.pop_front();
+                stack.push_front(&bytes).unwrap();
+                println!(
+                    "GetHash completed. Hash: {:?}",
+                    Felt::from_bytes_be_slice(&bytes)
+                );
                 self.step = GetHashStep::Done;
                 vec![]
             }

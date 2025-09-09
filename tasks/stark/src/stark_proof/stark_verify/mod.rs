@@ -1,6 +1,5 @@
 use std::vec;
 
-use felt::Felt;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -22,9 +21,6 @@ pub mod vector_decommit;
 // pub use table_decommit::TableDecommit;
 // pub use traces_decommit::TracesDecommit;
 pub use vector_decommit::VectorDecommit;
-
-use crate::swiftness::commitment::vector::types::Query;
-use crate::swiftness::stark::types::StarkProof;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
@@ -67,37 +63,37 @@ impl Default for StarkVerify {
 impl Executable for StarkVerify {
     fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
         &mut self,
-        stack: &mut T,
+        _stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::Init => {
                 // Read queries from stack (should be pushed by caller)
                 // Expected stack format: [query_n, query_n-1, ..., query_1, query_0, queries_len]
                 // Each query is a Query struct: [index, value] (64 bytes total)
-                let proof: &StarkProof = stack.get_proof_reference();
+                // let proof: &StarkProof = stack.get_proof_reference();
 
-                self.queries_len = match proof.config.n_queries.to_biguint().try_into() {
-                    Ok(len) => len,
-                    Err(_) => {
-                        // Push error and finish
-                        println!("Error: Queries len could not be converted to u128");
-                        self.step = StarkVerifyStep::Done;
-                        return vec![];
-                    }
-                };
-                // Is this sanity check? why do we take n_queries from proof and then read from stack?
-                // Should we just read from stack? or assert they are equal?
+                // self.queries_len = match proof.config.n_queries.to_biguint().try_into() {
+                //     Ok(len) => len,
+                //     Err(_) => {
+                //         // Push error and finish
+                //         println!("Error: Queries len could not be converted to u128");
+                //         self.step = StarkVerifyStep::Done;
+                //         return vec![];
+                //     }
+                // };
+                // // Is this sanity check? why do we take n_queries from proof and then read from stack?
+                // // Should we just read from stack? or assert they are equal?
 
-                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
-                println!("READ: Queries length: {:?}", queries_len);
-                stack.pop_front();
+                // let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                // println!("READ: Queries length: {:?}", queries_len);
+                // stack.pop_front();
 
-                let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
-                for _ in 0..queries_len.to_biguint().try_into().unwrap() {
-                    queries.push(Query::from_stack(stack));
-                }
-                // Push queries back onto stack using helper method
-                Query::push_queries_to_stack(queries.len(), stack);
+                // let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
+                // for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+                //     queries.push(Query::from_stack(stack));
+                // }
+                // // Push queries back onto stack using helper method
+                // Query::push_queries_to_stack(queries.len(), stack);
 
                 self.step = StarkVerifyStep::TracesDecommit;
                 // vec![TracesDecommit::new().to_vec_with_type_tag()]
@@ -140,12 +136,6 @@ impl Executable for StarkVerify {
 
             StarkVerifyStep::FriVerify => {
                 // FRI verification finished, read result
-                let result = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
-
-                // Push final verification result
-                stack.push_front(&result.to_bytes_be()).unwrap();
-
                 self.step = StarkVerifyStep::Done;
                 vec![]
             }

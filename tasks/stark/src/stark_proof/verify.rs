@@ -5,7 +5,7 @@ use crate::stark_proof::stark_commit::StarkCommit;
 use crate::stark_proof::stark_verify::StarkVerify;
 use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
-use felt::Felt;
+use crate::swiftness::air::domains::StarkDomains;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
@@ -39,17 +39,53 @@ impl Default for Verify {
 }
 
 impl Executable for Verify {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             VerifyStep::ValidatePublicInput => {
                 self.step = VerifyStep::GetHash;
                 vec![ValidatePublicInput::new().to_vec_with_type_tag()]
             }
             VerifyStep::GetHash => {
+                let proof =
+                    stack.get_proof_reference::<crate::swiftness::stark::types::StarkProof>();
+                let n_verifier_friendly_commitment_layers =
+                    proof.config.n_verifier_friendly_commitment_layers;
+                assert_eq!(
+                    stack.is_empty_front(),
+                    true,
+                    "Stack back should be empty before GetHash"
+                );
                 self.step = VerifyStep::StarkCommit;
-                vec![GetHash::new(Felt::ZERO).to_vec_with_type_tag()]
+                vec![GetHash::new(n_verifier_friendly_commitment_layers).to_vec_with_type_tag()]
             }
             VerifyStep::StarkCommit => {
+                let result = stack.borrow_front().to_owned();
+                stack.pop_front();
+
+                assert_eq!(
+                    stack.is_empty_front(),
+                    true,
+                    "Stack back should be empty after GetHash"
+                );
+
+                let proof =
+                    stack.get_proof_reference::<crate::swiftness::stark::types::StarkProof>();
+
+                let stark_domain = StarkDomains::new(
+                    proof.config.log_trace_domain_size,
+                    proof.config.log_n_cosets,
+                );
+
+                stack
+                    .push_front(stark_domain.trace_generator.to_bytes_be().as_slice())
+                    .unwrap();
+
+                stack
+                    .push_front(stark_domain.trace_domain_size.to_bytes_be().as_slice())
+                    .unwrap();
+
+                stack.push_front(&result).unwrap();
+
                 self.step = VerifyStep::StarkVerify;
                 vec![StarkCommit::new().to_vec_with_type_tag()]
             }
@@ -58,6 +94,11 @@ impl Executable for Verify {
                 vec![StarkVerify::new(0, 0).to_vec_with_type_tag()]
             }
             VerifyStep::VerifyPublicInput => {
+                assert_eq!(
+                    stack.is_empty_front(),
+                    true,
+                    "Stack should be empty before verifying public input"
+                );
                 self.step = VerifyStep::Done;
                 vec![VerifyPublicInput::new().to_vec_with_type_tag()]
             }

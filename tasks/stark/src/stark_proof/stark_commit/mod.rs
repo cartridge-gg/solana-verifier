@@ -217,9 +217,6 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::TracesCommit => {
-                // Get initial transcript state from stack (should be set by caller)
-                let _initial_transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-                stack.pop_front();
                 let initial_transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.trace_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -250,7 +247,6 @@ impl Executable for StarkCommit {
                     .commitment_hash = unsent_commitment.composition;
 
                 stark_commitment.oods_values = proof.unsent_commitment.oods_values;
-
                 self.step = StarkCommitStep::GenerateCompositionAlpha;
 
                 vec![TracesCommit::new(initial_transcript_digest).to_vec_with_type_tag()]
