@@ -210,7 +210,6 @@ async fn main() -> client::Result<()> {
     // Clean up the stack (remove the result)
     stack.pop_front();
 
-
     let expected_result = calculate_expected_get_hash(
         &proof_verifier.public_input,
         n_verifier_friendly_commitment_layers,

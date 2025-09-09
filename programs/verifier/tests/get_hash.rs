@@ -1,6 +1,5 @@
 mod fixtures;
 use felt::Felt;
-use fixtures::public_input::get;
 use stark::stark_proof::get_hash::GetHash;
 use starknet_crypto::pedersen_hash;
 use starknet_crypto::{poseidon_hash_many, Felt as StarkFelt};
@@ -18,8 +17,7 @@ fn get_hash() {
 
     let proof_verifier = proof.transform_to();
     stack.proof = proof_verifier.clone();
-
-    stack.push_task(GetHash::new(
+    stack.push_task(GetHash::new(   
         proof_verifier.config.n_verifier_friendly_commitment_layers,
     ));
     while !stack.is_empty_back() {

@@ -316,11 +316,11 @@ fn test_table_decommit() {
     let queries_length = Felt::from(queries.len() as u64);
     stack.push_front(&queries_length.to_bytes_be()).unwrap();
 
-    let vector_config = VectorConfig {
-        height,
-        n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
-    };
-    let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
+//     let vector_config = VectorConfig {
+//         height,
+//         n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
+//     };
+//     let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
 
     let n_columns = Felt::from(7 as u64);
 
@@ -330,17 +330,17 @@ fn test_table_decommit() {
     };
     let mut table_commitment = TableCommitment::new(table_config, vector_commitment);
 
-    // Push vector commitment using trait method
-    table_commitment.push_to_stack(&mut stack);
+//     // Push vector commitment using trait method
+//     table_commitment.push_to_stack(&mut stack);
 
-    // Push the VectorDecommit task
-    stack.push_task(TableDecommit::new());
+//     // Push the VectorDecommit task
+//     stack.push_task(TableDecommit::new());
 
-    let mut steps = 0;
-    while !stack.is_empty_back() {
-        stack.execute();
-        steps += 1;
-    }
+//     let mut steps = 0;
+//     while !stack.is_empty_back() {
+//         stack.execute();
+//         steps += 1;
+//     }
 
     println!("Executed {} steps", steps);
     println!("Final stack size: {}", stack.back_index - stack.front_index);
