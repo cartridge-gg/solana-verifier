@@ -19,11 +19,65 @@ pub struct Decommitment {
     pub interaction: table::types::Decommitment,
 }
 
+impl CommitmentTrait<Decommitment, ()> for Decommitment {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+        // Read original table decommitment
+        table::types::Decommitment::from_stack(stack);
+        
+        // Read interaction table decommitment
+        table::types::Decommitment::from_stack(stack);
+    }
+
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
+        // For Decommitment, data is stored in VerifyVariables, use from_stack instead
+        unimplemented!("Decommitment data is stored in VerifyVariables, use from_stack instead")
+    }
+
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+        // Push interaction table decommitment first (will be popped last)
+        self.interaction.push_to_stack(stack);
+        
+        // Push original table decommitment second (will be popped first)
+        self.original.push_to_stack(stack);
+    }
+
+    fn to_bytes_be(&self) -> Decommitment {
+        *self
+    }
+}
+
 // A witness for a decommitment of the AIR traces over queries.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Witness {
     pub original: table::types::Witness,
     pub interaction: table::types::Witness,
+}
+
+impl CommitmentTrait<Witness, ()> for Witness {
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+        // Read original table witness
+        table::types::Witness::from_stack(stack);
+        
+        // Read interaction table witness
+        table::types::Witness::from_stack(stack);
+    }
+
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(_stack: &T) -> &Self {
+        // For Witness, data is stored in VerifyVariables, use from_stack instead
+        unimplemented!("Witness data is stored in VerifyVariables, use from_stack instead")
+    }
+
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+        // Push interaction table witness first (will be popped last)
+        self.interaction.push_to_stack(stack);
+        
+        // Push original table witness second (will be popped first)
+        self.original.push_to_stack(stack);
+    }
+
+    fn to_bytes_be(&self) -> Witness {
+        *self
+    }
 }
 
 // Commitment for the Traces component.
