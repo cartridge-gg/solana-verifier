@@ -5,9 +5,8 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::funvec::{FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_QUERY_INDICES};
+use crate::funvec::{FunVec, FUNVEC_QUERY_INDICES};
 use crate::stark_proof::stark_verify::table_decommit::TableDecommit;
-use crate::swiftness::commitment::vector::types::Query;
 use crate::swiftness::stark::types::{
     cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
 };
@@ -139,7 +138,7 @@ impl Executable for TracesDecommit {
                 {
                     // Push Original Table Commitment last
                     let (stark_commitment, _) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
-                    let original_table_commitment = stark_commitment.traces.original.clone();
+                    let original_table_commitment = stark_commitment.traces.original;
                     let commitment_bytes = cast_struct_to_slice(&original_table_commitment);
                     stack.push_front(commitment_bytes).unwrap();
                 }
@@ -220,7 +219,7 @@ impl Executable for TracesDecommit {
                 {
                     // Push Interaction Table Commitment last
                     let (stark_commitment, _) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
-                    let interaction_table_commitment = stark_commitment.traces.interaction.clone();
+                    let interaction_table_commitment = stark_commitment.traces.interaction;
                     let commitment_bytes = cast_struct_to_slice(&interaction_table_commitment);
                     stack.push_front(commitment_bytes).unwrap();
                 }
