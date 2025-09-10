@@ -1,25 +1,27 @@
 use felt::Felt;
+use stark::funvec::FunVec;
+use stark::stark_proof::stark_verify::traces_decommit::TracesDecommit;
+use stark::swiftness::air::trace::config::Config as TraceConfig;
+use stark::swiftness::air::trace::Commitment as TraceCommitment;
+use stark::swiftness::air::trace::Decommitment as TraceDecommitment;
 use stark::swiftness::commitment::table::config::Config as TableConfig;
 use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
+use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use stark::swiftness::commitment::vector::config::Config as VectorConfig;
 use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::swiftness::commitment::table::types::Commitment as TracesCommitment;
-use stark::{
-    stark_proof::stark_verify::traces_decommit::TracesDecommit,
-    swiftness::commitment::vector::types::CommitmentTrait,
-};
+use stark::swiftness::stark::types::StarkCommitment;
+use swiftness_proof_parser::transform::MONTGOMERY_R;
+use utils::global_values::InteractionElements;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
+use stark::swiftness::stark::types::StarkProof;
 
 #[test]
 fn test_traces_decommit() {
     let mut stack = BidirectionalStackAccount::default();
 
-    // Correct test data from the working implementation
-    let commitment_hash =
-        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
-            .unwrap();
+    // Data from traces_decommit_log.txt
     let height = Felt::from_hex("0x14").unwrap(); // 20
     let n_verifier_friendly_layers = Felt::from_hex("0x64").unwrap(); // 100
 
@@ -201,8 +203,8 @@ fn test_traces_decommit() {
         .map(|f| Felt::from_hex_unchecked(f))
         .collect::<Vec<_>>();
 
-    // Decommitment values (n_columns * n_queries = 7 * 10 = 70 values)
-    let decommitment_values_hex = [
+    // Decommitment values from traces_decommit_log.txt (70 values for original, 30 for interaction)
+    let original_decommitment_values_hex = [
         "0x5a81cfa7b8ba1dd722ce2bcaf78476fd0e0b7fda53287ed2632c2c32ab4f42c",
         "0x437f6248b14ae3bc546eafe54a32cdc961c0821ab13a8ef15b28aae6762c6e9",
         "0x350167cc2d1223d974e60d87bbadb0bf782ceb21bebca6657ceb3df9d2398b",
@@ -275,38 +277,48 @@ fn test_traces_decommit() {
         "0x61e378adc06e8c25707453f902a88a58320f383024acb6e8766faad2dae72a4",
     ];
 
-    let decommitment_values = decommitment_values_hex
+    let interaction_decommitment_values_hex = [
+        "0x5bf29218811908115445900bc8f367dcf29cf113bfe0e29f3c669b396e12da6",
+        "0x84945c17d78c44d588525e6012070172989c66a12f876d40def2eabd025352",
+        "0x73dd90541f088a8be7da7ff68e532d4af514312e6c367913e2d93aebded6888",
+        "0x6f925f5f494f60aae00761a87d21aa2d29b807514e30407a6049618c4d54db8",
+        "0x7d3e24eb2c919340e3e8573cdbf8330830b040dc6cd255497435039c9fff343",
+        "0x1e33d04a094e6d4dc2ccbac5f94effdf5800ec814d42f4b4b30642a1b537c5d",
+        "0x554156d17b1d78c4503b5d9ac0b5aef51cf1048c18c017318955654b81e106b",
+        "0x112cbcd71ebd64a09832ba3b69a8ac48af5176386e09e908b5d7118adfacdad",
+        "0x8fff861ec8a2f0216e8161a3a0dff2a6384f9dd9eb6c1c3cbf39f2c7a8ebf6",
+        "0x2e3dae8f2a70ca35f49f5ebe4a33613fbb8bcc59c42e9681e81c007aa139f1",
+        "0x1c9a20fc0184009000e8a93b983d6016117e8279dcd4afeef8b0231313a4068",
+        "0x3f111d9ad96bfdfc7d467e2ff0b79fe3a7e8bd5e2736a58b4296ab8e910d25f",
+        "0x3ddbf3767e51556ca3914783920d508c993d7c4b80b7a9232cc132674f4124e",
+        "0x35a280058cf32f47441a42db2dd0a41848ad8560e2a7e2ae806196006f1d306",
+        "0x3807fe3c5ccb585140ad0e58ab11f20ccf3d614684b8014a3deab4f607f4a8",
+        "0x3312b1827bf625d9269f7a2b8597f598b2ab729e2406f40dd089155cdfedeb0",
+        "0x1085a4ee6cea111d74c9ca967e5b558625bb9e93bfa4d1617051cb66378c57d",
+        "0x18b9b375d9da086d8825ba6f683a19f1a6afb30d3cd8b3ab8a5b242040d21c7",
+        "0x718e58a2f2f48f6bfecc1263b2ceb43d26fd1aa86bf12f2c75cc564c592108c",
+        "0x60c3dbaea374e6b68e8363f5769023ece533a0581a098aacd185fbe657b5a10",
+        "0x164e1191ba919ecf586655e920bae73134c7b8db66416579074725b71154177",
+        "0x4a283c8426e01924982760c0180e9b4dad90e3dce99f017eea4e62a43ec1e7a",
+        "0x72fe1e3b53b3c59593a7f77afd48966ba8a2cbc7fafa7b2ec80ee929d080134",
+        "0x54e169ac57ec327fc0fc6bfa109ccbf0877335becd6bab57e53e2c5d2963452",
+        "0xafd9d0db759ab20cfaab153a2e79339dfe6a73e0349059cf0ce17c52603dc3",
+        "0x23d84e00e69b16f915492c474a2b503eb2ff556c5b68fd3319cca404d7a3c6e",
+        "0x60ad0242b3f839ce26a48fab179628f81a02768082dfb09c48db6e44e6dd111",
+        "0x1feaa9ecc39d6ad84bc3bb79327b39731545e636ee2ca7ace1677cb8b1f6887",
+        "0x6cab97e59dae1d257f420aea18b44d84d40cc76cc6bbf81bb4307f5e28c88af",
+        "0x461c77600d1fee552f0b2ae8cb786c17c02360bcde0c1b2c568590792af759c",
+    ];
+
+    let original_decommitment_values = original_decommitment_values_hex
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
         .collect::<Vec<_>>();
 
-    println!("Test setup:");
-    println!("  Commitment hash: {:?}", commitment_hash);
-    println!("  Height: {:?}", height);
-    println!(
-        "  N verifier friendly layers: {:?}",
-        n_verifier_friendly_layers
-    );
-    println!("  Queries count: {}", queries.len());
-    println!("  Authentications count: {}", authentications.len());
-    println!("  Decommitment values count: {}", decommitment_values.len());
-
-    // Push authentications in reverse order (for stack)
-    for auth in authentications.iter().rev() {
-        stack.push_front(&auth.to_bytes_be()).unwrap();
-    }
-
-    stack
-        .push_front(&Felt::from(authentications.len() as u64).to_bytes_be())
-        .unwrap();
-
-    for value in decommitment_values.iter().rev() {
-        stack.push_front(&value.to_bytes_be()).unwrap();
-    }
-    let decommitment_length = Felt::from(decommitment_values.len() as u64);
-    stack
-        .push_front(&decommitment_length.to_bytes_be())
-        .unwrap();
+    let interaction_decommitment_values = interaction_decommitment_values_hex
+        .iter()
+        .map(|f| Felt::from_hex_unchecked(f))
+        .collect::<Vec<_>>();
 
     for index in queries.iter().rev() {
         // Query: index first, then value
@@ -321,18 +333,295 @@ fn test_traces_decommit() {
         height,
         n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
     };
-    let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
 
-    let n_columns = Felt::from(7 as u64);
+    let original_commitment_hash =
+        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
+            .unwrap();
+    let interaction_commitment_hash =
+        Felt::from_hex("0x7171ffc67e24fcbb2a7d1acd6244fa91c54dff15c96ca26d193907b716ce2c5")
+            .unwrap();
 
-    let table_config = TableConfig {
-        n_columns,
+    let vector_commitment_original = VectorCommitment::new(vector_config, original_commitment_hash);
+    let vector_commitment_interaction =
+        VectorCommitment::new(vector_config, interaction_commitment_hash);
+
+    let n_columns_original = Felt::from(7 as u64);
+    let n_columns_interaction = Felt::from(3 as u64);
+
+    let table_config_original = TableConfig {
+        n_columns: n_columns_original,
         vector: vector_config,
     };
-    let mut table_commitment = TracesCommitment::new(table_config, vector_commitment);
+    let table_config_interaction = TableConfig {
+        n_columns: n_columns_interaction,
+        vector: vector_config,
+    };
 
-    // Push vector commitment using trait method
-    table_commitment.push_to_stack(&mut stack);
+    let _trace_config = TraceConfig {
+        original: table_config_original,
+        interaction: table_config_interaction,
+    };
+
+    let _table_commitment_original =
+        TableCommitment::new(table_config_original, vector_commitment_original);
+    let _table_commitment_interaction =
+        TableCommitment::new(table_config_interaction, vector_commitment_interaction);
+
+    let original_decommitment_values_vec = FunVec::from_vec(original_decommitment_values.clone());
+    let original_montgomery_values = FunVec::from_vec(
+        original_decommitment_values
+            .iter()
+            .map(|x| x * MONTGOMERY_R)
+            .collect(),
+    );
+    let interaction_decommitment_values_vec =
+        FunVec::from_vec(interaction_decommitment_values.clone());
+    let interaction_montgomery_values = FunVec::from_vec(
+        interaction_decommitment_values
+            .iter()
+            .map(|x| x * MONTGOMERY_R)
+            .collect(),
+    );
+
+    let table_decommitment_original =
+        TableDecommitment::new(original_decommitment_values_vec, original_montgomery_values);
+    let table_decommitment_interaction = TableDecommitment::new(
+        interaction_decommitment_values_vec,
+        interaction_montgomery_values,
+    );
+
+    let mut proof = StarkProof::default();
+    let mut stark_commitment = StarkCommitment::<InteractionElements>::default();
+
+    // Set up the proof with data from traces_decommit_log.txt
+    proof.witness.traces_decommitment = TraceDecommitment {
+        original: table_decommitment_original,
+        interaction: table_decommitment_interaction,
+    };
+
+    // Set up witness data from the log
+    let original_authentications = FunVec::from_vec(authentications.clone());
+    proof.witness.traces_witness.original.vector.authentications = original_authentications;
+
+    // Set up interaction authentications from the log
+    let interaction_authentications_hex = [
+        "0x76b789ba37b249ed446240d80a657fd3a5216fdef370ac2e67966da1781f111",
+        "0x364dd8b93f77e8fe4a4220cb995c4b80079891290789864fa3c100ab21bec05",
+        "0x3cc20832ca880bc6ad2eaacb38e0ffea115901137c46c31fe838a4238514049",
+        "0x348907f2e55dce07e27d77e7deab058a8f501647dcb9eedee3e250615a04884",
+        "0xc301771c274048c2e4cf9a80cba0f5f6c6b55ad24f7f88c74cdfec6d9a40eb",
+        "0x181abc85910722d6eb29e740b06d2c45c21dae09a007c0f0df98de5cba3b7d2",
+        "0x202effed198702786efe1dc32cde6df6fa54278bae9c4d801e05da6292c0f11",
+        "0xc9e7ce3c1c9ddf651f57010923085513b541a85001eae3d4a08f1ca1f63298",
+        "0xdaa9ce9b236f5d9f5b07937d8d042a354fe1e2f63c10000b0df1693bd8ce82",
+        "0x5a09b9f8b632d9d548b473a53d9b0c2412d5c36382bf6f8d13ba59a7475f455",
+        "0x2913951a49284de65d5ab35c06dab42cae6e92ac073035d0af51d261a6fc08e",
+        "0x35464b46b9239eda631924a70a930e9f8d08cf1defe97a9ba33b2453a5b6291",
+        "0x70eb30da3695280edfba8b540a75732aa6dc840dcc99a0b730f81c58f4bd4d0",
+        "0x4ba37beb9e6735d2e47788d96e841e10fe506e5a6b88f275a70ce7beb2a9967",
+        "0x4d2703aa177413be9e1e3b4580d7921eb0df767adef8aa0e0dfb43d3a11464",
+        "0x2d9bfc4a97be1ad887ca557e1063cf7cb83af174b61d977c3950eca104685b3",
+        "0x90a12c9a8964cea0a0062997bec48724249543e13ee96d120cbcbf3f31a56b",
+        "0x496b8770873e2597d658f6d918be7b6545d1dd2f85fe19fb4a8fd416e8b513d",
+        "0x69b9eb7973b0fcaddfcb3c8a6ea0c5361375f7c7ae16385cf9c887d30bdf2cb",
+        "0x287a3ec04cda03b1ba5b4c117af129033e5571356e78d4527f2cc670d022856",
+        "0x20d7ac2523a5c88f689a4da0f18fd7394fdac8c34f567d2951fec771fa984d8",
+        "0x2f445fd061f2ba231c04fb1e32baa117563c07034cfcb13c1b3fb79b07a79b6",
+        "0x6eb3c9fb9dd1434531abf6e291f701e06c13c987d1c3ba3f643d4e45064742d",
+        "0x17afd828f62de9cc5ee017618c80e7e064f66b9a631ba13dce6ef7949b6bfc8",
+        "0x38d895b73ff320fec7098cdf7c1a1b68280a184b3db3f5b452d5019f5e5361",
+        "0x492c1da796bb73bb3029eb41451c8b779c7cb92b80c589d9094861c065a916c",
+        "0x679b2916f02ceaceef3c3ed8c3f068229c6435316a2ce19b9ab463ea67a373b",
+        "0x3bf581f4d94a39b2b41494919584ef328f3bff01e7e58b4c9015a3502a737cc",
+        "0x7c934170516c3836f2ce10df2a3cf5339cdaecd2353ab97e89a77cc6aeb14bb",
+        "0x43c46699d2ec397138b261d4bcdab798903f2cf2890730476011135826c9a2f",
+        "0x42cde356b7bbe38893c983635932cfd0a5ed77eb6a77f3788bf388f67d60af7",
+        "0x3f25a361d52b2ff8fe8267f07650c9506b1de04cc9ed82d84f2102af0fc04c5",
+        "0x696d504019609ed98b34337eae1e5d4590c3c7ff8d7c333644e400734a63162",
+        "0x30bff263f7ce997b2a79c0bf2f6e0598632d7290a721a15edd725be2c69df29",
+        "0x3d45d035c364e5f1f28236c55284427305a30afc602feb34e0e8b9df582bca3",
+        "0x4a714cac0662c1a852d712a26e4cbeeeacb9f7116b769dd11fc6684e2efddf4",
+        "0x362768880673b2913007dc8606dbe556457191f2afdf607764b93954b024281",
+        "0x480ab8e6165c76254bd56054b8a8c3ce6d5de60cb3084a2669af5ec8f36f75",
+        "0x7fd76d34699b64be7a980af9c8bde3737c61df11b38fc5fa39fa71cc1d86c5f",
+        "0x4c248805022a02f16a9f650e015f829d1c89d1c459af7157f14bcc1f46bfa1",
+        "0x58288d9c1b845ddde62bbad387ef2d6960ec43ff3412c67ca0720e9bd63614e",
+        "0x40871f884f21fb25bfa97e01ee9a2bd4bfa689e0c34a86e907d1f5f6a0abec9",
+        "0x49cdacb2c7bca4996af15fa53d6bb45862fd34986d48f217cc3047ddf6c4d45",
+        "0x503de266db2ecd69cc2ed3a2410be913e777179891a49aba0f931c165a2420b",
+        "0x3573f6fce688a827535a2e82ea94b515c13d26e456fb719d2a2f4ad85eea13f",
+        "0x6a2904e5ef366202b5c2c263a4aa230b80cd44d5e037faf7f3d130061ad20f6",
+        "0x4759e31171ca140476a936f4dce9d15c412cd99044839c0913d2784f1125b5d",
+        "0x251ef225175f621ec7d6cfc275100997d019544bc3d0b8262e9abdbea6e4bad",
+        "0x709fe6fe7a173da6f301e8ca6a95f32c0d8964070f58ccb059c57a919baed62",
+        "0x5d34845bd23ac1fdfb64d6f00c8c0a3eb52f13ca1af0a773d91330cb29ed206",
+        "0x6d0dac6849e3c1b12aa08d641e8647954383b1375d258b490317060f314f614",
+        "0x6c8c76d1fef8b75cbabd284f621f49e76cf60db0c6739d3f1120ee5fb6427a",
+        "0x2a06dd43d9c6b756330563bbaade7f47898924787aae724f6deade207d02811",
+        "0x3d2e609634b4d1379703bf2d9d54bdfdfee3ae14e1a2f94502366695b83f536",
+        "0x294f7d5a2984cf078d5946973f41dc80a6dfe3d5bf89a24791d85f7ff3bb9c5",
+        "0x3d88ce09803c433f5442d75cbd3d7d35b00912329664b8fede98627febd77d",
+        "0x12bf84d3ed4b26d5c5de2fe84469663f717905dbfd614e4551bf71cf82ff4a5",
+        "0x4fbfec4a2da7ab549af92264fadfcf01c26d2591904cfbb6e02dd714d705e89",
+        "0x687fda78e7de0256d84f04eb7f94b9be5bcd017f6618edfa51858bb32d510dd",
+        "0x6087d5ea70a6389469e8fa2094785812f75368e86faee9bce58ab74a17277f6",
+        "0x1cc1ea86d5772b9a7397ad41989f2e73e76eedd7605177ad3131cd8a150126b",
+        "0x27f2f556a6e391fe6328aa105917e8c6d1dcbb2e4c7ea92de6c173757395a28",
+        "0x69d1b243bcecd8b1c8abad30db6b8fa74856970db0843669a805edd2b14c00e",
+        "0x1d9a02e2319e56be57a3cc2be932d9fee602960a6229547571b2e1b92eadf50",
+        "0x4bd8ed28820db1ce055f4b79809d9e11a99c1e1f766777dde07ec452892041b",
+        "0x79fe4421d71a83ff347c92b6ff8d231b6e74b43c5f2a0c098bdd7ea4bb30b7c",
+        "0x49d6aebc099ac97edcc682cc0b76e22b4a8c93303e458b5d9b6e4e13a158fa8",
+        "0x7cb5ef83e467ab67f9795ad86bd45fd55487cb68de0c316ed16cf4daa4f1505",
+        "0x7d281768a3b3492df15855e1080411807790f9b89286277ac0da55ab13e3176",
+        "0x7b8052c7ef750eadb16ac7e87527ab76fe331006f61752ca7b9dfdca97bf493",
+        "0x2af715167fefed6fa0887799d9798ebe99b256fa2eddc94b43c6c9146f5090a",
+        "0x18796cd4ed88e1750e229851cc7861bf1ea23d0f318b5605d4712b2580d5e1f",
+        "0x4e408e992bae49aab8b3b66696af3dfb886beaec391fb412e07eda5f65941f1",
+        "0x7c6c81a18bca75581a49438eae384067c07ed270b3d68a6e48348265e49e6b3",
+        "0x1ca7da8b0480c44aeece37621be633fcee5c4636a979000abd383ccf9d224f1",
+        "0x70f86634c6abc920496946dce41c0d5e4db8118fd83d63bee0fe94f35d6a36b",
+        "0x7ef6623b4cb856b176b3a18dad4bca6735b5ab73c0f4a0e05ad0747ea73006a",
+        "0x2a193cb6a0683e8a19cd4b59f9ca501cfad289be86b80ec5c35b4f85bb10132",
+        "0x25fdcaffcebdc6bad5c375e9936dfe096c2a77b86059a86aa4ec6e8cb5c4216",
+        "0x3ea2279958ff5852eeb4e64d80f862fef7d10e17eeecf8d9c7e9d56fa9c6430",
+        "0x4c0db58654eb85c6c576963d5318659f6bb24784c995d200c6fbfb630eed95e",
+        "0x46d53379d0a45e9bb282186624beed25ed6a5071609b35a394e9df575094b08",
+        "0x2f260e73f0e718a49a5668cc9f43b9e0766e58692ecdf8461857e043dab2b7c",
+        "0x4e9cb4e481222e66f386530a57ec2ecd0451fda60ae2888f4450b3c55006073",
+        "0x26bf87fbdb5e542c9d918347faf9f4a3985519f1f7ef4f76bdb121016b26de8",
+        "0xd224688a01b4489679359f96d88f3dbe7905beb5127535dac5948fe725fb07",
+        "0x46997f693222169d68fdd91d920e60bd72ebaf0a6767718242198b1c370c796",
+        "0x1d170d2e6be529b17a8a7f31867fe76ab89ddd45321866bc3dcb8b92fc519a6",
+        "0x1157e7065cd177bbc01cb84d1d7a6e03f974a9047139972f9c25e1bef27214a",
+        "0x36fbfc9c34a54cb96e770b3dd8ac439673e9793e26ed5a220382567bf7bd77a",
+        "0x531bf470f6c585696173467c023cb9c5f5fc44a38c5df75db366b8cdceea9cd",
+        "0x3840da2268d57a48cd43834e90d8d0d693fb567cfd1dff5d6a2193717859fd3",
+        "0x3410a3b1e98235e5d44e8bf65221d3cf9e4cf6f37fd18a296f3bf7c23069125",
+        "0x458d0ce8934f2e68b5a240e88db9093d2afc49f1534c9fda46652a04f1138b5",
+        "0x6e23116750b4494e3331dfb20b71ae5de2a2903cdf0cca6d2fd7667bf98c3d3",
+        "0x575a6eee8491b3f94f5a0bdc8d69b11114f1ffa778d0ed456fe916497dff86f",
+        "0x75ccf0e20b9bc788de40efc15e207f2ea100b1ad222aa88e708f3065f42e02b",
+        "0x302f0e3dd5518420328c09910b7b0c4e7583276bef4f44cdce91f2bd642dd5b",
+        "0x4a3ac75b61c5b5cb3064eda42c4e3d236c20530f5a847e0aa19d477974306fe",
+        "0x580ffaae66cfd97404ee879c52902a30f4c8de26d660df820f78f95dbe48dd0",
+        "0x3ef650c119753a23c13fec26d43cc5ec950043a36ec58c425d5f2b1c76f078d",
+        "0x4483e16171bd32594824649dd4c271ef9d3ffeccb94a52ba9f9ae63e83afd8e",
+        "0x596d276a006d16d98fedc2a0c8f5b44cdb68a9742feeb83d25a2c3a43ac3a91",
+        "0x4d15b8fe7cc7be20ad80b9815fed60bf1c9e192cb481b9793fd964de29d2831",
+        "0x7455767862cbcec3e835abf1533cdb6da3940549bd2923614fae97dd2e15628",
+        "0x3242c7b9abc0e845e5789bffcdc074b38ec1aef8ec29ea06dc9b6a9bf72727a",
+        "0x1193f34976cb21fdbeda00f8f6016e0ed5d235589a6cd12a33ac335e7ee3451",
+        "0x53a712804fb598609746cb9ddc53adf71ce01e8f6646e87e20576613b3ab893",
+        "0x1f485222649b25d762b6f580b3c7408dd51d4a41887cb3bd11ffa5e007b0192",
+        "0x47ad45c0dbb6b27545cd95ddc7c4316e91a5ae7615d87d6646e728379c715a8",
+        "0x180374fe491b2b7439dabe9ee9ad0f4b3e1fa5ab50d3b137ef6aa4cf3fd71b3",
+        "0x3559b1b89d680c86863ab37b25535e877c6bf88beefcba745e483159077ddb5",
+        "0x2724cd76d2abfcc4f293b7894621ddfb7adecdbf1e4ed32d3a4e43bead7c3cc",
+        "0x1a0029238afcd7a0779e39a8158fda0942eb14b2734f9921428b96638ee8f3e",
+        "0xcd7f8ec7105c1a67b2c1b9b7de0d1b53d820ea4b5a108a3bcf76f5580d71f9",
+        "0x1c3ebbea383770c83c8eff8d24aff4ef6c75cbe60caf27794db0bc0ae069352",
+        "0x45d5c5c1eaf7b3cc85e6ddf6b4f8308603b51bf01e2731ad9eddd0b6f97f173",
+        "0x6cfb748aa36ddefbbafedd60df791e550298023f9cabde71ca9a7b3b12590c3",
+        "0x5da9e3f1e07085fb498e9acaca82ae002f347845dfd292f6ace331d9efde939",
+        "0x5ca30e4aab922d075b5381044d90dc3a9055e2f3d74334db41c878cbe50a3f9",
+        "0x3b600e2f955c36e52a123047736afbe3668092e8da0d87e4499ca2d33e14723",
+        "0x2fcd621cd66fa329296e7494ddffb13131b2edcc0d2e23e16e4583831deab9b",
+        "0x1414487139a8c1ce17740db3931d82bd8cea317d27977ee0b844b0317c5c8e5",
+        "0x67b9fef9446991016a899cd5fed72896fabf2e04c77107d267733ad58f524a1",
+        "0x6e33d20e800e78463a51dd4550112d8e5fec1b010a77c1e00e4a087b381e611",
+        "0x58dd95737a203c3981ab8a6dc97957f557c4cbbdcb752ae3168ed6590f32b82",
+        "0x468f3c0fde415a9c5d2aa36f1a012cb9cfb34d308bba8b7187c7ab6e25d2eb9",
+        "0x481e7e3d48be9918c1722bd598049aa7dd3336d6bb3d1d6f625bbd9dfe51aa0",
+        "0x229b56d9c6e88a2f968227234dd3b0566253b952df03d7d09a93d1a76e927a9",
+        "0x33443ebf07007f6dea85ff4d506cc3edc02cb316ddff09d77cb754a14e03b34",
+        "0x46ba51410bc8e371d1a75ef0069301819bac23dd3e1041fb4fa97fcbcd561c8",
+        "0x4bfebfc9f423838dfd4cb28b6d70a53646ea57002ce4afc91e371e6815b3c4d",
+        "0x3d809e239ad34363d350a1af2a2b0e0ef9968147357985497d50de7da341a64",
+        "0x3e43249e901c2d86ace654b820a4a9c86ab22e792a74f3593066cbeeeb028bc",
+        "0x63b92167d491f8d3ca069ad069553961059cab349317f5c8b5f2f38f30c8f39",
+        "0x2b14efdd8315aab3f3fc8e72b151131a3f5e68eebd6b710773a83b96a906967",
+        "0xff9d7b63a123f19014da4be885187928ac982e6605de9b8a23cbd4ec59b929",
+        "0x38cd76ca81385261a7b2687cca02395d325ac759ef35f07354e706c95c3675f",
+        "0x6e3cc6ce52df290ebc16600c5b2358c195f7138e1e8a77e1c8717facd5943de",
+        "0x6f5237cf2ff3d24c6c2a5172890e9734b34a15430d4327dfef99655e09c1715",
+        "0x5eec4358e0dd031543e035da38030f9389d1f517b576450d1c7bba3cbce370f",
+        "0x3760b1561e21245e82dca98edcd6f0d32dd98e9deb253e0ed56d542ad393ed5",
+        "0x74a631cf2a833c70e1388c23a2c9d12e6ccc18169fb111c910a0b3119ae6aa9",
+        "0x5794890aef3be791ae9619b98d45bde617134519b933cf9c7327cdec92991f7",
+        "0x7600f8a366a525a42b38da4da5a6880d0683e27413f8d7f700fdb806856fba1",
+        "0x1b3f2bd4523c83536ca69293a9d412acc3ab3b1e3ca90c0c1a7fa52799583ec",
+        "0xf9f931aa1e228a15eac2f97c43c045d26604331d829afb40a8d1f68c00e17b",
+        "0x50f96bad1eed06805a2eb595f2935672dde616e68fcb21530fe13c45019cb5",
+        "0x50a55442b12ab08a66eba124f4eadb678d7e47be6bc3762aa41000e652af7c4",
+        "0x7f1b6af56db7871e9eb4c4bc70694d0aacc31b9ac4a76f079fc4ed8d7cdf47a",
+        "0x1a84ce8e1e09ff9a37ce8827f7a9eda4680343c23adbb13e669eb8874b74558",
+        "0x7030ad79dae6c0fb2ff37c6940ed5d5c427ca6e40d66a4b92ba45aa418b7876",
+        "0x58cee4467ffcb3a8c615e75eed63da75f9ce0070fd56c54038fe7287c162193",
+        "0x33488d700e4f77d7f67f64ed336ef8cf669bc6bb71c0b0e798d4b9ac431f5f",
+        "0x1819dddd855e88e064337c6e6157f38b86867304f27eec9df48b4dfe67fab6b",
+        "0x4d783b6bb8704ad7160508cfee86f790552c368e20e9d0a0919266164de74be",
+        "0x79c5ef984a8e33b3ccd3539ef8d73f4617363cc93fbe909d088e0943749c795",
+        "0x72f53cc49512032ed82e1a53aa5ab61f94b540404327fc433f752ee75247594",
+        "0x724a99ba8eeb2811abed127c86b74ed92e051812cd58e4ea4a15f709d29b850",
+        "0x39ba80681bf41d02a2af546a30ca8a2c22386d2c3059006da659f8a5ef4c917",
+    ];
+
+    let interaction_authentications = interaction_authentications_hex
+        .iter()
+        .map(|f| Felt::from_hex_unchecked(f))
+        .collect::<Vec<_>>();
+
+    proof
+        .witness
+        .traces_witness
+        .interaction
+        .vector
+        .authentications = FunVec::from_vec(interaction_authentications);
+
+    // Set up stark commitment with data from the log
+    let table_commitment_original =
+        TableCommitment::new(table_config_original, vector_commitment_original);
+    let table_commitment_interaction =
+        TableCommitment::new(table_config_interaction, vector_commitment_interaction);
+
+    let interaction_elements = InteractionElements {
+        memory_multi_column_perm_perm_interaction_elm: Felt::from_hex(
+            "0x33dd9c083eee682a168398d8189bf14bc503febe8d298c7b254ff5d74868c39",
+        )
+        .unwrap(),
+        memory_multi_column_perm_hash_interaction_elm0: Felt::from_hex(
+            "0x6a7aed3206de9c6a434484cc1f499801fc2df433783aef27b67ee8010b9a6c5",
+        )
+        .unwrap(),
+        range_check16_perm_interaction_elm: Felt::from_hex(
+            "0x645541a20083f184215fcb20d8014bed0546f6ae292f9eb7ee3de254117c597",
+        )
+        .unwrap(),
+        diluted_check_permutation_interaction_elm: Felt::from_hex(
+            "0x11d978931f41d88e9e8930b42c84b6471782ca8c565464dd6f468c2b4804a22",
+        )
+        .unwrap(),
+        diluted_check_interaction_z: Felt::from_hex(
+            "0x1e22e58ff299d68ff2d5823796c232bd70a8e700d70379417849503417a478a",
+        )
+        .unwrap(),
+        diluted_check_interaction_alpha: Felt::from_hex(
+            "0x3b74ba4892c5814cd3d16f5f28df48e8a6dc70a3d67f18b1b4921510fe88278",
+        )
+        .unwrap(),
+    };
+
+    let trace_commitment = TraceCommitment::<InteractionElements>::new(
+        table_commitment_original,
+        interaction_elements,
+        table_commitment_interaction,
+    );
+
+    stark_commitment.traces = trace_commitment;
+
+    stack.proof = proof;
+    stack.stark_commitment = stark_commitment;
 
     // Push the VectorDecommit task
     stack.push_task(TracesDecommit::new());

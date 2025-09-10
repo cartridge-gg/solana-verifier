@@ -140,6 +140,7 @@ impl Executable for VectorDecommit {
                     commitment_hash == self.reference_commitment_hash,
                     "Commitment hash verification failed"
                 );
+                println!("DEBUG: VectorDecommitStep::VerifyCommitmentHash done");
                 self.step = VectorDecommitStep::Done;
                 vec![]
             }

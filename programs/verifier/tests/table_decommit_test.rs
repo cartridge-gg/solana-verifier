@@ -1,9 +1,7 @@
 use felt::Felt;
 use stark::swiftness::commitment::table::config::Config as TableConfig;
 use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
 use stark::swiftness::commitment::vector::config::Config as VectorConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use stark::{
     stark_proof::stark_verify::table_decommit::TableDecommit,
@@ -21,9 +19,7 @@ fn test_table_decommit() {
     // Correct test data from the working implementation
     let commitment_hash =
         Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
-        Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
             .unwrap();
-    let height = Felt::from_hex("0x14").unwrap(); // 20
     let height = Felt::from_hex("0x14").unwrap(); // 20
     let n_verifier_friendly_layers = Felt::from_hex("0x64").unwrap(); // 100
 
@@ -201,15 +197,6 @@ fn test_table_decommit() {
     ];
 
     let authentications = authentications_hex
-        .iter()
-        .map(|f| Felt::from_hex_unchecked(f))
-        .collect::<Vec<_>>();
-    let queries_hex = [
-        "0x3982a", "0x52d42", "0x585a8", "0x7c3cc", "0x8af7f", "0x8e6f3", "0x97846", "0x9e330",
-        "0xa9b57", "0xfa009",
-    ];
-
-    let queries = queries_hex
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
         .collect::<Vec<_>>();
@@ -553,17 +540,7 @@ fn test_table_decommit() {
     // Push authentications in reverse order (for stack)
     for auth in authentications.iter().rev() {
         stack.push_front(&auth.to_bytes_be()).unwrap();
-    // Push authentications in reverse order (for stack)
-    for auth in authentications.iter().rev() {
-        stack.push_front(&auth.to_bytes_be()).unwrap();
     }
-
-    stack
-        .push_front(&Felt::from(authentications.len() as u64).to_bytes_be())
-        .unwrap();
-
-    for value in decommitment_values.iter().rev() {
-        stack.push_front(&value.to_bytes_be()).unwrap();
 
     stack
         .push_front(&Felt::from(authentications.len() as u64).to_bytes_be())
@@ -593,26 +570,24 @@ fn test_table_decommit() {
     let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
 
     let n_columns = Felt::from(7 as u64);
-    let n_columns = Felt::from(7 as u64);
 
     let table_config = TableConfig {
         n_columns,
         vector: vector_config,
     };
     let mut table_commitment = TableCommitment::new(table_config, vector_commitment);
-    let mut table_commitment = TableCommitment::new(table_config, vector_commitment);
 
-//     // Push vector commitment using trait method
-//     table_commitment.push_to_stack(&mut stack);
+    // Push vector commitment using trait method
+    table_commitment.push_to_stack(&mut stack);
 
-//     // Push the VectorDecommit task
-//     stack.push_task(TableDecommit::new());
+    // Push the VectorDecommit task
+    stack.push_task(TableDecommit::new());
 
-//     let mut steps = 0;
-//     while !stack.is_empty_back() {
-//         stack.execute();
-//         steps += 1;
-//     }
+    let mut steps = 0;
+    while !stack.is_empty_back() {
+        stack.execute();
+        steps += 1;
+    }
 
     println!("Executed {} steps", steps);
     println!("Final stack size: {}", stack.back_index - stack.front_index);

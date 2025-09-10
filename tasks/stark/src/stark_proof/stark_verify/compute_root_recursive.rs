@@ -58,7 +58,6 @@ impl Executable for ComputeRootRecursive {
                 let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let n_queries_usize: usize = n_queries.try_into().unwrap();
-                println!("DEBUG: n_queries_usize = {}", n_queries_usize);
                 assert!(
                     n_queries_usize <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",

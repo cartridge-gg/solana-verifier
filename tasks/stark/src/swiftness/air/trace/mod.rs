@@ -1,10 +1,10 @@
 pub mod config;
 
 use crate::swiftness::commitment::table;
+use crate::swiftness::commitment::vector::types::CommitmentTrait;
 use crate::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice};
 use felt::Felt;
 use utils::{BidirectionalStack, StarkVerifyTrait};
-use crate::swiftness::commitment::vector::types::CommitmentTrait;
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct UnsentCommitment {
     pub original: Felt,
@@ -23,7 +23,7 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
         // Read original table decommitment
         table::types::Decommitment::from_stack(stack);
-        
+
         // Read interaction table decommitment
         table::types::Decommitment::from_stack(stack);
     }
@@ -33,10 +33,10 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
         unimplemented!("Decommitment data is stored in VerifyVariables, use from_stack instead")
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         // Push interaction table decommitment first (will be popped last)
         self.interaction.push_to_stack(stack);
-        
+
         // Push original table decommitment second (will be popped first)
         self.original.push_to_stack(stack);
     }
@@ -57,7 +57,7 @@ impl CommitmentTrait<Witness, ()> for Witness {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
         // Read original table witness
         table::types::Witness::from_stack(stack);
-        
+
         // Read interaction table witness
         table::types::Witness::from_stack(stack);
     }
@@ -67,10 +67,10 @@ impl CommitmentTrait<Witness, ()> for Witness {
         unimplemented!("Witness data is stored in VerifyVariables, use from_stack instead")
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         // Push interaction table witness first (will be popped last)
         self.interaction.push_to_stack(stack);
-        
+
         // Push original table witness second (will be popped first)
         self.original.push_to_stack(stack);
     }
@@ -90,6 +90,20 @@ pub struct Commitment<InteractionElements> {
     pub interaction_elements: InteractionElements,
     // Commitment to the second (interaction) trace.
     pub interaction: table::types::Commitment,
+}
+
+impl<InteractionElements> Commitment<InteractionElements> {
+    pub fn new(
+        original: table::types::Commitment,
+        interaction_elements: InteractionElements,
+        interaction: table::types::Commitment,
+    ) -> Self {
+        Self {
+            original,
+            interaction_elements,
+            interaction,
+        }
+    }
 }
 
 // Bytes representation for stack operations
@@ -117,7 +131,7 @@ where
         cast_slice_to_struct::<Self>(data)
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         let commitment_bytes = cast_struct_to_slice(self);
         stack.push_front(commitment_bytes).unwrap();
     }
@@ -129,4 +143,3 @@ where
         }
     }
 }
-
