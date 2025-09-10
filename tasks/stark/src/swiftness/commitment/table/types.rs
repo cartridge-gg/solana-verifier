@@ -48,9 +48,7 @@ impl CommitmentTrait<TableCommitmentBytes> for Commitment {
 
     fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         let commitment_bytes = cast_struct_to_slice(self);
-        for byte in commitment_bytes {
-            stack.push_front(&[*byte]).unwrap();
-        }
+        stack.push_front(commitment_bytes).unwrap();
     }
 
     fn to_bytes_be(&self) -> TableCommitmentBytes {
