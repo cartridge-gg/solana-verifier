@@ -17,7 +17,7 @@ fn get_hash() {
 
     let proof_verifier = proof.transform_to();
     stack.proof = proof_verifier.clone();
-    stack.push_task(GetHash::new(   
+    stack.push_task(GetHash::new(
         proof_verifier.config.n_verifier_friendly_commitment_layers,
     ));
     while !stack.is_empty_back() {
