@@ -26,6 +26,7 @@ impl Commitment {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct TableCommitmentBytes {
     pub config: TableConfigBytes,
     pub vector_commitment: VectorCommitmentBytes,
@@ -45,7 +46,7 @@ impl CommitmentTrait<TableCommitmentBytes> for Commitment {
         cast_slice_to_struct::<Self>(data)
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         let commitment_bytes = cast_struct_to_slice(self);
         stack.push_front(commitment_bytes).unwrap();
     }
@@ -94,7 +95,7 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
         }
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         let count = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
         let count: usize = count.to_biguint().try_into().unwrap();
@@ -135,7 +136,7 @@ impl CommitmentTrait<Witness, ()> for Witness {
         unimplemented!("Witness data is stored in VerifyVariables, use from_stack instead")
     }
 
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         self.vector.push_to_stack(stack);
     }
 

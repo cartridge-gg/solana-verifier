@@ -292,6 +292,18 @@ impl ProofData for BidirectionalStackAccount {
     fn set_global_values(&mut self, global_values: GlobalValues) {
         self.global_values = global_values;
     }
+    fn get_stark_commitment_and_proof<T: Sized, P: Sized>(&self) -> (&T, &P) {
+        let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice(&self.proof);
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+
+        let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
+
+        (stark_commitment, proof)
+    }
 
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
         let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);

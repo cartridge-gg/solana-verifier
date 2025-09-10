@@ -11,6 +11,7 @@ pub struct Commitment {
     pub commitment_hash: Felt,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct VectorCommitmentBytes {
     pub config: VectorConfigBytes,
     pub commitment_hash: [u8; 32],
@@ -21,7 +22,7 @@ where
 {
     fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> R;
     fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self;
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T);
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T);
     fn to_bytes_be(&self) -> P;
 }
 
@@ -51,7 +52,7 @@ impl CommitmentTrait<VectorCommitmentBytes> for Commitment {
     }
 
     #[inline(always)]
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         let commitment_bytes = cast_struct_to_slice(self);
         stack.push_front(commitment_bytes).unwrap();
     }
@@ -122,7 +123,7 @@ impl CommitmentTrait<Witness, usize> for Witness {
     }
 
     #[inline(always)]
-    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&self, stack: &mut T) {
         // Get count first
         let count = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
@@ -393,7 +394,6 @@ impl QueryWithDepth {
         count: usize,
         stack: &mut T,
     ) {
-        println!("DEBUG: push_queries_with_depth_to_stack: count = {}", count);
         // Push queries in reverse order - no allocation
         for i in (0..count).rev() {
             let (depth_bytes, value_bytes, index_bytes) = {

@@ -96,9 +96,13 @@ impl Executable for TableDecommit {
 
                 // Store queries indices
                 let mut query_indices = Vec::new();
-                for _ in 0..queries_count {
-                    let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
+                for i in 0..queries_count {
+                    // let index = Felt::from_bytes_be_slice(stack.borrow_front());
+                    // stack.pop_front();
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    let queries_slice = &mut verify_variables.temp_queries;
+                    let index = queries_slice[i * 2];
+                    println!("DEBUG: index: {:?}", index);
                     query_indices.push(index);
                 }
 
@@ -175,8 +179,6 @@ impl Executable for TableDecommit {
 
                 // Store hash in corresponding vector query
                 self.vector_queries[self.current_query_index].value = hash;
-                println!("Query {} hash: {:?}", self.current_query_index, hash);
-
                 self.current_query_index += 1;
 
                 // Move to next query or finish
@@ -345,8 +347,6 @@ impl Executable for GenerateVectorQueries {
                 stack.pop_front();
                 stack.pop_front();
                 stack.pop_front();
-
-                println!("Poseidon hash result: {:?}", result);
 
                 // Push result to stack for TableDecommit to collect
                 stack.push_front(&result.to_bytes_be()).unwrap();
