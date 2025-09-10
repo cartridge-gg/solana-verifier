@@ -270,22 +270,6 @@ async fn main() -> client::Result<()> {
     )
     .await?;
 
-    let counter = Felt::from_hex("0x0").unwrap();
-    let push_counter_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushData(counter.to_bytes_be().to_vec()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let _ = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[push_counter_ix],
-    )
-    .await?;
-
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
