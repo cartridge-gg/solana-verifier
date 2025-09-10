@@ -26,6 +26,7 @@ impl Commitment {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct TableCommitmentBytes {
     pub config: TableConfigBytes,
     pub vector_commitment: VectorCommitmentBytes,

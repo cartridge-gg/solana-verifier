@@ -1,7 +1,10 @@
 pub mod config;
 
 use crate::swiftness::commitment::table;
+use crate::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice};
 use felt::Felt;
+use utils::{BidirectionalStack, StarkVerifyTrait};
+use crate::swiftness::commitment::vector::types::CommitmentTrait;
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct UnsentCommitment {
     pub original: Felt,
@@ -24,7 +27,7 @@ pub struct Witness {
 }
 
 // Commitment for the Traces component.
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Commitment<InteractionElements> {
     // Commitment to the first trace.
     pub original: table::types::Commitment,
@@ -34,3 +37,42 @@ pub struct Commitment<InteractionElements> {
     // Commitment to the second (interaction) trace.
     pub interaction: table::types::Commitment,
 }
+
+// Bytes representation for stack operations
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct TraceCommitmentBytes {
+    pub original: table::types::TableCommitmentBytes,
+    pub interaction: table::types::TableCommitmentBytes,
+}
+
+// Implement CommitmentTrait for Trace::Commitment
+impl<InteractionElements> CommitmentTrait<TraceCommitmentBytes> for Commitment<InteractionElements>
+where
+    InteractionElements: Clone + Default,
+{
+    fn from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Self {
+        let data = stack.borrow_front();
+        let commitment_ref = cast_slice_to_struct::<Self>(data);
+        let commitment = commitment_ref.clone(); // Clone the reference
+        stack.pop_front();
+        commitment
+    }
+
+    fn from_stack_ref<T: BidirectionalStack + StarkVerifyTrait>(stack: &T) -> &Self {
+        let data = stack.borrow_front();
+        cast_slice_to_struct::<Self>(data)
+    }
+
+    fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(&mut self, stack: &mut T) {
+        let commitment_bytes = cast_struct_to_slice(self);
+        stack.push_front(commitment_bytes).unwrap();
+    }
+
+    fn to_bytes_be(&self) -> TraceCommitmentBytes {
+        TraceCommitmentBytes {
+            original: self.original.to_bytes_be(),
+            interaction: self.interaction.to_bytes_be(),
+        }
+    }
+}
+

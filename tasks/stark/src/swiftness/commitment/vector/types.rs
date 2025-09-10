@@ -11,6 +11,7 @@ pub struct Commitment {
     pub commitment_hash: Felt,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct VectorCommitmentBytes {
     pub config: VectorConfigBytes,
     pub commitment_hash: [u8; 32],
