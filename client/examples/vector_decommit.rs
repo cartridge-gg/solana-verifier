@@ -21,7 +21,7 @@ use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{
     global_values::{GlobalValues, InteractionElements},
-    AccountCast, Executable,
+    AccountCast, Executable, COLUMN_VALUES_SIZE,
 };
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
@@ -97,7 +97,7 @@ async fn main() -> client::Result<()> {
     let global_values_offset = domains_offset + 992; // After domains (DOMAINS_SIZE * 32 = 31 * 32)
     let constraint_coefficients_offset = global_values_offset + global_values_size; // After global_values
     let column_values_offset = constraint_coefficients_offset + 6208; // After constraint_coefficients (N_CONSTRAINTS * 32 = 194 * 32)
-    let stark_commitment_offset = column_values_offset + 320; // After column_values (COLUMN_VALUES_SIZE * 32 = 10 * 32)
+    let stark_commitment_offset = column_values_offset + 32 * COLUMN_VALUES_SIZE; // After column_values (COLUMN_VALUES_SIZE * 32 = 10 * 32)
     let verify_variables_offset = stark_commitment_offset + stark_commitment_size; // After stark_commitment
 
     println!(
@@ -190,7 +190,7 @@ async fn main() -> client::Result<()> {
     instructions.extend(constraint_coefficients_chunks);
 
     // 6. Initialize column values with zeros (10 * 32 = 320 bytes) - will be computed during execution
-    let column_values_size = 320; // COLUMN_VALUES_SIZE * 32 = 10 * 32 bytes
+    let column_values_size = 32 * COLUMN_VALUES_SIZE; // COLUMN_VALUES_SIZE * 32 = 10 * 32 bytes
     let empty_column_values = vec![0u8; column_values_size];
     let column_values_chunks: Vec<_> = empty_column_values
         .chunks(CHUNK_SIZE)
