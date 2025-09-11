@@ -275,10 +275,6 @@ fn test_table_decommit() {
         "0x61e378adc06e8c25707453f902a88a58320f383024acb6e8766faad2dae72a4",
     ];
 
-    let decommitment_values = decommitment_values_hex
-        .iter()
-        .map(|f| Felt::from_hex_unchecked(f))
-        .collect::<Vec<_>>();
     // Decommitment values (n_columns * n_queries = 7 * 10 = 70 values)
     let decommitment_values_hex = [
         "0x5a81cfa7b8ba1dd722ce2bcaf78476fd0e0b7fda53287ed2632c2c32ab4f42c",
