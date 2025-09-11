@@ -1,8 +1,8 @@
 use felt::{Felt, NonZeroFelt};
 
-const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
+pub const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
 
-const STARK_PRIME_MINUS_ONE: Felt =
+pub const STARK_PRIME_MINUS_ONE: Felt =
     Felt::from_hex_unchecked("800000000000011000000000000000000000000000000000000000000000000");
 
 #[derive(Debug, PartialEq)]
