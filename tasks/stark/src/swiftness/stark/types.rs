@@ -2,7 +2,7 @@ use super::config::StarkConfig;
 use crate::funvec::{
     FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES,
 };
-use crate::swiftness;
+use crate::swiftness::{self, commitment};
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
 use crate::swiftness::commitment::table;
@@ -102,6 +102,16 @@ impl Default for VerifyVariables {
         }
     }
 }
+
+#[derive(Debug, PartialEq)]
+#[repr(C)]
+pub struct FriVerifyData {
+    pub queries: Vec<Felt>,
+    pub fri_commitment: fri::types::Commitment,
+    pub fri_decommitment: commitment::types::Decommitment,
+    pub witness: commitment::types::Witness,
+}
+
 #[cfg(test)]
 mod test {
     use crate::{
