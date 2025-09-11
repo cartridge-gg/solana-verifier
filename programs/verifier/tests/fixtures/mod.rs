@@ -3,6 +3,7 @@ pub mod config;
 pub mod constraint_coefficients;
 pub mod fri_commitment;
 pub mod fri_config;
+pub mod fri_decommitment;
 pub mod fri_unsent_commitment;
 pub mod fri_witness;
 pub mod interaction_elements;
