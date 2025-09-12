@@ -1,11 +1,12 @@
 use super::config::StarkConfig;
 use crate::funvec::{
-    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES,
+    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_LEAVES, FUNVEC_OODS,
+    FUNVEC_QUERIES, FUNVEC_QUERY_INDICES,
 };
-use crate::swiftness::{self, commitment};
 use crate::swiftness::air::public_memory::PublicInput;
 use crate::swiftness::air::trace;
 use crate::swiftness::commitment::table;
+use crate::swiftness::{self, commitment};
 use crate::swiftness::{fri, pow::pow};
 use felt::Felt;
 use fri::types::Witness as FriWitness;
@@ -23,6 +24,13 @@ where
 {
     assert_eq!(slice.len(), std::mem::size_of::<T>());
     unsafe { &*(slice.as_ptr() as *const T) }
+}
+pub fn cast_slice_to_struct_mut<T>(slice: &[u8]) -> &mut T
+where
+    T: Sized,
+{
+    assert_eq!(slice.len(), std::mem::size_of::<T>());
+    unsafe { &mut *(slice.as_ptr() as *mut T) }
 }
 pub fn cast_struct_to_slice<T>(s: &T) -> &[u8]
 where
@@ -106,10 +114,36 @@ impl Default for VerifyVariables {
 #[derive(Debug, PartialEq)]
 #[repr(C)]
 pub struct FriVerifyData {
-    pub queries: Vec<Felt>,
+    pub queries: FunVec<Felt, FUNVEC_QUERIES>,
     pub fri_commitment: fri::types::Commitment,
     pub fri_decommitment: commitment::types::Decommitment,
-    pub witness: commitment::types::Witness,
+    pub witness: fri::types::Witness,
+    // Working fields for FRI verification
+    pub current_layer: usize,
+    pub working_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>,
+    pub working_elements: FunVec<Felt, FUNVEC_LEAVES>,
+    pub working_indices: FunVec<Felt, FUNVEC_QUERY_INDICES>,
+    pub working_y_values: FunVec<Felt, FUNVEC_LEAVES>,
+    pub coset_size: Felt,
+    pub eval_point: Felt,
+}
+
+impl Default for FriVerifyData {
+    fn default() -> Self {
+        Self {
+            queries: FunVec::default(),
+            fri_commitment: fri::types::Commitment::default(),
+            fri_decommitment: commitment::types::Decommitment::default(),
+            witness: fri::types::Witness::default(),
+            current_layer: 0,
+            working_queries: FunVec::default(),
+            working_elements: FunVec::default(),
+            working_indices: FunVec::default(),
+            working_y_values: FunVec::default(),
+            coset_size: Felt::ZERO,
+            eval_point: Felt::ZERO,
+        }
+    }
 }
 
 #[cfg(test)]
