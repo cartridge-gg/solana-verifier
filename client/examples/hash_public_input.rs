@@ -1,10 +1,9 @@
-use std::path::Path;
-
 use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
 use felt::Felt;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::Keypair,
@@ -13,6 +12,7 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::{stark_proof::HashPublicInputs, swiftness::stark::types::cast_struct_to_slice};
+use std::path::Path;
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
@@ -220,9 +220,10 @@ async fn main() -> client::Result<()> {
             &VerifierInstruction::Execute(i as u32),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
+        let limit = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
 
         let execute_tx = Transaction::new_signed_with_payer(
-            &[execute_ix],
+            &[execute_ix, limit],
             Some(&payer.pubkey()),
             &[&payer],
             client.get_latest_blockhash().await?,

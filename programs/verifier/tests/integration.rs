@@ -34,7 +34,7 @@ pub fn test_proof_verification() {
     stack.pop_front();
     let result_output_hash = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
-    
+
     println!("Result program hash: {result_program_hash:?}");
     println!("Result output hash: {result_output_hash:?}");
     assert_eq!(
