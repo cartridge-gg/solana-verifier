@@ -1,4 +1,7 @@
-use stark::swiftness::commitment::types::{LayerWitness, Witness};
+use stark::{
+    funvec::FunVec,
+    swiftness::fri::types::{LayerWitness, Witness},
+};
 
 mod layer_0;
 mod layer_1;
@@ -10,7 +13,7 @@ mod layer_6;
 mod layer_7;
 pub fn get() -> Witness {
     Witness {
-        layers: get_layers(),
+        layers: FunVec::from_vec(get_layers()),
     }
 }
 pub fn get_layers() -> Vec<LayerWitness> {

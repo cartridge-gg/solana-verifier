@@ -1,3 +1,7 @@
+use crate::funvec::FunVec;
+use crate::funvec::FUNVEC_DECOMMITMENT_VALUES;
+use crate::funvec::FUNVEC_LAYERS;
+use crate::funvec::FUNVEC_LEAVES;
 use crate::swiftness::commitment::table::types::Commitment as TableCommitment;
 use crate::swiftness::commitment::table::types::Witness as TableWitness;
 use crate::swiftness::fri::config::Config;
@@ -29,25 +33,33 @@ pub struct Commitment {
 #[derive(Debug, PartialEq)]
 pub struct Decommitment {
     // Array of size n_values, containing the values of the input layer at query indices.
-    pub values: Vec<Felt>,
+    pub values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
     // Array of size n_values, containing the field elements that correspond to the query indices
     // (See queries_to_points).
-    pub points: Vec<Felt>,
+    pub points: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
 }
 
+impl Default for Decommitment {
+    fn default() -> Self {
+        Self {
+            values: FunVec::default(),
+            points: FunVec::default(),
+        }
+    }
+}
 // A witness for the decommitment of the FRI layers over queries.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Witness {
     // An array of size n_layers - 1, containing a witness for each inner layer.
-    pub layers: Vec<LayerWitness>,
+    pub layers: FunVec<LayerWitness, FUNVEC_LAYERS>,
 }
 
 // A witness for a single FRI layer. This witness is required to verify the transition from an
 // inner layer to the following layer.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct LayerWitness {
     // Values for the sibling leaves required for decommitment.
-    pub leaves: Vec<Felt>,
+    pub leaves: FunVec<Felt, FUNVEC_LEAVES>,
     // Table commitment witnesses for decommiting all the leaves.
     pub table_witness: TableWitness,
 }

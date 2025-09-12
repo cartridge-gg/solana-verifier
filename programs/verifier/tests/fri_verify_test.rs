@@ -1,4 +1,6 @@
 mod fixtures;
+use felt::Felt;
+use stark::funvec::FunVec;
 use stark::swiftness::commitment;
 use stark::swiftness::fri;
 use stark::swiftness::stark::types::cast_struct_to_slice;
@@ -9,7 +11,7 @@ use verifier::state::BidirectionalStackAccount;
 #[test]
 fn test_fri_verify() {
     let mut stack: BidirectionalStackAccount = BidirectionalStackAccount::default();
-    let task = stark::stark_proof::stark_verify::FriVerify::new();
+    let task = stark::stark_proof::stark_verify::fri_verify::FriVerify::new();
     push_data(&mut stack);
     stack.push_task(task);
 
@@ -31,13 +33,21 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
     let queries = fixtures::queries::get();
     let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
     let fri_decommitment: commitment::types::Decommitment = fixtures::fri_decommitment::get();
-    let witness: commitment::types::Witness = fixtures::witness::get();
+    let witness: fri::types::Witness = fixtures::witness::get();
     let mut fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
-        queries: queries.clone(),
+        queries: FunVec::from_vec(queries.clone()),
         fri_commitment: fri_commitment,
         fri_decommitment: fri_decommitment,
         witness: witness.clone(),
+        current_layer: 0,
+        working_queries: FunVec::default(),
+        working_elements: FunVec::default(),
+        working_indices: FunVec::default(),
+        working_y_values: FunVec::default(),
+        coset_size: Felt::ZERO,
+        eval_point: Felt::ZERO,
     };
-    let fri_verify_data_bytes = cast_struct_to_slice(&mut fri_verify_data);
-    stack.push_front(fri_verify_data_bytes).unwrap();
+    // Użyj nowej metody do przechowania FriVerifyData w cache
+    stack.store_in_cache(&fri_verify_data);
+    println!("FriVerifyData stored in cache");
 }

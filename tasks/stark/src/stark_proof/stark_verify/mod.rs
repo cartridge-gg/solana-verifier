@@ -9,14 +9,23 @@ pub mod compute_root_recursive;
 pub mod eval_oods_boundary_poly_at_points;
 pub mod eval_oods_polynomial;
 pub mod fri_verify;
+pub mod fri_verify_layers;
 pub mod hash_computation;
 pub mod table_decommit;
 pub mod traces_decommit;
 pub mod vector_decommit;
+pub use fri_verify_layers::FriVerifyLayers;
+pub mod compute_coset_elements;
+pub mod compute_next_layer;
+pub mod fri_formula;
+pub mod group;
 
 // Re-export the new task types
+pub use compute_coset_elements::ComputeCosetElements;
+pub use compute_next_layer::ComputeNextLayer;
 // pub use eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
 // pub use eval_oods_polynomial::EvalOodsPolynomial;
+pub use fri_formula::FriFormula;
 // pub use fri_verify::FriVerify;
 // pub use table_decommit::TableDecommit;
 // pub use traces_decommit::TracesDecommit;

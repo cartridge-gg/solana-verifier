@@ -1,14 +1,15 @@
 use crate::error::VerifierError;
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::stark::types::cast_struct_to_slice_mut;
-use stark::swiftness::stark::types::StarkCommitment;
-use stark::swiftness::stark::types::VerifyVariables;
-use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
+use stark::swiftness::stark::types::{
+    cast_slice_to_struct, cast_slice_to_struct_mut, cast_struct_to_slice, cast_struct_to_slice_mut,
+    FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+};
 use utils::global_values::InteractionElements;
 use utils::ProofData;
 use utils::StarkCommitmentTrait;
 use utils::StarkVerifyTrait;
+use utils::CACHE_SIZE;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
@@ -33,6 +34,7 @@ pub struct BidirectionalStackAccount {
     pub poseidon_bits: [Felt; POSEIDON_BITS_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
     pub verify_variables: VerifyVariables,
+    pub cached_data: [u8; CACHE_SIZE],
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -49,6 +51,7 @@ impl Default for BidirectionalStackAccount {
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
             stark_commitment: StarkCommitment::default(),
             verify_variables: VerifyVariables::default(),
+            cached_data: [0; CACHE_SIZE],
             eval_composition_polynomial_bits: [Felt::ZERO; BITS_SIZE],
             poseidon_bits: [Felt::ZERO; POSEIDON_BITS_SIZE],
         }
@@ -127,8 +130,10 @@ impl BidirectionalStack for BidirectionalStackAccount {
         let mut data_length = 0_usize;
         for i in 1..=LENGTH_SIZE {
             let x: usize = self.buffer[self.front_index.saturating_sub(i)].into();
+            println!("i={}, x={}, front_index={}", i, x, self.front_index);
             data_length = (data_length << 8) | x;
         }
+        println!("data_len: {:?}", data_length);
 
         &self.buffer[self.front_index.saturating_sub(data_length + LENGTH_SIZE)
             ..self.front_index.saturating_sub(LENGTH_SIZE)]
@@ -173,6 +178,22 @@ impl BidirectionalStack for BidirectionalStackAccount {
 
     fn is_empty_back(&self) -> bool {
         self.back_index == CAPACITY
+    }
+
+    fn store_in_cache<T>(&mut self, data: &T) {
+        let bytes = cast_struct_to_slice(data);
+        assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
+        self.cached_data[..bytes.len()].copy_from_slice(bytes);
+    }
+
+    fn borrow_from_cache<T>(&self) -> &T {
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct::<T>(&self.cached_data[..size])
+    }
+
+    fn borrow_from_cache_mut<T>(&mut self) -> &mut T {
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct_mut::<T>(&mut self.cached_data[..size])
     }
 }
 

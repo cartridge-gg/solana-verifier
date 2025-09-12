@@ -7,6 +7,8 @@ pub mod transcript;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
+// pub const CAPACITY: usize = 524288; // 512KB - wystarczy dla FriVerifyData
+// pub const LENGTH_SIZE: usize = 4; // 4 bajty = 32 bity = do 4GB
 // pub const MASK_VALUES_ROWS_SIZE: usize = 4107;
 // pub const MASK_VALUES_COLUMNS_SIZE: usize = 8;
 pub const MASK_VALUES_SIZE: usize = 192;
@@ -21,6 +23,7 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
+pub const CACHE_SIZE: usize = 524288;
 
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
@@ -50,6 +53,10 @@ pub trait BidirectionalStack {
     fn borrow_mut_back(&mut self) -> &mut [u8];
     fn is_empty_front(&self) -> bool;
     fn is_empty_back(&self) -> bool;
+
+    fn store_in_cache<T>(&mut self, data: &T);
+    fn borrow_from_cache<T>(&self) -> &T;
+    fn borrow_from_cache_mut<T>(&mut self) -> &mut T;
 }
 
 pub trait Scheduler: BidirectionalStack {

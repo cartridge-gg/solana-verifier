@@ -1,10 +1,10 @@
 use felt::Felt;
-use stark::swiftness::commitment::types::Decommitment;
+use stark::{funvec::FunVec, swiftness::commitment::types::Decommitment};
 
 pub fn get() -> Decommitment {
     Decommitment {
-        values: get_values(),
-        points: get_points(),
+        values: FunVec::from_vec(get_values()),
+        points: FunVec::from_vec(get_points()),
     }
 }
 

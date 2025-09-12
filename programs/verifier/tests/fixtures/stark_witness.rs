@@ -1,4 +1,4 @@
-use crate::fixtures::{fri_witness, trace_decommitment, witness};
+use crate::fixtures::{fri_witness, trace_decommitment, trace_witness};
 use felt::Felt;
 use stark::funvec::FunVec;
 use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
@@ -9,7 +9,7 @@ use stark::swiftness::stark::types::StarkWitness;
 pub fn get() -> StarkWitness {
     StarkWitness {
         traces_decommitment: trace_decommitment::get(),
-        traces_witness: witness::get(),
+        traces_witness: trace_witness::get(),
         composition_decommitment: TableDecommitment {
             montgomery_values: FunVec::from_vec(vec![Felt::from_hex_unchecked(
                 "0x7292f156e66e87304f8a7e0e565a3fec43d76f2c80a400c2a590c6660f205f0",
