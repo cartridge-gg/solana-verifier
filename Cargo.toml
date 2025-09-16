@@ -24,13 +24,3 @@ utils = { path = "./programs/utils" }
 arithmetic = { path = "./tasks/arithmetic" }
 felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }
-
-
-[profile.release]
-opt-level = 1
-lto = "thin"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-debug = false
-incremental = false

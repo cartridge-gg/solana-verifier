@@ -21,6 +21,7 @@ use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccoun
 
 pub const CHUNK_SIZE: usize = 900;
 
+#[allow(clippy::unnecessary_mut_passed)]
 pub async fn verify(config: &Config) -> Result<()> {
     let client = initialize_client(config).await?;
     let payer = if let Some(ref payer_keypair) = config.payer_keypair {
@@ -65,7 +66,7 @@ pub async fn verify(config: &Config) -> Result<()> {
     );
     instructions.push(stack_set_ix);
 
-    let oods_values = proof_verifier.unsent_commitment.oods_values.clone();
+    let oods_values = proof_verifier.unsent_commitment.oods_values;
     let oods_values_bytes = cast_struct_to_slice(&mut oods_values.clone()).to_vec();
     let oods_values_ixs: Vec<Instruction> = oods_values_bytes
         .chunks(CHUNK_SIZE)
