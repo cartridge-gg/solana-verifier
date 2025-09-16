@@ -26,7 +26,7 @@ async fn main() -> client::Result<()> {
         .filter_level(log::LevelFilter::Info)
         .filter_module("client", log::LevelFilter::Trace)
         .init();
-    
+
     let config = Config::parse_args();
 
     let client = initialize_client(&config).await?;
