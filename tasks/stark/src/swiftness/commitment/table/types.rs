@@ -12,6 +12,7 @@ const MONTGOMERY_R: Felt =
 
 // Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[repr(C)]
 pub struct Commitment {
     pub config: Config,
     pub vector_commitment: vector::types::Commitment,
@@ -60,6 +61,7 @@ impl CommitmentTrait<TableCommitmentBytes> for Commitment {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[repr(C)]
 pub struct Decommitment {
     pub values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
     pub montgomery_values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
@@ -122,6 +124,7 @@ impl CommitmentTrait<Decommitment, ()> for Decommitment {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[repr(C)]
 pub struct Witness {
     pub vector: vector::types::Witness,
 }

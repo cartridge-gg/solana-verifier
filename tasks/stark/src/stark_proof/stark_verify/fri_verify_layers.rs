@@ -1,4 +1,4 @@
-use felt::Felt;
+use felt::{Felt, NonZeroFelt};
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -61,7 +61,10 @@ impl Executable for FriVerifyLayers {
                 fri_verify_data.working_elements.flush();
 
                 // working_queries are already set by FriVerify with correct fri_queries
-                println!("DEBUG: FriVerifyLayers Init - working_queries.len(): {}", fri_verify_data.working_queries.len());
+                println!(
+                    "DEBUG: FriVerifyLayers Init - working_queries.len(): {}",
+                    fri_verify_data.working_queries.len()
+                );
 
                 let n_layers_usize: usize = fri_verify_data
                     .fri_commitment
@@ -138,8 +141,14 @@ impl Executable for FriVerifyLayers {
 
                     let current_layer = fri_verify_data.current_layer;
                     println!("DEBUG: current_layer: {:?}", current_layer);
-                    println!("DEBUG: working_y_values.len(): {:?}", fri_verify_data.working_y_values.len());
-                    println!("DEBUG: working_indices.len(): {:?}", fri_verify_data.working_indices.len());
+                    println!(
+                        "DEBUG: working_y_values.len(): {:?}",
+                        fri_verify_data.working_y_values.len()
+                    );
+                    println!(
+                        "DEBUG: working_indices.len(): {:?}",
+                        fri_verify_data.working_indices.len()
+                    );
 
                     // Zbierz y_values
                     let mut y_values = Vec::new();
@@ -170,13 +179,8 @@ impl Executable for FriVerifyLayers {
                         .get(current_layer)
                         .unwrap();
 
-                    (
-                        y_values,
-                        indices,
-                        table_witness,
-                        *target_commitment,
-                    )
-                }; 
+                    (y_values, indices, table_witness, *target_commitment)
+                };
 
                 for i in (0..table_witness.vector.authentications.len()).rev() {
                     stack
@@ -202,7 +206,10 @@ impl Executable for FriVerifyLayers {
                     .push_front(&Felt::from(y_values.len()).to_bytes_be())
                     .unwrap();
                 println!("DEBUG: y_values.len(): {:?}", y_values.len());
-                println!("DEBUG: First few y_values: {:?}", y_values.iter().take(4).collect::<Vec<_>>());
+                println!(
+                    "DEBUG: First few y_values: {:?}",
+                    y_values.iter().take(4).collect::<Vec<_>>()
+                );
 
                 println!("DEBUG: indices.len(): {:?}", indices.len());
                 println!("DEBUG: All indices: {:?}", indices);
@@ -252,18 +259,5 @@ impl Executable for FriVerifyLayers {
 
     fn is_finished(&mut self) -> bool {
         self.stage == FriVerifyLayersStep::Done
-    }
-}
-
-impl FriVerifyLayers {
-    // Parse final queries from FriVerifyData
-    pub fn parse_final_queries_from_data(fri_verify_data: &FriVerifyData) -> Vec<FriLayerQuery> {
-        let mut final_queries = Vec::new();
-        for i in 0..fri_verify_data.working_queries.len() {
-            if let Some(query) = fri_verify_data.working_queries.get(i) {
-                final_queries.push(*query);
-            }
-        }
-        final_queries
     }
 }

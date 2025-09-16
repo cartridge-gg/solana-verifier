@@ -31,6 +31,7 @@ pub struct Commitment {
 }
 
 #[derive(Debug, PartialEq)]
+#[repr(C)]
 pub struct Decommitment {
     // Array of size n_values, containing the values of the input layer at query indices.
     pub values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,

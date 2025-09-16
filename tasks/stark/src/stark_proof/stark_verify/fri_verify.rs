@@ -24,8 +24,6 @@ const FIELD_GENERATOR_INVERSE: Felt =
 #[repr(C)]
 pub enum FriVerifyStep {
     Init,
-    ComputeFirstLayer,
-    ComputeFriGroup,
     VerifyInnerLayers,
     VerifyLastLayer,
     Done,
@@ -52,11 +50,10 @@ impl Executable for FriVerify {
         match self.stage {
             FriVerifyStep::Init => {
                 let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                println!("DEBUG: eval_points[0]: {:?}", fri_verify_data
-                    .fri_commitment
-                    .eval_points
-                    .get(0)
-                    .unwrap());
+                println!(
+                    "DEBUG: eval_points[0]: {:?}",
+                    fri_verify_data.fri_commitment.eval_points.get(0).unwrap()
+                );
 
                 let queries_len = fri_verify_data.queries.len();
                 let fri_len = fri_verify_data.fri_decommitment.values.len();
@@ -83,20 +80,11 @@ impl Executable for FriVerify {
                         });
                     }
                 }
-                self.stage = FriVerifyStep::ComputeFirstLayer;
+                self.stage = FriVerifyStep::VerifyInnerLayers;
                 println!("Transitioning to ComputeFirstLayer");
                 vec![]
             }
-            FriVerifyStep::ComputeFirstLayer => {
-                self.stage = FriVerifyStep::ComputeFriGroup;
-                println!("Transitioning to ComputeFriGroup");
-                vec![]
-            }
-            FriVerifyStep::ComputeFriGroup => {
-                self.stage = FriVerifyStep::VerifyInnerLayers;
-                println!("Transitioning to VerifyInnerLayers");
-                vec![]
-            }
+
             FriVerifyStep::VerifyInnerLayers => {
                 // Initialize FriVerifyData with data needed for ComputeNextLayer
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
@@ -106,27 +94,21 @@ impl Executable for FriVerify {
                 for query in &self.fri_queries {
                     fri_verify_data.working_queries.push(*query);
                 }
-
-                // Reset working fields
-                fri_verify_data.current_layer = 0;
-                fri_verify_data.working_indices.flush();
-                fri_verify_data.working_y_values.flush();
-                fri_verify_data.working_elements.flush();
-                fri_verify_data.next_queries.flush();
-                fri_verify_data.current_coset_index = 0;
-
                 self.stage = FriVerifyStep::VerifyLastLayer;
                 vec![FriVerifyLayers::new().to_vec_with_type_tag()]
             }
+
             FriVerifyStep::VerifyLastLayer => {
                 // Verify last layer using Horner evaluation
-                let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // Get the last queries from FriVerifyLayers (should be on stack or in fri_queries)
-                // For each query, evaluate the polynomial using Horner's method
-                for query in &self.fri_queries {
+                for i in 0..fri_verify_data.working_queries.len() {
+                    let query = fri_verify_data.working_queries.get(i).unwrap();
                     let horner_result = self.horner_eval(
-                        fri_verify_data.fri_commitment.last_layer_coefficients.as_slice(),
+                        fri_verify_data
+                            .fri_commitment
+                            .last_layer_coefficients
+                            .as_slice(),
                         Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
                     );
 

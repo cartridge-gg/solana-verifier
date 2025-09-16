@@ -3,7 +3,6 @@ use felt::Felt;
 use stark::funvec::FunVec;
 use stark::swiftness::commitment;
 use stark::swiftness::fri;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
@@ -20,6 +19,12 @@ fn test_fri_verify() {
     }
     assert_eq!(stack.front_index, 0);
     assert_eq!(stack.back_index, 131072);
+    println!("DEBUG: stack.is_empty_back(): {:?}", stack.is_empty_back());
+    println!(
+        "DEBUG: stack.is_empty_front(): {:?}",
+        stack.is_empty_front()
+    );
+    println!("SUCCESSFULLY EXECUTED FRI VERIFY");
 }
 
 // Stack layout pre-execution:

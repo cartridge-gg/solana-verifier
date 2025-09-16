@@ -4,6 +4,7 @@ use crate::{
 };
 use felt::Felt;
 
+#[repr(C)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct UnsentCommitment {
     // Array of size n_layers - 1 containing unsent table commitments for each inner layer.
@@ -14,6 +15,7 @@ pub struct UnsentCommitment {
 }
 
 // A witness for the decommitment of the FRI layers over queries.
+#[repr(C)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Witness {
     // An array of size n_layers - 1, containing a witness for each inner layer.
@@ -22,6 +24,7 @@ pub struct Witness {
 
 // A witness for a single FRI layer. This witness is required to verify the transition from an
 // inner layer to the following layer.
+#[repr(C)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct LayerWitness {
     pub leaves: FunVec<Felt, FUNVEC_LEAVES>,
@@ -29,6 +32,7 @@ pub struct LayerWitness {
     pub table_witness: table::types::Witness,
 }
 
+#[repr(C)]
 #[derive(Debug, PartialEq, Default)]
 pub struct Commitment {
     pub config: swiftness::fri::config::Config,
@@ -42,12 +46,14 @@ pub struct Commitment {
     pub last_layer_coefficients: FunVec<Felt, FUNVEC_LAST_LAYER>,
 }
 
+#[repr(C)]
 pub struct FriLayerComputationParams {
     pub coset_size: Felt,
     pub fri_group: Vec<Felt>,
     pub eval_point: Felt,
 }
 
+#[repr(C)]
 #[derive(PartialEq, Eq, Debug, Clone, Default, Copy)]
 pub struct FriLayerQuery {
     pub index: Felt,
