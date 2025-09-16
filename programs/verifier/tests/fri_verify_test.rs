@@ -50,6 +50,7 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
         sibling_witness: FunVec::default(),
         next_x_inv_value: Felt::ZERO,
         coset_x_inv: Felt::ZERO,
+        coset_elements: FunVec::default(),
         current_coset_index: 0,
     };
     // Użyj nowej metody do przechowania FriVerifyData w cache

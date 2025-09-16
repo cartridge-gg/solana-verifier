@@ -5,15 +5,13 @@ use super::group::get_fri_group;
 use crate::funvec::FunVec;
 use crate::swiftness::stark::types::FriVerifyData;
 
-// Task for computing coset elements
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct ComputeCosetElements {
     stage: ComputeCosetElementsStep,
     current_index: usize,
     coset_x_inv: Felt,
-    coset_start_index: Felt,           // Starting index of the coset
-    coset_elements: FunVec<Felt, 256>, // Store coset elements
+    coset_start_index: Felt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +31,6 @@ impl ComputeCosetElements {
             current_index: 0,
             coset_x_inv: Felt::ZERO,
             coset_start_index: Felt::ZERO,
-            coset_elements: FunVec::default(),
         }
     }
 
@@ -43,7 +40,6 @@ impl ComputeCosetElements {
             current_index: 0,
             coset_x_inv: Felt::ZERO,
             coset_start_index,
-            coset_elements: FunVec::default(),
         }
     }
 }
@@ -59,13 +55,9 @@ impl Executable for ComputeCosetElements {
         match self.stage {
             ComputeCosetElementsStep::Init => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
-
-                // Initialize computation (like original function start)
                 self.current_index = 0;
                 self.coset_x_inv = Felt::ZERO;
-
-                // Clear coset_elements
-                self.coset_elements.flush();
+                fri_verify_data.coset_elements.flush();
 
                 self.stage = ComputeCosetElementsStep::ProcessElement;
                 vec![]
@@ -97,7 +89,7 @@ impl Executable for ComputeCosetElements {
                         fri_verify_data.working_queries = temp_queries;
 
                         // Add query y_value to coset elements (like original: coset_elements.push(query[0].y_value))
-                        self.coset_elements.push(query.y_value);
+                        fri_verify_data.coset_elements.push(query.y_value);
 
                         // Calculate coset_x_inv using FRI group (like original: query[0].x_inv_value * fri_group.get(index).unwrap())
                         let fri_group = get_fri_group();
@@ -118,7 +110,7 @@ impl Executable for ComputeCosetElements {
                             fri_verify_data.sibling_witness = temp_witness;
 
                             // Add witness to coset elements (like original: coset_elements.push(withness[0]))
-                            self.coset_elements.push(witness_value);
+                            fri_verify_data.coset_elements.push(witness_value);
                         } else {
                             panic!("Insufficient sibling witness data in test fixtures at index {} (need 112, have {})", 
                                     self.current_index, fri_verify_data.sibling_witness.len());
@@ -131,22 +123,26 @@ impl Executable for ComputeCosetElements {
                     // All elements processed - copy results to working data (like original return (coset_elements, coset_x_inv))
                     let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
+                    println!(
+                        "DEBUG: ComputeCosetElements Done - coset_elements.len(): {}",
+                        fri_verify_data.coset_elements.len()
+                    );
+
                     // Add coset_elements to working_y_values (like original: verify_y_values.extend(coset_elements.iter()))
-                    for i in 0..self.coset_elements.len() {
-                        if let Some(element) = self.coset_elements.get(i) {
+                    for i in 0..fri_verify_data.coset_elements.len() {
+                        if let Some(element) = fri_verify_data.coset_elements.get(i) {
                             fri_verify_data.working_y_values.push(*element);
                         }
                     }
 
                     // Also copy to working_elements for FriFormula
                     fri_verify_data.working_elements.flush();
-                    for i in 0..self.coset_elements.len() {
-                        if let Some(element) = self.coset_elements.get(i) {
+                    for i in 0..fri_verify_data.coset_elements.len() {
+                        if let Some(element) = fri_verify_data.coset_elements.get(i) {
                             fri_verify_data.working_elements.push(*element);
                         }
                     }
 
-                    // Store coset_x_inv for FriFormula
                     fri_verify_data.coset_x_inv = self.coset_x_inv;
 
                     self.stage = ComputeCosetElementsStep::Done;

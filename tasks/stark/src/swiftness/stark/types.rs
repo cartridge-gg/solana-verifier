@@ -133,6 +133,7 @@ pub struct FriVerifyData {
     pub eval_point: Felt,
     pub next_x_inv_value: Felt, // For storing x_inv_value for next_queries
     pub coset_x_inv: Felt,      // For storing coset_x_inv for fri_formula
+    pub coset_elements: FunVec<Felt, 256>,
     pub current_coset_index: usize, // Track which coset is being processed
 }
 
@@ -154,6 +155,7 @@ impl Default for FriVerifyData {
             eval_point: Felt::ZERO,
             next_x_inv_value: Felt::ZERO,
             coset_x_inv: Felt::ZERO,
+            coset_elements: FunVec::default(),
             current_coset_index: 0,
         }
     }
