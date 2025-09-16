@@ -614,6 +614,7 @@ pub async fn send_and_confirm_transactions(
     client: &RpcClient,
     transactions: &[Transaction],
 ) -> Result<()> {
+    let mut transaction_results = Vec::new();
     let futures = transactions.iter().map(|tx| {
         let client = &client;
         async move {
@@ -626,9 +627,16 @@ pub async fn send_and_confirm_transactions(
         match result {
             Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
             Err(e) => {
-                panic!("{}", format!("Transaction NOT confirmed (timeout): {}", e))
+                warn!("{}", format!("Transaction NOT confirmed (timeout): {e}"));
+                transaction_results.push(e);
             }
         }
+    }
+    if !transaction_results.is_empty() {
+        return Err(ClientError::TransactionError(format!(
+            "{} transactions failed",
+            transaction_results.len()
+        )));
     }
     Ok(())
 }
