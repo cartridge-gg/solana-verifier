@@ -1,9 +1,7 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::swiftness::stark::types::{
-    cast_slice_to_struct, cast_slice_to_struct_mut, FriVerifyData,
-};
+use crate::swiftness::stark::types::FriVerifyData;
 
 // Constants representing primitive roots of unity for orders 2, 4, 8, and 16.
 // These are calculated based on the formula 1 / 3^((PRIME - 1) / 16) where 3 is a generator.

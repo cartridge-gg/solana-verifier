@@ -25,7 +25,7 @@ where
     assert_eq!(slice.len(), std::mem::size_of::<T>());
     unsafe { &*(slice.as_ptr() as *const T) }
 }
-pub fn cast_slice_to_struct_mut<T>(slice: &[u8]) -> &mut T
+pub fn cast_slice_to_struct_mut<T>(slice: &mut [u8]) -> &mut T
 where
     T: Sized,
 {
