@@ -2,8 +2,7 @@ use crate::error::VerifierError;
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use stark::swiftness::stark::types::{
-    cast_slice_to_struct, cast_slice_to_struct_mut, cast_struct_to_slice, cast_struct_to_slice_mut,
-    FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+    cast_slice_to_struct, cast_slice_to_struct_mut, cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables,
 };
 use utils::global_values::InteractionElements;
 use utils::ProofData;

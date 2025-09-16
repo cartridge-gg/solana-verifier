@@ -97,7 +97,7 @@ impl Executable for ComputeCosetElements {
                         self.coset_x_inv = query.x_inv_value * fri_group_element;
                     } else {
                         // Use sibling witness from global sibling_witness (like original else clause: sibling_witness.drain(0..1))
-                        if fri_verify_data.sibling_witness.len() > 0 {
+                        if !fri_verify_data.sibling_witness.is_empty() {
                             let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
 
                             // Remove first witness from global sibling_witness (simulate drain(0..1))

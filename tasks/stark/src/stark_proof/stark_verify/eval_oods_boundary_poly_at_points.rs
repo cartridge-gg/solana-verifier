@@ -4,7 +4,6 @@ use crate::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
 use crate::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
 use felt::{Felt, NonZeroFelt};
-use std::println;
 use utils::global_values::InteractionElements;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,

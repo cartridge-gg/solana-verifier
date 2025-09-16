@@ -30,7 +30,7 @@ pub struct Commitment {
     pub last_layer_coefficients: Vec<Felt>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 #[repr(C)]
 pub struct Decommitment {
     // Array of size n_values, containing the values of the input layer at query indices.
@@ -40,14 +40,6 @@ pub struct Decommitment {
     pub points: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
 }
 
-impl Default for Decommitment {
-    fn default() -> Self {
-        Self {
-            values: FunVec::default(),
-            points: FunVec::default(),
-        }
-    }
-}
 // A witness for the decommitment of the FRI layers over queries.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Witness {
