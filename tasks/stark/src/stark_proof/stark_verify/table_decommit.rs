@@ -83,7 +83,6 @@ impl Executable for TableDecommit {
 
                 // An extra layer is added to the height since the table is considered as a layer
                 let bottom_layer_depth = table_commitment.config.vector.height + Felt::ONE;
-                println!("DEBUG: bottom_layer_depth = {}", bottom_layer_depth);
                 self.is_bottom_layer_verifier_friendly = table_commitment
                     .config
                     .vector
@@ -103,7 +102,6 @@ impl Executable for TableDecommit {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.temp_queries;
                     let index = queries_slice[i * 2];
-                    println!("DEBUG: index: {:?}", index);
                     query_indices.push(index);
                 }
 
@@ -128,7 +126,6 @@ impl Executable for TableDecommit {
 
                 // Read witness
                 self.n_authentications = VectorWitness::from_stack(stack);
-                println!("DEBUG: n_authentications = {}", self.n_authentications);
 
                 // Initialize vector queries with indices
                 self.vector_queries = query_indices
@@ -190,7 +187,6 @@ impl Executable for TableDecommit {
 
             TableDecommitStep::PrepareVectorDecommit => {
                 VectorWitness::push_to_stack_static(stack, self.n_authentications);
-                println!("DEBUG: n_authentications = {}", self.n_authentications);
 
                 // Push all vector queries to stack
                 for query in self.vector_queries.iter().rev() {
@@ -200,9 +196,7 @@ impl Executable for TableDecommit {
                 stack
                     .push_front(&Felt::from(self.total_queries).to_bytes_be())
                     .unwrap();
-                println!("DEBUG: total_queries = {}", self.total_queries);
 
-                // Push vector commitment
                 self.commitment.vector_commitment.push_to_stack(stack);
 
                 self.step = TableDecommitStep::ExecuteVectorDecommit;

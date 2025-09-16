@@ -114,7 +114,6 @@ fn run_compute_next_layer_test(
         fri_verify_data_after_execution.next_queries.len()
     );
 
-    // Debug: print next queries
     for i in 0..fri_verify_data_after_execution.next_queries.len() {
         if let Some(query) = fri_verify_data_after_execution.next_queries.get(i) {
             println!(
@@ -124,7 +123,6 @@ fn run_compute_next_layer_test(
         }
     }
 
-    // working_queries should be consumed (empty or contain remaining queries for next cosets)
     println!(
         "✅ Working queries after execution: {}",
         fri_verify_data_after_execution.working_queries.len()
