@@ -19,11 +19,6 @@ fn test_fri_verify() {
     }
     assert_eq!(stack.front_index, 0);
     assert_eq!(stack.back_index, 131072);
-    println!("DEBUG: stack.is_empty_back(): {:?}", stack.is_empty_back());
-    println!(
-        "DEBUG: stack.is_empty_front(): {:?}",
-        stack.is_empty_front()
-    );
     println!("SUCCESSFULLY EXECUTED FRI VERIFY");
 }
 

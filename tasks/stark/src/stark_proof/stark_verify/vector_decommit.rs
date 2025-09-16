@@ -54,18 +54,12 @@ impl Executable for VectorDecommit {
             VectorDecommitStep::VectorCommitmentDecommit => {
                 // Read vector commitment using trait method
                 let vector_commitment = VectorCommitment::from_stack(stack);
-                println!("DEBUG: vector_commitment: {:?}", vector_commitment);
-
                 self.reference_commitment_hash = vector_commitment.commitment_hash;
-                println!("DEBUG: height = {}", vector_commitment.config.height);
                 let height = vector_commitment.config.height;
-
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("DEBUG: queries_len: {:?}", queries_len);
-
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
-                println!("DEBUG: queries_count: {:?}", queries_count);
+
                 assert!(
                     queries_count <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",
@@ -141,7 +135,6 @@ impl Executable for VectorDecommit {
                     commitment_hash == self.reference_commitment_hash,
                     "Commitment hash verification failed"
                 );
-                println!("DEBUG: VectorDecommitStep::VerifyCommitmentHash done");
                 self.step = VectorDecommitStep::Done;
                 vec![]
             }

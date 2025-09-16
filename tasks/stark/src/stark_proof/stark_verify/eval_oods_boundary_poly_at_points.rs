@@ -105,12 +105,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 // Initialize evaluations array (already zeroed in constructor)
                 self.current_point_index = 0;
 
-                println!("DEBUG: Read {} points", self.points_count);
-                println!(
-                    "DEBUG: n_original_columns: {}, n_interaction_columns: {}",
-                    self.n_original_columns, self.n_interaction_columns
-                );
-
                 self.step = EvalOodsBoundaryStep::PreparePoint;
                 vec![]
             }
@@ -203,11 +197,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let evaluation = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.evaluations[self.current_point_index] = evaluation;
-
-                println!(
-                    "DEBUG: Point {}: {:?} -> Evaluation: {:?}",
-                    self.current_point_index, self.points[self.current_point_index], evaluation
-                );
 
                 self.current_point_index += 1;
                 self.step = EvalOodsBoundaryStep::PreparePoint;

@@ -1,4 +1,4 @@
-use felt::{Felt, NonZeroFelt};
+use felt::Felt;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -7,10 +7,7 @@ use utils::{
 use super::table_decommit::TableDecommit;
 use super::ComputeNextLayer;
 use crate::swiftness::commitment::vector::types::CommitmentTrait;
-use crate::swiftness::fri::types::FriLayerQuery;
-use crate::swiftness::stark::types::{
-    cast_slice_to_struct, cast_slice_to_struct_mut, FriVerifyData, StarkProof, VerifyVariables,
-};
+use crate::swiftness::stark::types::{FriVerifyData, VerifyVariables};
 
 // Task for verifying FRI layers
 #[derive(Debug, Clone)]
@@ -54,18 +51,6 @@ impl Executable for FriVerifyLayers {
             FriVerifyLayersStep::Init => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // Initialize working fields (but keep working_queries as set by FriVerify)
-                fri_verify_data.current_layer = 0;
-                fri_verify_data.working_indices.flush();
-                fri_verify_data.working_y_values.flush();
-                fri_verify_data.working_elements.flush();
-
-                // working_queries are already set by FriVerify with correct fri_queries
-                println!(
-                    "DEBUG: FriVerifyLayers Init - working_queries.len(): {}",
-                    fri_verify_data.working_queries.len()
-                );
-
                 let n_layers_usize: usize = fri_verify_data
                     .fri_commitment
                     .config
@@ -78,8 +63,6 @@ impl Executable for FriVerifyLayers {
                 } else {
                     self.stage = FriVerifyLayersStep::ProcessLayer;
                 }
-
-                // Dane są już zmodyfikowane bezpośrednio na stosie!
                 vec![]
             }
 
@@ -118,8 +101,6 @@ impl Executable for FriVerifyLayers {
                         .get(fri_verify_data.current_layer)
                         .unwrap();
 
-                    // Copy sibling witness to sibling_witness field for ComputeNextLayer
-                    fri_verify_data.sibling_witness.flush();
                     for i in 0..target_layer_witness.leaves.len() {
                         if let Some(value) = target_layer_witness.leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
@@ -135,22 +116,10 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::PushTableData => {
-                // Pobierz wszystkie potrzebne dane w jednym kroku
                 let (y_values, indices, table_witness, target_commitment) = {
                     let fri_verify_data = stack.borrow_from_cache::<FriVerifyData>();
-
                     let current_layer = fri_verify_data.current_layer;
-                    println!("DEBUG: current_layer: {:?}", current_layer);
-                    println!(
-                        "DEBUG: working_y_values.len(): {:?}",
-                        fri_verify_data.working_y_values.len()
-                    );
-                    println!(
-                        "DEBUG: working_indices.len(): {:?}",
-                        fri_verify_data.working_indices.len()
-                    );
 
-                    // Zbierz y_values
                     let mut y_values = Vec::new();
                     for i in 0..fri_verify_data.working_y_values.len() {
                         if let Some(value) = fri_verify_data.working_y_values.get(i) {
@@ -158,7 +127,6 @@ impl Executable for FriVerifyLayers {
                         }
                     }
 
-                    // Zbierz indices
                     let mut indices = Vec::new();
                     for i in 0..fri_verify_data.working_indices.len() {
                         if let Some(index) = fri_verify_data.working_indices.get(i) {
@@ -166,7 +134,6 @@ impl Executable for FriVerifyLayers {
                         }
                     }
 
-                    // Pobierz referencje do struktur (bez klonowania jeszcze)
                     let table_witness = fri_verify_data
                         .witness
                         .layers
@@ -194,10 +161,6 @@ impl Executable for FriVerifyLayers {
                         &Felt::from(table_witness.vector.authentications.len()).to_bytes_be(),
                     )
                     .unwrap();
-                println!(
-                    "DEBUG: table_witness.vector.authentications.len(): {:?}",
-                    table_witness.vector.authentications.len()
-                );
 
                 for value in y_values.iter().rev() {
                     stack.push_front(&value.to_bytes_be()).unwrap();
@@ -205,14 +168,7 @@ impl Executable for FriVerifyLayers {
                 stack
                     .push_front(&Felt::from(y_values.len()).to_bytes_be())
                     .unwrap();
-                println!("DEBUG: y_values.len(): {:?}", y_values.len());
-                println!(
-                    "DEBUG: First few y_values: {:?}",
-                    y_values.iter().take(4).collect::<Vec<_>>()
-                );
 
-                println!("DEBUG: indices.len(): {:?}", indices.len());
-                println!("DEBUG: All indices: {:?}", indices);
                 for i in (0..indices.len()).rev() {
                     let index = indices[i];
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -223,10 +179,8 @@ impl Executable for FriVerifyLayers {
                     .push_front(&Felt::from(indices.len()).to_bytes_be())
                     .unwrap();
 
-                println!("DEBUG: target_commitment: {:?}", target_commitment);
                 target_commitment.push_to_stack(stack);
 
-                // Create TableDecommit task
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;
                 vec![TableDecommit::new().to_vec_with_type_tag()]
             }
@@ -234,11 +188,8 @@ impl Executable for FriVerifyLayers {
             FriVerifyLayersStep::WaitForTableDecommit => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // TableDecommit completed successfully - move to next layer
                 fri_verify_data.current_layer += 1;
 
-                // Update working_queries with next_queries from ComputeNextLayer
-                fri_verify_data.working_queries.flush();
                 for i in 0..fri_verify_data.next_queries.len() {
                     if let Some(query) = fri_verify_data.next_queries.get(i) {
                         fri_verify_data.working_queries.push(*query);

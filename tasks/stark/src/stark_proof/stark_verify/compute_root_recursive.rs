@@ -64,7 +64,6 @@ impl Executable for ComputeRootRecursive {
                     n_queries_usize,
                     FUNVEC_QUERIES
                 );
-                // Clear the entire queries array first (new instance starts fresh)
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
@@ -117,12 +116,10 @@ impl Executable for ComputeRootRecursive {
                     authentications[i] = auth;
                 }
 
-                // Read vector config using trait method
                 let vector_config = VectorConfig::from_stack(stack);
                 let n_verifier_friendly_layers =
                     vector_config.n_verifier_friendly_commitment_layers;
 
-                // Get current query from array
                 let (current_index, current_value, current_depth) = {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
@@ -138,12 +135,7 @@ impl Executable for ComputeRootRecursive {
                     depth: current_depth,
                 };
 
-                let steps_to_root = self.current.depth;
-                // println!("DEBUG: Steps to root = {}", steps_to_root);
-
-                // Check if we reached the root
                 if self.current.index == Felt::ONE {
-                    // We found the root - push it to stack and finish
                     stack.push_front(&self.current.value.to_bytes_be()).unwrap();
                     self.step = ComputeRootRecursiveStep::Done;
                     vec![]
@@ -269,8 +261,6 @@ impl Executable for ComputeRootRecursive {
                             .push_front(&Felt::from(start + 1).to_bytes_be())
                             .unwrap();
 
-                        // Push queries using trait method
-                        // println!("DEBUG: n_queries_usize = {}", n_queries_usize);
                         QueryWithDepth::push_queries_with_depth_to_stack(n_queries_usize, stack);
 
                         self.step = ComputeRootRecursiveStep::ReadHash;
@@ -293,10 +283,8 @@ impl Executable for ComputeRootRecursive {
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Read queries into pre-allocated array
                 QueryWithDepth::read_queries_with_depth_from_stack(stack);
 
-                // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                 let queries_slice = &mut verify_variables.queries;
 
@@ -307,7 +295,6 @@ impl Executable for ComputeRootRecursive {
                     next_slot += 1;
                 }
 
-                // Add new query with bounds checking
                 assert!(
                     next_slot < max_slots,
                     "Queries array full: next_slot={}, max_slots={}",
@@ -318,7 +305,6 @@ impl Executable for ComputeRootRecursive {
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.current.depth - Felt::ONE;
 
-                // Push queries using trait method - calculate actual count
                 let actual_count = {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;

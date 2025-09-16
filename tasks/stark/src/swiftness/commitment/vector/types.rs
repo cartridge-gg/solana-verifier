@@ -103,10 +103,6 @@ impl CommitmentTrait<Witness, usize> for Witness {
             n_auth_usize,
             FUNVEC_AUTHENTICATIONS
         );
-        println!(
-            "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
-            n_auth_usize
-        );
 
         for i in 0..n_auth_usize {
             let auth = Felt::from_bytes_be_slice(stack.borrow_front());

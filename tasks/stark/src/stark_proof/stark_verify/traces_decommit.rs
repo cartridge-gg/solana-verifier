@@ -83,11 +83,6 @@ impl Executable for TracesDecommit {
                         .vector
                         .authentications
                         .len();
-                    println!(
-                        "DEBUG: decommitment_values_len: {:?}",
-                        self.decommitment_values_len
-                    );
-                    println!("DEBUG: witness_count: {:?}", self.witness_count);
                 }
 
                 {
