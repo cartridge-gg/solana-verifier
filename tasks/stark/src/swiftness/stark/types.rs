@@ -59,6 +59,7 @@ pub struct StarkProof {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
+#[repr(C)]
 pub struct StarkUnsentCommitment {
     pub traces: trace::UnsentCommitment,
     pub composition: Felt,
@@ -71,6 +72,7 @@ pub struct StarkUnsentCommitment {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[repr(C)]
 pub struct StarkWitness {
     pub traces_decommitment: TracesDecommitment,
     pub traces_witness: TracesWitness,
@@ -80,6 +82,7 @@ pub struct StarkWitness {
 }
 
 #[derive(Debug, PartialEq, Default)]
+#[repr(C)]
 pub struct StarkCommitment<InteractionElements> {
     pub traces: TracesCommitment<InteractionElements>,
     pub composition: TableCommitment,

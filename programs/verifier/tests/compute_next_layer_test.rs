@@ -1875,42 +1875,50 @@ fn test_next_layer16() {
 #[test]
 fn test_two_compute_next_layer_tasks() {
     println!("=== Testing two consecutive ComputeNextLayer tasks ===");
-    
+
     let mut stack = BidirectionalStackAccount::default();
-    
+
     // First layer
-    let first_layer_queries = vec![
-        FriLayerQuery {
-            index: Felt::from(19),
-            y_value: Felt::from_dec_str("3009640132648008425771663319959959262486220333099664427328058765768842449250").unwrap(),
-            x_inv_value: Felt::from_dec_str("54553547539894122403827046258314152559223416585866015792288871627619859008").unwrap(),
-        },
-    ];
-    
-    let first_layer_sibling_witness = vec![
-        Felt::from_dec_str("1123008634785466227765787920403783137942925653310144335875674694591276473192").unwrap(),
-    ];
-    
+    let first_layer_queries = vec![FriLayerQuery {
+        index: Felt::from(19),
+        y_value: Felt::from_dec_str(
+            "3009640132648008425771663319959959262486220333099664427328058765768842449250",
+        )
+        .unwrap(),
+        x_inv_value: Felt::from_dec_str(
+            "54553547539894122403827046258314152559223416585866015792288871627619859008",
+        )
+        .unwrap(),
+    }];
+
+    let first_layer_sibling_witness = vec![Felt::from_dec_str(
+        "1123008634785466227765787920403783137942925653310144335875674694591276473192",
+    )
+    .unwrap()];
+
     let coset_size = Felt::from(2);
-    let eval_point = Felt::from_dec_str("2443479172752326919986485065418726216145528469562787664528210275186695390471").unwrap();
-    
+    let eval_point = Felt::from_dec_str(
+        "2443479172752326919986485065418726216145528469562787664528210275186695390471",
+    )
+    .unwrap();
+
     let fri_verify_data = setup_fri_verify_data(
         first_layer_queries.clone(),
         coset_size,
         eval_point,
         first_layer_sibling_witness.clone(),
     );
-    
+
     stack.store_in_cache(&fri_verify_data);
-    
+
     // Run first ComputeNextLayer
     let first_task = ComputeNextLayer::new();
     stack.push_task(first_task);
-    
+
     while !stack.is_empty_back() {
         stack.execute();
     }
-    
+
     // Get first layer results
     let fri_verify_data_after_first = stack.borrow_from_cache::<FriVerifyData>();
     let first_layer_next_queries = {
@@ -1922,7 +1930,7 @@ fn test_two_compute_next_layer_tasks() {
         }
         queries
     };
-    
+
     let first_layer_y_values = {
         let mut values = Vec::new();
         for i in 0..fri_verify_data_after_first.working_y_values.len() {
@@ -1932,34 +1940,35 @@ fn test_two_compute_next_layer_tasks() {
         }
         values
     };
-    
+
     println!("First layer y_values: {:?}", first_layer_y_values);
-    
+
     // Second layer - simulate FriVerifyLayers transition
     let mut fri_verify_data_for_second = stack.borrow_from_cache_mut::<FriVerifyData>();
-    
+
     // Update working_queries with next_queries from first layer
     for query in &first_layer_next_queries {
         fri_verify_data_for_second.working_queries.push(*query);
     }
-    
+
     // Add DIFFERENT sibling witness for second layer
-    let second_layer_sibling_witness = vec![
-        Felt::from_dec_str("9999999999999999999999999999999999999999999999999999999999999999").unwrap(),
-    ];
+    let second_layer_sibling_witness = vec![Felt::from_dec_str(
+        "9999999999999999999999999999999999999999999999999999999999999999",
+    )
+    .unwrap()];
 
     for witness in &second_layer_sibling_witness {
         fri_verify_data_for_second.sibling_witness.push(*witness);
     }
-    
+
     // Run second ComputeNextLayer
     let second_task = ComputeNextLayer::new();
     stack.push_task(second_task);
-    
+
     while !stack.is_empty_back() {
         stack.execute();
     }
-    
+
     // Get second layer results
     let fri_verify_data_after_second = stack.borrow_from_cache::<FriVerifyData>();
     let second_layer_y_values = {
@@ -1971,21 +1980,29 @@ fn test_two_compute_next_layer_tasks() {
         }
         values
     };
-    
+
     println!("Second layer y_values: {:?}", second_layer_y_values);
-    
+
     // Verification
-    assert!(first_layer_y_values.len() > 0, "First layer should produce y_values");
-    assert!(second_layer_y_values.len() > 0, "Second layer should produce y_values");
-    
+    assert!(
+        first_layer_y_values.len() > 0,
+        "First layer should produce y_values"
+    );
+    assert!(
+        second_layer_y_values.len() > 0,
+        "Second layer should produce y_values"
+    );
+
     // CRITICAL: Verify second layer uses its own sibling witness
     let found_second_witness = second_layer_y_values.contains(&second_layer_sibling_witness[0]);
-    assert!(found_second_witness, "Second layer should use its own sibling witness");
-    
+    assert!(
+        found_second_witness,
+        "Second layer should use its own sibling witness"
+    );
+
     // Verify layers produce different results (no data leakage)
     let values_different = first_layer_y_values[0] != second_layer_y_values[0];
     assert!(values_different, "Layers should produce different y_values");
-    
+
     println!("✅ Two consecutive ComputeNextLayer tasks test passed!");
 }
-

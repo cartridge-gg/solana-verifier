@@ -7,6 +7,7 @@ use utils::BidirectionalStack;
 use vector::config::Config as VectorConfig;
 
 #[derive(Debug, Clone, PartialEq, Default, Copy)]
+#[repr(C)]
 pub struct Config {
     pub n_columns: Felt,
     pub vector: VectorConfig,

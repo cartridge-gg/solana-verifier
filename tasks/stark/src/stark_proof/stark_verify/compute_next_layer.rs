@@ -51,7 +51,7 @@ impl Executable for ComputeNextLayer {
                 // Initialize computation (like original function start)
                 fri_verify_data.working_indices.flush();
                 fri_verify_data.working_y_values.flush(); // Clear at start, then extend for each coset
-                // fri_verify_data.next_queries.flush(); // Clear next_queries for fresh start
+                                                          // fri_verify_data.next_queries.flush(); // Clear next_queries for fresh start
                 fri_verify_data.current_coset_index = 0; // Start with first coset
 
                 if fri_verify_data.working_queries.is_empty() {

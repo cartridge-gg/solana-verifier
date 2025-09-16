@@ -2,6 +2,7 @@ use felt::Felt;
 use utils::BidirectionalStack;
 
 #[derive(Debug, Clone, PartialEq, Default, Copy)]
+#[repr(C)]
 pub struct Config {
     pub height: Felt,
     pub n_verifier_friendly_commitment_layers: Felt,
