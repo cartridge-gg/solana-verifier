@@ -137,6 +137,10 @@ impl Executable for ComputeRootRecursive {
                     value: current_value,
                     depth: current_depth,
                 };
+
+                let steps_to_root = self.current.depth;
+                // println!("DEBUG: Steps to root = {}", steps_to_root);
+
                 // Check if we reached the root
                 if self.current.index == Felt::ONE {
                     // We found the root - push it to stack and finish
@@ -266,6 +270,7 @@ impl Executable for ComputeRootRecursive {
                             .unwrap();
 
                         // Push queries using trait method
+                        // println!("DEBUG: n_queries_usize = {}", n_queries_usize);
                         QueryWithDepth::push_queries_with_depth_to_stack(n_queries_usize, stack);
 
                         self.step = ComputeRootRecursiveStep::ReadHash;

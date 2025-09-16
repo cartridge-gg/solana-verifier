@@ -74,7 +74,7 @@ impl Executable for FriFormula {
                             values[0],
                             values[1],
                             fri_verify_data.eval_point,
-                            Felt::ONE,
+                            fri_verify_data.coset_x_inv,
                         )
                     }
                     4 => {
@@ -84,7 +84,11 @@ impl Executable for FriFormula {
                                 values.len()
                             );
                         }
-                        self.fri_formula4(&values[0..4], fri_verify_data.eval_point, Felt::ONE)
+                        self.fri_formula4(
+                            &values[0..4],
+                            fri_verify_data.eval_point,
+                            fri_verify_data.coset_x_inv,
+                        )
                     }
                     8 => {
                         if values.len() < 8 {
@@ -93,7 +97,11 @@ impl Executable for FriFormula {
                                 values.len()
                             );
                         }
-                        self.fri_formula8(&values[0..8], fri_verify_data.eval_point, Felt::ONE)
+                        self.fri_formula8(
+                            &values[0..8],
+                            fri_verify_data.eval_point,
+                            fri_verify_data.coset_x_inv,
+                        )
                     }
                     16 => {
                         if values.len() < 16 {
@@ -102,7 +110,11 @@ impl Executable for FriFormula {
                                 values.len()
                             );
                         }
-                        self.fri_formula16(&values[0..16], fri_verify_data.eval_point, Felt::ONE)
+                        self.fri_formula16(
+                            &values[0..16],
+                            fri_verify_data.eval_point,
+                            fri_verify_data.coset_x_inv,
+                        )
                     }
                     _ => {
                         panic!("Invalid coset size: {}", coset_size_u64);
@@ -111,9 +123,25 @@ impl Executable for FriFormula {
 
                 self.stage = FriFormulaStep::Done;
 
-                fri_verify_data.working_y_values.push(result);
-                // Push result to stack
-                // stack.push_front(&result.to_bytes_be()).unwrap();
+                // Generate next_queries based on FRI formula result
+                // Add the new query to next_queries using current_coset_index
+                if let Some(coset_index) = fri_verify_data
+                    .working_indices
+                    .get(fri_verify_data.current_coset_index)
+                {
+                    let next_index = *coset_index;
+
+                    // Use pre-calculated x_inv_value from ComputeNextLayer
+                    let next_query = crate::swiftness::fri::types::FriLayerQuery {
+                        index: next_index,
+                        y_value: result,
+                        x_inv_value: fri_verify_data.next_x_inv_value,
+                    };
+                    fri_verify_data.next_queries.push(next_query);
+
+                    // Increment coset index for next coset
+                    fri_verify_data.current_coset_index += 1;
+                }
                 vec![]
             }
             FriFormulaStep::Done => {

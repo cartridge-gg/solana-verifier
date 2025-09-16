@@ -1,16 +1,11 @@
 use felt::{Felt, NonZeroFelt};
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
+use crate::funvec::FunVec;
+
 use crate::{
-    stark_proof::stark_verify::{group::get_fri_group, FriVerifyLayers},
-    swiftness::{
-        commitment,
-        fri::{self, types::FriLayerQuery},
-        stark::{
-            self,
-            types::{cast_slice_to_struct, FriVerifyData},
-        },
-    },
+    stark_proof::stark_verify::FriVerifyLayers,
+    swiftness::{fri::types::FriLayerQuery, stark::types::FriVerifyData},
 };
 
 // FriVerify task
@@ -18,7 +13,7 @@ use crate::{
 #[repr(C)]
 pub struct FriVerify {
     stage: FriVerifyStep,
-    fri_queries: Vec<FriLayerQuery>,
+    fri_queries: FunVec<FriLayerQuery, 256>,
 }
 
 #[allow(dead_code)]
@@ -41,7 +36,7 @@ impl FriVerify {
     pub fn new() -> Self {
         Self {
             stage: FriVerifyStep::Init,
-            fri_queries: Vec::new(),
+            fri_queries: FunVec::default(),
         }
     }
 }
@@ -57,6 +52,11 @@ impl Executable for FriVerify {
         match self.stage {
             FriVerifyStep::Init => {
                 let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                println!("DEBUG: eval_points[0]: {:?}", fri_verify_data
+                    .fri_commitment
+                    .eval_points
+                    .get(0)
+                    .unwrap());
 
                 let queries_len = fri_verify_data.queries.len();
                 let fri_len = fri_verify_data.fri_decommitment.values.len();
@@ -66,7 +66,7 @@ impl Executable for FriVerify {
                     "FRI decommitment length does not match queries length"
                 );
 
-                self.fri_queries.clear();
+                self.fri_queries.flush();
                 for (index, query) in fri_verify_data.queries.iter().enumerate() {
                     if index < fri_verify_data.fri_decommitment.values.len()
                         && index < fri_verify_data.fri_decommitment.points.len()
@@ -83,7 +83,6 @@ impl Executable for FriVerify {
                         });
                     }
                 }
-                // stack.pop_front();
                 self.stage = FriVerifyStep::ComputeFirstLayer;
                 println!("Transitioning to ComputeFirstLayer");
                 vec![]
@@ -99,25 +98,25 @@ impl Executable for FriVerify {
                 vec![]
             }
             FriVerifyStep::VerifyInnerLayers => {
-                let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                let n_layers = fri_verify_data.fri_commitment.config.n_layers;
-                let total_layers = n_layers
-                    .to_biguint()
-                    .try_into()
-                    .unwrap_or(0usize)
-                    .saturating_sub(1); // n_layers - 1 inner layers
+                // Initialize FriVerifyData with data needed for ComputeNextLayer
+                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
+
+                // Initialize working_queries with fri_queries from Init step
+                fri_verify_data.working_queries.flush();
+                for query in &self.fri_queries {
+                    fri_verify_data.working_queries.push(*query);
+                }
+
+                // Reset working fields
+                fri_verify_data.current_layer = 0;
+                fri_verify_data.working_indices.flush();
+                fri_verify_data.working_y_values.flush();
+                fri_verify_data.working_elements.flush();
+                fri_verify_data.next_queries.flush();
+                fri_verify_data.current_coset_index = 0;
 
                 self.stage = FriVerifyStep::VerifyLastLayer;
-                vec![FriVerifyLayers::new(
-                    // get_fri_group(),
-                    // n_layers,
-                    // fri_verify_data.fri_commitment.inner_layers.to_vec(),
-                    // fri_verify_data.witness.layers,
-                    // fri_verify_data.fri_commitment.eval_points.clone(),
-                    // fri_verify_data.fri_commitment.config.fri_step_sizes.as_slice()[1..].to_vec(),
-                    // self.fri_queries.clone(),
-                )
-                .to_vec_with_type_tag()]
+                vec![FriVerifyLayers::new().to_vec_with_type_tag()]
             }
             FriVerifyStep::VerifyLastLayer => {
                 // Verify last layer using Horner evaluation
@@ -127,7 +126,7 @@ impl Executable for FriVerify {
                 // For each query, evaluate the polynomial using Horner's method
                 for query in &self.fri_queries {
                     let horner_result = self.horner_eval(
-                        &fri_verify_data.fri_commitment.last_layer_coefficients,
+                        fri_verify_data.fri_commitment.last_layer_coefficients.as_slice(),
                         Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
                     );
 

@@ -14,7 +14,6 @@ use crate::swiftness::stark::types::{
 #[repr(C)]
 pub struct ComputeNextLayer {
     stage: ComputeNextLayerStep,
-    current_query_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +23,6 @@ pub enum ComputeNextLayerStep {
     ProcessQueries,
     ComputeCosetElements,
     WaitForCosetElements,
-    ApplyFriFormula,
     Done,
 }
 
@@ -34,7 +32,6 @@ impl ComputeNextLayer {
     pub fn new() -> Self {
         Self {
             stage: ComputeNextLayerStep::Init,
-            current_query_index: 0,
         }
     }
 }
@@ -51,24 +48,24 @@ impl Executable for ComputeNextLayer {
             ComputeNextLayerStep::Init => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // Initialize computation
-                self.current_query_index = 0;
+                // Initialize computation (like original function start)
                 fri_verify_data.working_indices.flush();
-                fri_verify_data.working_y_values.flush();
+                fri_verify_data.working_y_values.flush(); // Clear at start, then extend for each coset
+                // fri_verify_data.next_queries.flush(); // Clear next_queries for fresh start
+                fri_verify_data.current_coset_index = 0; // Start with first coset
 
                 if fri_verify_data.working_queries.is_empty() {
                     self.stage = ComputeNextLayerStep::Done;
                 } else {
                     self.stage = ComputeNextLayerStep::ProcessQueries;
                 }
-
-                // Dane są już zmodyfikowane bezpośrednio na stosie!
                 vec![]
             }
             ComputeNextLayerStep::ProcessQueries => {
                 let fri_verify_data = stack.borrow_from_cache::<FriVerifyData>();
 
-                if self.current_query_index < fri_verify_data.working_queries.len() {
+                // Check if there are still queries to process (like original: while !queries.is_empty())
+                if !fri_verify_data.working_queries.is_empty() {
                     self.stage = ComputeNextLayerStep::ComputeCosetElements;
                 } else {
                     // All queries processed
@@ -79,87 +76,38 @@ impl Executable for ComputeNextLayer {
             ComputeNextLayerStep::ComputeCosetElements => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // Get current query and compute coset information
-                if let Some(query) = fri_verify_data
-                    .working_queries
-                    .get(self.current_query_index)
-                {
+                // Get first query and compute coset information (like original: queries.first().unwrap())
+                if let Some(query) = fri_verify_data.working_queries.get(0) {
                     let query_uint = query.index.to_biguint();
                     let coset_index = query_uint / fri_verify_data.coset_size.to_biguint();
                     let coset_index_felt =
                         Felt::from_bytes_be_slice(coset_index.to_bytes_be().as_slice());
+                    fri_verify_data.working_indices.push(coset_index_felt);
+                    let _coset_start_index = coset_index_felt * fri_verify_data.coset_size;
+
+                    // Store x_inv_value for next_queries calculation
+                    let next_x_inv = query.x_inv_value.pow_felt(&fri_verify_data.coset_size);
+                    fri_verify_data.next_x_inv_value = next_x_inv;
+
+                    // Create and launch ComputeCosetElements task with coset_start_index
                     let coset_start_index = coset_index_felt * fri_verify_data.coset_size;
-
-                    // Store coset information for ComputeCosetElements
-                    // ComputeCosetElements will work directly on FriVerifyData
-
-                    // Dane są już zmodyfikowane bezpośrednio na stosie!
-
-                    // Create and launch ComputeCosetElements task
                     self.stage = ComputeNextLayerStep::WaitForCosetElements;
-                    vec![ComputeCosetElements::new().to_vec_with_type_tag()]
+                    vec![
+                        ComputeCosetElements::with_coset_start_index(coset_start_index)
+                            .to_vec_with_type_tag(),
+                    ]
                 } else {
                     self.stage = ComputeNextLayerStep::Done;
                     vec![]
                 }
             }
             ComputeNextLayerStep::WaitForCosetElements => {
-                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
-
-                // ComputeCosetElements finished - results are in working_elements
-                // Copy elements to working_y_values for verification
-                for i in 0..fri_verify_data.working_elements.len() {
-                    if let Some(element) = fri_verify_data.working_elements.get(i) {
-                        fri_verify_data.working_y_values.push(*element);
-                    }
-                }
-
-                // Dane są już zmodyfikowane bezpośrednio na stosie!
+                // ComputeCosetElements finished - results are already in working_y_values and working_elements
+                // next_x_inv_value was already calculated in ComputeCosetElements step
 
                 // Create FriFormula sub-task
-                self.stage = ComputeNextLayerStep::ApplyFriFormula;
-                vec![FriFormula::new().to_vec_with_type_tag()]
-            }
-            ComputeNextLayerStep::ApplyFriFormula => {
-                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
-
-                // // FriFormula completed - get result from stack
-                // let fri_formula_result = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
-
-                self.current_query_index += 1;
-
-                // Get current query and compute next query
-                if let Some(query) = fri_verify_data
-                    .working_queries
-                    .get(self.current_query_index - 1)
-                {
-                    let query_uint = query.index.to_biguint();
-                    let coset_index = query_uint / fri_verify_data.coset_size.to_biguint();
-                    let coset_index_felt =
-                        Felt::from_bytes_be_slice(coset_index.to_bytes_be().as_slice());
-
-                    // Calculate next x_inv
-                    let next_x_inv = query.x_inv_value.pow_felt(&fri_verify_data.coset_size);
-
-                    // Update working_queries with next layer query
-                    let next_query = FriLayerQuery {
-                        index: coset_index_felt,
-                        y_value: *fri_verify_data
-                            .working_y_values
-                            .get(self.current_query_index - 1)
-                            .unwrap(),
-                        x_inv_value: next_x_inv,
-                    };
-
-                    // Replace current query with next layer query
-                    *fri_verify_data
-                        .working_queries
-                        .at_mut(self.current_query_index - 1) = next_query;
-                }
-
                 self.stage = ComputeNextLayerStep::ProcessQueries;
-                vec![]
+                vec![FriFormula::new().to_vec_with_type_tag()]
             }
             ComputeNextLayerStep::Done => {
                 vec![]

@@ -26,11 +26,11 @@ felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }
 
 
-[profile.release]
-opt-level = "z"
-lto = "thin"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-debug = false
-incremental = false
+# [profile.release]
+# opt-level = "z"
+# lto = "thin"
+# codegen-units = 1
+# panic = "abort"
+# strip = "symbols"
+# debug = false
+# incremental = false
