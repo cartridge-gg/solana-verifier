@@ -627,7 +627,7 @@ pub async fn send_and_confirm_transactions(
         match result {
             Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
             Err(e) => {
-                warn!("{}", format!("Transaction NOT confirmed (timeout): {e}"));
+                warn!("Transaction NOT confirmed (timeout): {e}");
                 transaction_results.push(e);
             }
         }
