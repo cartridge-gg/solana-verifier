@@ -121,11 +121,16 @@ pub struct FriVerifyData {
     // Working fields for FRI verification
     pub current_layer: usize,
     pub working_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>,
+    pub next_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>, // For storing next layer queries
     pub working_elements: FunVec<Felt, FUNVEC_LEAVES>,
+    pub sibling_witness: FunVec<Felt, FUNVEC_LEAVES>, // Global sibling witness for all cosets
     pub working_indices: FunVec<Felt, FUNVEC_QUERY_INDICES>,
     pub working_y_values: FunVec<Felt, FUNVEC_LEAVES>,
     pub coset_size: Felt,
     pub eval_point: Felt,
+    pub next_x_inv_value: Felt, // For storing x_inv_value for next_queries
+    pub coset_x_inv: Felt,      // For storing coset_x_inv for fri_formula
+    pub current_coset_index: usize, // Track which coset is being processed
 }
 
 impl Default for FriVerifyData {
@@ -137,11 +142,16 @@ impl Default for FriVerifyData {
             witness: fri::types::Witness::default(),
             current_layer: 0,
             working_queries: FunVec::default(),
+            next_queries: FunVec::default(),
             working_elements: FunVec::default(),
+            sibling_witness: FunVec::default(),
             working_indices: FunVec::default(),
             working_y_values: FunVec::default(),
             coset_size: Felt::ZERO,
             eval_point: Felt::ZERO,
+            next_x_inv_value: Felt::ZERO,
+            coset_x_inv: Felt::ZERO,
+            current_coset_index: 0,
         }
     }
 }

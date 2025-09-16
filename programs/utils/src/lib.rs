@@ -5,7 +5,7 @@ pub mod global_values;
 use crate::global_values::GlobalValues;
 pub mod transcript;
 
-pub const CAPACITY: usize = 65536;
+pub const CAPACITY: usize = 131072;
 pub const LENGTH_SIZE: usize = 2;
 // pub const CAPACITY: usize = 524288; // 512KB - wystarczy dla FriVerifyData
 // pub const LENGTH_SIZE: usize = 4; // 4 bajty = 32 bity = do 4GB
@@ -23,7 +23,7 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
-pub const CACHE_SIZE: usize = 524288;
+pub const CACHE_SIZE: usize = 1048576;
 
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {

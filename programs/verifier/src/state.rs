@@ -130,10 +130,8 @@ impl BidirectionalStack for BidirectionalStackAccount {
         let mut data_length = 0_usize;
         for i in 1..=LENGTH_SIZE {
             let x: usize = self.buffer[self.front_index.saturating_sub(i)].into();
-            println!("i={}, x={}, front_index={}", i, x, self.front_index);
             data_length = (data_length << 8) | x;
         }
-        println!("data_len: {:?}", data_length);
 
         &self.buffer[self.front_index.saturating_sub(data_length + LENGTH_SIZE)
             ..self.front_index.saturating_sub(LENGTH_SIZE)]

@@ -1,7 +1,9 @@
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::swiftness::stark::types::{cast_slice_to_struct_mut, FriVerifyData};
+use super::group::get_fri_group;
+use crate::funvec::FunVec;
+use crate::swiftness::stark::types::FriVerifyData;
 
 // Task for computing coset elements
 #[derive(Debug, Clone)]
@@ -9,6 +11,9 @@ use crate::swiftness::stark::types::{cast_slice_to_struct_mut, FriVerifyData};
 pub struct ComputeCosetElements {
     stage: ComputeCosetElementsStep,
     current_index: usize,
+    coset_x_inv: Felt,
+    coset_start_index: Felt,           // Starting index of the coset
+    coset_elements: FunVec<Felt, 256>, // Store coset elements
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +31,19 @@ impl ComputeCosetElements {
         Self {
             stage: ComputeCosetElementsStep::Init,
             current_index: 0,
+            coset_x_inv: Felt::ZERO,
+            coset_start_index: Felt::ZERO,
+            coset_elements: FunVec::default(),
+        }
+    }
+
+    pub fn with_coset_start_index(coset_start_index: Felt) -> Self {
+        Self {
+            stage: ComputeCosetElementsStep::Init,
+            current_index: 0,
+            coset_x_inv: Felt::ZERO,
+            coset_start_index,
+            coset_elements: FunVec::default(),
         }
     }
 }
@@ -42,13 +60,14 @@ impl Executable for ComputeCosetElements {
             ComputeCosetElementsStep::Init => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                // Initialize computation
+                // Initialize computation (like original function start)
                 self.current_index = 0;
-                fri_verify_data.working_elements.flush();
+                self.coset_x_inv = Felt::ZERO;
+
+                // Clear coset_elements
+                self.coset_elements.flush();
 
                 self.stage = ComputeCosetElementsStep::ProcessElement;
-
-                // Dane są już zmodyfikowane bezpośrednio na stosie!
                 vec![]
             }
             ComputeCosetElementsStep::ProcessElement => {
@@ -58,62 +77,79 @@ impl Executable for ComputeCosetElements {
                     fri_verify_data.coset_size.to_biguint().try_into().unwrap();
 
                 if self.current_index < coset_size_usize {
-                    // Compute coset start index based on current query
-                    let coset_start_index =
-                        if let Some(first_query) = fri_verify_data.working_queries.get(0) {
-                            let query_uint = first_query.index.to_biguint();
-                            let coset_index = query_uint / fri_verify_data.coset_size.to_biguint();
-                            let coset_index_felt =
-                                Felt::from_bytes_be_slice(coset_index.to_bytes_be().as_slice());
-                            coset_index_felt * fri_verify_data.coset_size
-                        } else {
-                            Felt::ZERO
-                        };
+                    // Compute target index for this coset position (like original: coset_start_index + index)
+                    let target_index =
+                        self.coset_start_index + Felt::from(self.current_index as u64);
 
-                    let target_index = coset_start_index + Felt::from(self.current_index as u64);
+                    // Check if first query matches target_index (like original: q.first() && q.unwrap().index == target_index)
+                    let q = fri_verify_data.working_queries.get(0);
+                    if q.is_some() && q.unwrap().index == target_index {
+                        // Found matching query - consume it (simulate queries.drain(0..1))
+                        let query = *q.unwrap();
 
-                    // Check if we have a query for this index
-                    let mut found_query = false;
-                    let mut query_y_value = Felt::ZERO;
-                    let mut coset_x_inv = Felt::ZERO;
-
-                    // Search for matching query
-                    for i in 0..fri_verify_data.working_queries.len() {
-                        if let Some(query) = fri_verify_data.working_queries.get(i) {
-                            if query.index == target_index {
-                                query_y_value = query.y_value;
-                                // Calculate coset_x_inv using FRI group (hardcoded for now)
-                                let fri_group_element = match self.current_index {
-                                    0 => Felt::ONE,
-                                    1 => Felt::from_hex_unchecked("0x446ed3ce295dda2b5ea677394813e6eab8bfbc55397aacac8e6df6f4bc9ca34"), // OMEGA_8
-                                    _ => Felt::ONE, // Simplified
-                                };
-                                coset_x_inv = query.x_inv_value * fri_group_element;
-                                found_query = true;
-                                break;
+                        // Remove first query (simulate drain(0..1))
+                        let mut temp_queries = FunVec::default();
+                        for i in 1..fri_verify_data.working_queries.len() {
+                            if let Some(remaining_query) = fri_verify_data.working_queries.get(i) {
+                                temp_queries.push(*remaining_query);
                             }
                         }
-                    }
+                        fri_verify_data.working_queries = temp_queries;
 
-                    if found_query {
-                        fri_verify_data.working_elements.push(query_y_value);
+                        // Add query y_value to coset elements (like original: coset_elements.push(query[0].y_value))
+                        self.coset_elements.push(query.y_value);
+
+                        // Calculate coset_x_inv using FRI group (like original: query[0].x_inv_value * fri_group.get(index).unwrap())
+                        let fri_group = get_fri_group();
+                        let fri_group_element = *fri_group.get(self.current_index).unwrap();
+                        self.coset_x_inv = query.x_inv_value * fri_group_element;
                     } else {
-                        // Use sibling witness from working_elements (if available)
-                        if let Some(witness_value) =
-                            fri_verify_data.working_elements.get(self.current_index)
-                        {
-                            // Value already in working_elements from sibling witness
+                        // Use sibling witness from global sibling_witness (like original else clause: sibling_witness.drain(0..1))
+                        if fri_verify_data.sibling_witness.len() > 0 {
+                            let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
+
+                            // Remove first witness from global sibling_witness (simulate drain(0..1))
+                            let mut temp_witness = FunVec::default();
+                            for i in 1..fri_verify_data.sibling_witness.len() {
+                                if let Some(element) = fri_verify_data.sibling_witness.get(i) {
+                                    temp_witness.push(*element);
+                                }
+                            }
+                            fri_verify_data.sibling_witness = temp_witness;
+
+                            // Add witness to coset elements (like original: coset_elements.push(withness[0]))
+                            self.coset_elements.push(witness_value);
                         } else {
-                            fri_verify_data.working_elements.push(Felt::ZERO); // Fallback
+                            panic!("Insufficient sibling witness data in test fixtures at index {} (need 112, have {})", 
+                                    self.current_index, fri_verify_data.sibling_witness.len());
                         }
                     }
 
                     self.current_index += 1;
                     vec![]
                 } else {
-                    // All elements processed
-                    self.stage = ComputeCosetElementsStep::Done;
+                    // All elements processed - copy results to working data (like original return (coset_elements, coset_x_inv))
+                    let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
+                    // Add coset_elements to working_y_values (like original: verify_y_values.extend(coset_elements.iter()))
+                    for i in 0..self.coset_elements.len() {
+                        if let Some(element) = self.coset_elements.get(i) {
+                            fri_verify_data.working_y_values.push(*element);
+                        }
+                    }
+
+                    // Also copy to working_elements for FriFormula
+                    fri_verify_data.working_elements.flush();
+                    for i in 0..self.coset_elements.len() {
+                        if let Some(element) = self.coset_elements.get(i) {
+                            fri_verify_data.working_elements.push(*element);
+                        }
+                    }
+
+                    // Store coset_x_inv for FriFormula
+                    fri_verify_data.coset_x_inv = self.coset_x_inv;
+
+                    self.stage = ComputeCosetElementsStep::Done;
                     vec![]
                 }
             }
@@ -129,14 +165,19 @@ impl Executable for ComputeCosetElements {
 }
 
 impl ComputeCosetElements {
-    // Get the computed results from FriVerifyData
+    // Get the computed results from FriVerifyData (like original return values)
     pub fn get_results_from_data(fri_verify_data: &FriVerifyData) -> Vec<Felt> {
         let mut coset_elements = Vec::new();
-        for i in 0..fri_verify_data.working_elements.len() {
-            if let Some(element) = fri_verify_data.working_elements.get(i) {
+        for i in 0..fri_verify_data.working_y_values.len() {
+            if let Some(element) = fri_verify_data.working_y_values.get(i) {
                 coset_elements.push(*element);
             }
         }
         coset_elements
+    }
+
+    // Get the coset_x_inv value
+    pub fn get_coset_x_inv(&self) -> Felt {
+        self.coset_x_inv
     }
 }

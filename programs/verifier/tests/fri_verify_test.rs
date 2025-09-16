@@ -19,7 +19,7 @@ fn test_fri_verify() {
         stack.execute();
     }
     assert_eq!(stack.front_index, 0);
-    assert_eq!(stack.back_index, 65536);
+    assert_eq!(stack.back_index, 131072);
 }
 
 // Stack layout pre-execution:
@@ -34,7 +34,7 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
     let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
     let fri_decommitment: commitment::types::Decommitment = fixtures::fri_decommitment::get();
     let witness: fri::types::Witness = fixtures::witness::get();
-    let mut fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
+    let fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
         queries: FunVec::from_vec(queries.clone()),
         fri_commitment: fri_commitment,
         fri_decommitment: fri_decommitment,
@@ -46,6 +46,11 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
         working_y_values: FunVec::default(),
         coset_size: Felt::ZERO,
         eval_point: Felt::ZERO,
+        next_queries: FunVec::default(),
+        sibling_witness: FunVec::default(),
+        next_x_inv_value: Felt::ZERO,
+        coset_x_inv: Felt::ZERO,
+        current_coset_index: 0,
     };
     // Użyj nowej metody do przechowania FriVerifyData w cache
     stack.store_in_cache(&fri_verify_data);

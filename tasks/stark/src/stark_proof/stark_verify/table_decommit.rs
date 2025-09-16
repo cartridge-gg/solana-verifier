@@ -83,6 +83,7 @@ impl Executable for TableDecommit {
 
                 // An extra layer is added to the height since the table is considered as a layer
                 let bottom_layer_depth = table_commitment.config.vector.height + Felt::ONE;
+                println!("DEBUG: bottom_layer_depth = {}", bottom_layer_depth);
                 self.is_bottom_layer_verifier_friendly = table_commitment
                     .config
                     .vector
@@ -127,6 +128,7 @@ impl Executable for TableDecommit {
 
                 // Read witness
                 self.n_authentications = VectorWitness::from_stack(stack);
+                println!("DEBUG: n_authentications = {}", self.n_authentications);
 
                 // Initialize vector queries with indices
                 self.vector_queries = query_indices

@@ -57,6 +57,7 @@ impl Executable for VectorDecommit {
                 println!("DEBUG: vector_commitment: {:?}", vector_commitment);
 
                 self.reference_commitment_hash = vector_commitment.commitment_hash;
+                println!("DEBUG: height = {}", vector_commitment.config.height);
                 let height = vector_commitment.config.height;
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
