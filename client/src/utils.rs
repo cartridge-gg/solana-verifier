@@ -614,6 +614,7 @@ pub async fn send_and_confirm_transactions(
     client: &RpcClient,
     transactions: &[Transaction],
 ) -> Result<()> {
+    let mut transaction_results = Vec::new();
     let futures = transactions.iter().map(|tx| {
         let client = &client;
         async move {
@@ -625,8 +626,17 @@ pub async fn send_and_confirm_transactions(
     for (_, result) in results {
         match result {
             Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),
-            Err(e) => warn!(error:% = e; "Transaction NOT confirmed (timeout)"),
+            Err(e) => {
+                warn!("Transaction NOT confirmed (timeout): {e}");
+                transaction_results.push(e);
+            }
         }
+    }
+    if !transaction_results.is_empty() {
+        return Err(ClientError::TransactionError(format!(
+            "{} transactions failed",
+            transaction_results.len()
+        )));
     }
     Ok(())
 }
@@ -637,7 +647,7 @@ pub async fn send_and_confirm_with_limit(
     payer: &Keypair,
     limit: u32,
 ) -> Result<()> {
-    const BATCH_SIZE: usize = 20;
+    const BATCH_SIZE: usize = 90;
     for (i, chunk) in instructions.chunks(BATCH_SIZE).enumerate() {
         let futures = chunk.iter().map(|instruction| {
             let client = &client;
@@ -645,11 +655,20 @@ pub async fn send_and_confirm_with_limit(
                 // the size is of this instruction is always
                 // the same or smaller as we have const chunk size
                 let limit = ComputeBudgetInstruction::set_compute_unit_limit(limit);
+                let mut latest_blockhash = client.get_latest_blockhash().await;
+                let mut retry_count = 0;
+                let max_retries = 15;
+                while latest_blockhash.is_err() && retry_count < max_retries {
+                    sleep(std::time::Duration::from_millis(10));
+                    latest_blockhash = client.get_latest_blockhash().await;
+                    retry_count += 1;
+                }
+
                 let tx = Transaction::new_signed_with_payer(
                     &[instruction.clone(), limit],
                     Some(&payer.pubkey()),
                     &[&payer],
-                    client.get_latest_blockhash().await.unwrap(),
+                    latest_blockhash.unwrap(),
                 );
 
                 let confirmed = client.send_and_confirm_transaction(&tx).await;

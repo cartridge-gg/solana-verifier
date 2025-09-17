@@ -22,6 +22,11 @@ pub const CHUNK_SIZE: usize = 1000;
 #[tokio::main]
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .filter_module("client", log::LevelFilter::Trace)
+        .init();
+
     let config = Config::parse_args();
 
     let client = initialize_client(&config).await?;

@@ -1,9 +1,10 @@
 use client::{
-    initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
-    setup_payer, setup_program, ClientError, Config,
+    initialize_client, interact_with_program_instructions, setup_payer, setup_program, ClientError,
+    Config,
 };
 use felt::Felt;
 use solana_sdk::{
+    compute_budget::ComputeBudgetInstruction,
     instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
@@ -14,7 +15,7 @@ use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-
+// use felt::Felt;
 /// Main entry point for the Solana program client
 #[tokio::main]
 #[allow(clippy::result_large_err)]
@@ -135,25 +136,35 @@ async fn main() -> client::Result<()> {
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
     let simulation_steps = stack.simulate();
     println!("Simulation steps: {simulation_steps}");
-    let mut transactions = Vec::new();
+    let mut signatures = Vec::new();
+
     for i in 0..simulation_steps {
-        // Execute the task
         let execute_ix = Instruction::new_with_borsh(
             program_id,
             &VerifierInstruction::Execute(i as u32),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
 
+        let limit = ComputeBudgetInstruction::set_compute_unit_limit(700_000);
+
         let execute_tx = Transaction::new_signed_with_payer(
-            &[execute_ix],
+            &[limit, execute_ix],
             Some(&payer.pubkey()),
             &[&payer],
             client.get_latest_blockhash().await?,
         );
 
-        transactions.push(execute_tx.clone());
+        let sim = client.simulate_transaction(&execute_tx).await?;
+        println!(
+            "Sim step {i}, CU (sim): {}",
+            sim.value.units_consumed.unwrap_or(0)
+        );
+
+        let sig = client.send_and_confirm_transaction(&execute_tx).await?;
+        println!("Execute step {i} signature: {sig}");
+        signatures.push(sig);
     }
-    send_and_confirm_transactions(&client, &transactions).await?;
+
     // Read and display the result
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())

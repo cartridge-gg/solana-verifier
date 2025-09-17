@@ -3,6 +3,7 @@ use client::{
     setup_payer, setup_program, ClientError, Config,
 };
 use felt::Felt;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
@@ -14,7 +15,6 @@ use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-
 /// Main entry point for the Solana program client
 #[tokio::main]
 #[allow(clippy::result_large_err)]
@@ -197,8 +197,9 @@ async fn main() -> client::Result<()> {
             &VerifierInstruction::Execute(i as u32),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
+        let limit = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
         let execute_tx = Transaction::new_signed_with_payer(
-            &[execute_ix],
+            &[limit, execute_ix],
             Some(&payer.pubkey()),
             &[&payer],
             client.get_latest_blockhash().await?,
