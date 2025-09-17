@@ -1,11 +1,11 @@
 use felt::Felt;
-use stark::swiftness::stark::config::StarkConfig;
+use stark::funvec::FunVec;
 use stark::swiftness::air::trace::config::Config as TraceConfig;
 use stark::swiftness::commitment::table::config::Config as TableConfig;
 use stark::swiftness::commitment::vector::config::Config as VectorConfig;
 use stark::swiftness::fri::config::Config as FriConfig;
 use stark::swiftness::pow::config::Config as PowConfig;
-use stark::funvec::FunVec;
+use stark::swiftness::stark::config::StarkConfig;
 
 pub fn get() -> StarkConfig {
     // Vector config for common settings
@@ -35,7 +35,7 @@ pub fn get() -> StarkConfig {
     // FRI config
     let fri = FriConfig {
         log_input_size: Felt::from_hex("0x20").unwrap(), // 32
-        n_layers: Felt::from_hex("0x9").unwrap(), // 9
+        n_layers: Felt::from_hex("0x9").unwrap(),        // 9
         inner_layers: FunVec::from_vec(vec![
             TableConfig {
                 n_columns: Felt::from_hex("0x8").unwrap(), // 8
@@ -109,9 +109,7 @@ pub fn get() -> StarkConfig {
     };
 
     // Proof of work config
-    let proof_of_work = PowConfig {
-        n_bits: 32,
-    };
+    let proof_of_work = PowConfig { n_bits: 32 };
 
     StarkConfig {
         traces,
@@ -119,8 +117,8 @@ pub fn get() -> StarkConfig {
         fri,
         proof_of_work,
         log_trace_domain_size: Felt::from_hex("0x1c").unwrap(), // 28
-        n_queries: Felt::from_hex("0x10").unwrap(), // 16
-        log_n_cosets: Felt::from_hex("0x4").unwrap(), // 4
+        n_queries: Felt::from_hex("0x10").unwrap(),             // 16
+        log_n_cosets: Felt::from_hex("0x4").unwrap(),           // 4
         n_verifier_friendly_commitment_layers: Felt::from_hex("0x17").unwrap(), // 23
     }
 }

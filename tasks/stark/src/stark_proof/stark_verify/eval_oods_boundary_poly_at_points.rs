@@ -100,11 +100,11 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     return vec![];
                 }
 
-                let current_point =  {
+                let current_point = {
                     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                     let points = &fri_verify_data.fri_decommitment.points;
                     let current_point = points.at(self.current_point_index);
-                    current_point.clone()
+                    *current_point
                 };
 
                 let (stark_commitment, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();

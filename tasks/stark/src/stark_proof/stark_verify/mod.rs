@@ -1,6 +1,10 @@
 use std::vec;
 
-use crate::swiftness::{air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE}, commitment::vector::types::CommitmentTrait, stark::types::VerifyVariables};
+use crate::swiftness::{
+    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+    commitment::vector::types::CommitmentTrait,
+    stark::types::VerifyVariables,
+};
 use felt::{Felt, NonZeroFelt};
 use utils::{
     global_values::InteractionElements, impl_type_identifiable, BidirectionalStack, Executable,
@@ -28,17 +32,13 @@ pub use fri_formula::FriFormula;
 pub use vector_decommit::VectorDecommit;
 
 use crate::{
-    funvec::{FunVec, FUNVEC_QUERIES},
     stark_proof::stark_verify::{
         eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints},
         fri_verify::FriVerify,
         table_decommit::TableDecommit,
         traces_decommit::TracesDecommit,
     },
-    swiftness::{
-        commitment::vector::types::Query,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
-    },
+    swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,11 +146,12 @@ impl Executable for StarkVerify {
                 for i in (0..queries_len).rev() {
                     let index = {
                         let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                        fri_verify_data.queries.at(i).clone()
+                        *fri_verify_data.queries.at(i)
                     };
-                    
+
                     {
-                        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                        let verify_variables: &mut VerifyVariables =
+                            stack.get_verify_variables_mut();
                         let queries_slice = &mut verify_variables.temp_queries;
                         queries_slice[i * 2] = index;
                     }
@@ -173,7 +174,6 @@ impl Executable for StarkVerify {
             }
 
             StarkVerifyStep::ComputeQueryPoints => {
-
                 let queries_len = {
                     let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
                     fri_verify_data.queries.len()
@@ -181,19 +181,26 @@ impl Executable for StarkVerify {
 
                 for i in (0..queries_len).rev() {
                     let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    stack.push_front(&fri_verify_data.queries.at(i).to_bytes_be()).unwrap();   
+                    stack
+                        .push_front(&fri_verify_data.queries.at(i).to_bytes_be())
+                        .unwrap();
                 }
-                stack.push_front(&Felt::from(queries_len).to_bytes_be()).unwrap();
+                stack
+                    .push_front(&Felt::from(queries_len).to_bytes_be())
+                    .unwrap();
 
                 let (log_trace_domain_size, log_n_cosets) = {
                     let proof: &StarkProof = stack.get_proof_reference();
-                    (proof.config.log_trace_domain_size,
-                    proof.config.log_n_cosets)
+                    (
+                        proof.config.log_trace_domain_size,
+                        proof.config.log_n_cosets,
+                    )
                 };
                 let log_eval_domain_size = log_trace_domain_size + log_n_cosets;
                 let eval_domain_size = Felt::TWO.pow_felt(&log_eval_domain_size);
                 let eval_generator = FIELD_GENERATOR.pow_felt(
-                    &STARK_PRIME_MINUS_ONE.field_div(&NonZeroFelt::try_from(eval_domain_size).unwrap()),
+                    &STARK_PRIME_MINUS_ONE
+                        .field_div(&NonZeroFelt::try_from(eval_domain_size).unwrap()),
                 );
 
                 stack.push_front(&eval_generator.to_bytes_be()).unwrap();
@@ -223,7 +230,6 @@ impl Executable for StarkVerify {
             }
 
             StarkVerifyStep::FriVerify => {
-
                 self.step = StarkVerifyStep::Done;
                 println!("Pushing FriVerify task");
                 vec![FriVerify::new().to_vec_with_type_tag()]
