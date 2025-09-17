@@ -123,11 +123,6 @@ impl Executable for ComputeCosetElements {
                     // All elements processed - copy results to working data (like original return (coset_elements, coset_x_inv))
                     let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                    println!(
-                        "DEBUG: ComputeCosetElements Done - coset_elements.len(): {}",
-                        fri_verify_data.coset_elements.len()
-                    );
-
                     // Add coset_elements to working_y_values (like original: verify_y_values.extend(coset_elements.iter()))
                     for i in 0..fri_verify_data.coset_elements.len() {
                         if let Some(element) = fri_verify_data.coset_elements.get(i) {

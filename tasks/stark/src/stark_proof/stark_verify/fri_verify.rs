@@ -45,7 +45,6 @@ impl Executable for FriVerify {
         match self.stage {
             FriVerifyStep::Init => {
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-
                 let queries_len = fri_verify_data.queries.len();
                 let fri_len = fri_verify_data.fri_decommitment.values.len();
 
