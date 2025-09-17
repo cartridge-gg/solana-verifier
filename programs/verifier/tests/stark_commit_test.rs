@@ -45,6 +45,7 @@ fn test_stark_commit_with_reference_values() {
     while !stack.is_empty_back() {
         stack.execute();
         steps += 1;
+        println!("Step {steps} completed, stack size");
     }
 
     println!("StarkCommit completed in {} steps", steps);

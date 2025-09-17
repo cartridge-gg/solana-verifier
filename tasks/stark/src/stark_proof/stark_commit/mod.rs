@@ -4,6 +4,7 @@ pub mod eval_oods_polynomial_inner;
 pub mod fri_commit;
 pub mod helpers;
 pub mod proof_of_work;
+pub mod public_memory_ratio;
 pub mod table_commit;
 pub mod traces_commit;
 pub mod verify_oods;

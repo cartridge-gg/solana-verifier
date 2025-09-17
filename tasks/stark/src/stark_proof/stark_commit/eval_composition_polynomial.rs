@@ -1,13 +1,15 @@
+use crate::pedersen::points::PedersenEval;
 use crate::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
 use crate::stark_proof::stark_commit::helpers::{
     DILUTED_N_BITS, DILUTED_SPACING, FELT_2, PEDERSEN_BUILTIN_RATIO, PEDERSEN_BUILTIN_REPETITIONS,
     POSEIDON_RATIO,
 };
+use crate::stark_proof::stark_commit::public_memory_ratio::PublicMemoryRatio;
 use crate::swiftness::air::consts::*;
 use crate::swiftness::air::periodic_columns::{
-    eval_pedersen_x, eval_pedersen_y, eval_poseidon_poseidon_full_round_key0,
-    eval_poseidon_poseidon_full_round_key1, eval_poseidon_poseidon_full_round_key2,
-    eval_poseidon_poseidon_partial_round_key0, eval_poseidon_poseidon_partial_round_key1,
+    eval_poseidon_poseidon_full_round_key0, eval_poseidon_poseidon_full_round_key1,
+    eval_poseidon_poseidon_full_round_key2, eval_poseidon_poseidon_partial_round_key0,
+    eval_poseidon_poseidon_partial_round_key1,
 };
 use crate::swiftness::air::recursive_with_poseidon::segments;
 use crate::swiftness::air::recursive_with_poseidon::GlobalValues;
@@ -47,6 +49,10 @@ pub struct EvalCompositionPolynomial {
 pub enum EvalCompositionStep {
     CollectMaskValues,
     ComputePeriodicColumns,
+    ComputeDilutedProduct,
+    ComputePublicMemoryProductRatio,
+    ComputePedersenPoints,
+    ComputePoseidonPoints,
     EvalPolynomial,
     Done,
 }
@@ -124,39 +130,42 @@ impl Executable for EvalCompositionPolynomial {
                     .interaction_elements
                     .diluted_check_interaction_alpha;
 
-                self.step = EvalCompositionStep::ComputePeriodicColumns;
+                self.step = EvalCompositionStep::ComputeDilutedProduct;
                 vec![]
             }
-
-            EvalCompositionStep::ComputePeriodicColumns => {
-                let proof: &StarkProof = stack.get_proof_reference();
-                let public_input = &proof.public_input;
-
-                // Calculate public memory column size
-                let public_memory_column_size = self
-                    .trace_domain_size
-                    .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
-
-                self.public_memory_prod_ratio = public_input.get_public_memory_product_ratio(
-                    self.memory_multi_column_perm_perm_interaction_elm,
-                    self.memory_multi_column_perm_hash_interaction_elm0,
-                    public_memory_column_size,
-                );
-
+            EvalCompositionStep::ComputeDilutedProduct => {
                 self.diluted_prod = get_diluted_product(
                     DILUTED_N_BITS.into(),
                     DILUTED_SPACING.into(),
                     self.diluted_check_interaction_z,
                     self.diluted_check_interaction_alpha,
                 );
+                self.step = EvalCompositionStep::ComputePublicMemoryProductRatio;
+                vec![]
+            }
+            EvalCompositionStep::ComputePublicMemoryProductRatio => {
+                let public_memory_column_size = self
+                    .trace_domain_size
+                    .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
 
-                // Get proof data to access public input
+                self.step = EvalCompositionStep::ComputePeriodicColumns;
+                vec![PublicMemoryRatio::new(
+                    self.memory_multi_column_perm_perm_interaction_elm,
+                    self.memory_multi_column_perm_hash_interaction_elm0,
+                    public_memory_column_size,
+                )
+                .to_vec_with_type_tag()]
+            }
+
+            EvalCompositionStep::ComputePeriodicColumns => {
+                self.public_memory_prod_ratio = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                // Calculate n_steps
                 let proof: &StarkProof = stack.get_proof_reference();
                 let public_input = &proof.public_input;
-                // Calculate n_steps
                 let n_steps = FELT_2.pow_felt(&public_input.log_n_steps);
-
-                // Calculate pedersen points
+                stack.push_front(&n_steps.to_bytes_be()).unwrap();
                 let n_pedersen_hash_copies = n_steps.field_div(
                     &NonZeroFelt::try_from(
                         Felt::from(PEDERSEN_BUILTIN_RATIO)
@@ -164,12 +173,26 @@ impl Executable for EvalCompositionPolynomial {
                     )
                     .unwrap(),
                 );
-
                 let pedersen_point = self.point.pow_felt(&n_pedersen_hash_copies);
-                self.pedersen_points_x = eval_pedersen_x(pedersen_point);
-                self.pedersen_points_y = eval_pedersen_y(pedersen_point);
 
+                self.step = EvalCompositionStep::ComputePedersenPoints;
+                vec![PedersenEval::new(pedersen_point).to_vec_with_type_tag()]
+            }
+            EvalCompositionStep::ComputePedersenPoints => {
+                let pedersen_points_y = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                let pedersen_points_x = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.pedersen_points_x = pedersen_points_x;
+                self.pedersen_points_y = pedersen_points_y;
+                self.step = EvalCompositionStep::ComputePoseidonPoints;
+                vec![]
+            }
+
+            EvalCompositionStep::ComputePoseidonPoints => {
                 // Calculate poseidon points
+                let n_steps = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
                 let n_poseidon_copies =
                     n_steps.field_div(&NonZeroFelt::try_from(Felt::from(POSEIDON_RATIO)).unwrap());
                 let poseidon_point = self.point.pow_felt(&n_poseidon_copies);
