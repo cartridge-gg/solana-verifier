@@ -41,11 +41,11 @@ fn test_eval_ods_boundary_poly_at_points() {
     let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
     stark_commitment.interaction_after_composition = oods_point;
     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-    
+
     let points = fixtures::queries::result();
     fri_verify_data.fri_decommitment.points = FunVec::from_vec(points.clone());
     let points_len = Felt::from(points.len());
-    
+
     stack.set_stark_commitment(&stark_commitment);
 
     stack.push_front(&points_len.to_bytes_be()).unwrap();
@@ -63,7 +63,7 @@ fn test_eval_ods_boundary_poly_at_points() {
     let points_len = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
     println!("points_len: {}", points_len);
-    
+
     let mut evaluations = Vec::new();
     while !stack.is_empty_front() {
         let result = Felt::from_bytes_be_slice(stack.borrow_front());

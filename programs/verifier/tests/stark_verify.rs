@@ -1,36 +1,35 @@
-use felt::Felt;
-use fixtures::trace_commitment;
-use stark::funvec::FunVec;
-use stark::stark_proof::stark_verify::StarkVerify;
-use stark::swiftness::commitment;
-use stark::swiftness::commitment::types::Decommitment;
-use stark::swiftness::fri;
-use stark::swiftness::stark::types::StarkCommitment;
-use swiftness_proof_parser::json_parser;
-use utils::global_values::InteractionElements;
-use utils::BidirectionalStack;
-use utils::Scheduler;
-use verifier::state::BidirectionalStackAccount;
-use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
-use stark::swiftness::stark::types::StarkProof;
 use crate::fixtures::authentications;
 use crate::fixtures::constraint_coefficients;
 use crate::fixtures::decommitment;
 use crate::fixtures::stark_config;
 use crate::fixtures::trace_decommitment;
+use felt::Felt;
+use fixtures::trace_commitment;
+use stark::funvec::FunVec;
+use stark::stark_proof::stark_verify::StarkVerify;
+use stark::swiftness::commitment::types::Decommitment;
+use stark::swiftness::fri;
+use stark::swiftness::stark::types::StarkCommitment;
+use stark::swiftness::stark::types::StarkProof;
+use swiftness_proof_parser::json_parser;
+use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
+use utils::global_values::InteractionElements;
+use utils::BidirectionalStack;
+use utils::Scheduler;
+use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 
 #[test]
 fn test_stark_verify() {
     let mut stack = BidirectionalStackAccount::default();
     push_data(&mut stack);
-    
+
     let proof_str = include_str!("../../../example_proof/saya.json");
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
     let proof_verifier = StarkProofParser::try_from(proof_json).unwrap();
     let proof_verifier_transformed = proof_verifier.transform_to();
 
-   let mut proof = StarkProof::default();
+    let mut proof = StarkProof::default();
 
     stack.constraint_coefficients =
         constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods()
@@ -72,7 +71,9 @@ fn test_stark_verify() {
     proof.config = stark_config::get();
 
     stack.proof = proof;
-    stark_commitment.interaction_after_composition = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc").unwrap();
+    stark_commitment.interaction_after_composition =
+        Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
+            .unwrap();
     stack.stark_commitment = stark_commitment;
 
     stack.push_task(StarkVerify::new());
