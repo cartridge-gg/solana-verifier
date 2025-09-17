@@ -34,7 +34,7 @@ pub struct TableDecommit {
     current_query_index: usize,
     total_queries: usize,
     n_authentications: usize,
-    // Tymczasowe przechowywanie vector queries
+    // THIS NEEDS TO BE CHANGED TO FUNVEC!
     vector_queries: Vec<Query>,
 }
 
@@ -70,7 +70,6 @@ impl Executable for TableDecommit {
             TableDecommitStep::PrepareVectorQueries => {
                 // Read table commitment
                 let table_commitment = TableCommitment::from_stack(stack);
-                println!("Table commitment: {:?}", table_commitment);
                 self.commitment = table_commitment;
 
                 // Store commitment config
@@ -97,8 +96,6 @@ impl Executable for TableDecommit {
                 // Store queries indices
                 let mut query_indices = Vec::new();
                 for i in 0..queries_count {
-                    // let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                    // stack.pop_front();
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.temp_queries;
                     let index = queries_slice[i * 2];
@@ -106,7 +103,6 @@ impl Executable for TableDecommit {
                 }
 
                 self.total_queries = queries_count;
-                println!("Total queries: {}", self.total_queries);
 
                 // Read decommitment
                 Decommitment::from_stack(stack);

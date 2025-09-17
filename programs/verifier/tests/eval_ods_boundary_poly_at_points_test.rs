@@ -1,5 +1,6 @@
 use felt::Felt;
-use stark::swiftness::stark::types::StarkCommitment;
+use stark::funvec::FunVec;
+use stark::swiftness::stark::types::{FriVerifyData, StarkCommitment};
 use swiftness_proof_parser::json_parser;
 use utils::global_values::InteractionElements;
 use utils::{BidirectionalStack, Scheduler};
@@ -39,15 +40,13 @@ fn test_eval_ods_boundary_poly_at_points() {
 
     let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
     stark_commitment.interaction_after_composition = oods_point;
-
-    stack.set_stark_commitment(&stark_commitment);
-
+    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+    
     let points = fixtures::queries::result();
+    fri_verify_data.fri_decommitment.points = FunVec::from_vec(points.clone());
     let points_len = Felt::from(points.len());
-
-    for point in points.iter().rev() {
-        stack.push_front(&point.to_bytes_be()).unwrap();
-    }
+    
+    stack.set_stark_commitment(&stark_commitment);
 
     stack.push_front(&points_len.to_bytes_be()).unwrap();
     // Create and push the task
@@ -61,6 +60,10 @@ fn test_eval_ods_boundary_poly_at_points() {
     }
     println!("Executed {} steps", steps);
 
+    let points_len = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!("points_len: {}", points_len);
+    
     let mut evaluations = Vec::new();
     while !stack.is_empty_front() {
         let result = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -69,7 +72,6 @@ fn test_eval_ods_boundary_poly_at_points() {
             evaluations.push(result);
         }
     }
-
     let expected_result = vec![
         "0x56589147f36eee3f7976a1542599dd32be46d202f4ec49dccef821f43ade30f",
         "0x6da23461f6dc6aac5624da021558eaea6f8039c59a3a1596694aaade6ae5aea",

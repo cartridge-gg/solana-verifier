@@ -62,6 +62,7 @@ impl Executable for TracesDecommit {
                     .try_into()
                     .unwrap();
                 stack.pop_front();
+
                 for i in 0..self.queries_count {
                     let index = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();

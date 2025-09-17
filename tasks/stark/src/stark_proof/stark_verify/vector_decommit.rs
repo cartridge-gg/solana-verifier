@@ -129,11 +129,12 @@ impl Executable for VectorDecommit {
             VectorDecommitStep::VerifyCommitmentHash => {
                 let commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("commitment_hash: {:?}", commitment_hash);
 
                 assert!(
                     commitment_hash == self.reference_commitment_hash,
-                    "Commitment hash verification failed"
+                    "Commitment hash verification failed, expected: {:?}, got: {:?}",
+                    self.reference_commitment_hash,
+                    commitment_hash
                 );
                 self.step = VectorDecommitStep::Done;
                 vec![]

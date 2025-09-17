@@ -2,7 +2,7 @@ use crate::funvec::FUNVEC_QUERY_INDICES;
 use crate::stark_proof::stark_verify::eval_oods_polynomial::EvalOodsPolynomial;
 use crate::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
 use crate::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
-use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
+use crate::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use felt::{Felt, NonZeroFelt};
 use utils::global_values::InteractionElements;
 use utils::{
@@ -22,16 +22,12 @@ pub struct EvalOodsBoundaryPolyAtPoints {
     step: EvalOodsBoundaryStep,
     points_count: usize,
     current_point_index: usize,
-    // Fixed-size arrays instead of Vec for Solana BPF compatibility
-    points: [Felt; FUNVEC_QUERY_INDICES],
-    evaluations: [Felt; FUNVEC_QUERY_INDICES],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EvalOodsBoundaryStep {
     ReadPoints,
     PreparePoint,
-    EvaluatePoint,
     CollectResult,
     Done,
 }
@@ -46,8 +42,6 @@ impl EvalOodsBoundaryPolyAtPoints {
             step: EvalOodsBoundaryStep::ReadPoints,
             points_count: 0,
             current_point_index: 0,
-            points: [Felt::ZERO; FUNVEC_QUERY_INDICES],
-            evaluations: [Felt::ZERO; FUNVEC_QUERY_INDICES],
         }
     }
 }
@@ -73,20 +67,12 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 stack.pop_front();
                 self.points_count = queries_len.to_biguint().try_into().unwrap();
 
-                // Ensure we don't exceed the fixed array size
                 assert!(
                     self.points_count <= FUNVEC_QUERY_INDICES,
                     "Too many query points: {} > {}",
                     self.points_count,
                     FUNVEC_QUERY_INDICES
                 );
-
-                // Read points into fixed-size array
-                for i in 0..self.points_count {
-                    let point = Felt::from_bytes_be_slice(stack.borrow_front());
-                    stack.pop_front();
-                    self.points[i] = point;
-                }
 
                 // assert!(
                 //     decommitment.original.values.len() as u32 == points.len() as u32 * n_original_columns,
@@ -110,15 +96,16 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
 
             EvalOodsBoundaryStep::PreparePoint => {
                 if self.current_point_index >= self.points_count {
-                    // All points processed, push results back to stack in reverse order
-                    for evaluation in self.evaluations.iter().rev() {
-                        stack.push_front(&evaluation.to_bytes_be()).unwrap();
-                    }
                     self.step = EvalOodsBoundaryStep::Done;
                     return vec![];
                 }
 
-                let current_point = self.points[self.current_point_index];
+                let current_point =  {
+                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                    let points = &fri_verify_data.fri_decommitment.points;
+                    let current_point = points.at(self.current_point_index);
+                    current_point.clone()
+                };
 
                 let (stark_commitment, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
 
@@ -181,21 +168,15 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 stack.push_front(&oods_point.to_bytes_be()).unwrap();
                 stack.push_front(&current_point.to_bytes_be()).unwrap();
 
-                self.step = EvalOodsBoundaryStep::EvaluatePoint;
+                self.step = EvalOodsBoundaryStep::CollectResult;
                 vec![EvalOodsPolynomial::new().to_vec_with_type_tag()]
             }
 
-            EvalOodsBoundaryStep::EvaluatePoint => {
-                // EvalOodsPolynomial completed, collect result
-                self.step = EvalOodsBoundaryStep::CollectResult;
-                vec![]
-            }
-
             EvalOodsBoundaryStep::CollectResult => {
-                // The result should be on the stack
                 let evaluation = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                self.evaluations[self.current_point_index] = evaluation;
+                let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                fri_verify_data.fri_decommitment.values.push(evaluation);
 
                 self.current_point_index += 1;
                 self.step = EvalOodsBoundaryStep::PreparePoint;

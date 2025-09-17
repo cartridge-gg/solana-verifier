@@ -52,8 +52,8 @@ fn test_generate_interaction_elements() {
     println!("element1: {:?}", element1);
     println!("element0: {:?}", element0);
 
-    assert_eq!(stack.front_index, 0, "Stack should be empty");
-    assert_eq!(stack.back_index, 65536, "Stack should be empty");
+    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
     assert!(steps > 0, "Should have executed at least one step");
 
     assert_eq!(

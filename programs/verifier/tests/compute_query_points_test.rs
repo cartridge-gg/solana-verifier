@@ -32,8 +32,16 @@ fn test_compute_query_points() {
         Felt::ZERO,
         "All points should be consumed"
     );
-    assert_eq!(stack.front_index, 0, "Stack should be empty after test");
-    assert_eq!(stack.back_index, 65536, "Stack should be empty after test");
+    assert_eq!(
+        stack.is_empty_front(),
+        true,
+        "Stack should be empty after test"
+    );
+    assert_eq!(
+        stack.is_empty_back(),
+        true,
+        "Stack should be empty after test"
+    );
 }
 
 // Stack layout post-execution:

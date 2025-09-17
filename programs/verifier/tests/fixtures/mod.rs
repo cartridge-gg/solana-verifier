@@ -1,6 +1,8 @@
+pub mod authentications;
 pub mod commitment;
 pub mod config;
 pub mod constraint_coefficients;
+pub mod decommitment;
 pub mod fri_commitment;
 pub mod fri_config;
 pub mod fri_decommitment;
@@ -14,6 +16,7 @@ pub mod stark_commitment;
 pub mod stark_config;
 pub mod stark_domains;
 pub mod stark_witness;
+pub mod trace_commitment;
 pub mod trace_decommitment;
 pub mod trace_witness;
 pub mod unsent_commitment;

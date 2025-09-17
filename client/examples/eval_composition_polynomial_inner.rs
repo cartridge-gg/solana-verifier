@@ -19,6 +19,7 @@ use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccoun
 use felt::Felt;
 use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use utils::global_values::EcPoint;
+use utils::BidirectionalStack;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -327,12 +328,10 @@ async fn main() -> client::Result<()> {
     )
     .await?;
     println!("Parameters pushed to stack: {signature}");
-
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
         .map_err(ClientError::SolanaClientError)?;
-
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
@@ -374,7 +373,15 @@ async fn main() -> client::Result<()> {
         send_and_confirm_transactions(&client, &transactions).await?;
         println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
     }
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
 
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+
+    stack.is_empty_front();
+    stack.is_empty_back();
     println!("All execution steps completed");
     println!("\nEvalCompositionPolynomialInner successfully executed on Solana!");
 
