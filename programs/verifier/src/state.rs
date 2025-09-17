@@ -10,7 +10,10 @@ use utils::ProofData;
 use utils::StarkCommitmentTrait;
 use utils::StarkVerifyTrait;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
-use utils::{CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE, POWS_SIZE};
+use utils::{
+    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
+    POSEIDON_BITS_SIZE, POWS_SIZE,
+};
 
 /// Define the type of state stored in accounts
 #[repr(C)]
@@ -26,6 +29,8 @@ pub struct BidirectionalStackAccount {
     pub global_values: GlobalValues,
     pub constraint_coefficients: [Felt; N_CONSTRAINTS],
     pub column_values: [Felt; COLUMN_VALUES_SIZE],
+    pub eval_composition_polynomial_bits: [Felt; BITS_SIZE],
+    pub poseidon_bits: [Felt; POSEIDON_BITS_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
     pub verify_variables: VerifyVariables,
 }
@@ -44,6 +49,8 @@ impl Default for BidirectionalStackAccount {
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
             stark_commitment: StarkCommitment::default(),
             verify_variables: VerifyVariables::default(),
+            eval_composition_polynomial_bits: [Felt::ZERO; BITS_SIZE],
+            poseidon_bits: [Felt::ZERO; POSEIDON_BITS_SIZE],
         }
     }
 }
@@ -258,6 +265,8 @@ impl ProofData for BidirectionalStackAccount {
         &mut GlobalValues,
         &mut [Felt; N_CONSTRAINTS],
         &mut [Felt; COLUMN_VALUES_SIZE],
+        &mut [Felt; BITS_SIZE],
+        &mut [Felt; POSEIDON_BITS_SIZE],
     ) {
         // Access proof bytes directly to avoid borrowing conflicts
         let proof_bytes = self.get_proof_bytes();
@@ -273,7 +282,10 @@ impl ProofData for BidirectionalStackAccount {
             unsafe { &mut *(&mut self.constraint_coefficients as *mut [Felt; N_CONSTRAINTS]) };
         let column_values_slice =
             unsafe { &mut *(&mut self.column_values as *mut [Felt; COLUMN_VALUES_SIZE]) };
-
+        let bits_slice =
+            unsafe { &mut *(&mut self.eval_composition_polynomial_bits as *mut [Felt; BITS_SIZE]) };
+        let poseidon_bits_slice =
+            unsafe { &mut *(&mut self.poseidon_bits as *mut [Felt; POSEIDON_BITS_SIZE]) };
         (
             proof_ref,
             pows_slice,
@@ -282,6 +294,8 @@ impl ProofData for BidirectionalStackAccount {
             global_values_ref,
             constraint_coefficients_slice,
             column_values_slice,
+            bits_slice,
+            poseidon_bits_slice,
         )
     }
 

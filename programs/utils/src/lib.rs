@@ -14,6 +14,8 @@ pub const OODS_VALUES_SIZE: usize = 194;
 pub const COLUMN_VALUES_SIZE: usize = 10;
 pub const DOMAINS_SIZE: usize = 31;
 pub const POWS_SIZE: usize = 134;
+pub const BITS_SIZE: usize = 15;
+pub const POSEIDON_BITS_SIZE: usize = 18;
 //todo: make it dependent on Layout
 pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
@@ -109,6 +111,8 @@ pub trait ProofData {
         &mut GlobalValues,
         &mut [Felt; N_CONSTRAINTS],
         &mut [Felt; COLUMN_VALUES_SIZE],
+        &mut [Felt; BITS_SIZE],
+        &mut [Felt; POSEIDON_BITS_SIZE],
     );
 
     /// Get global values - to be implemented by concrete types that have access to GlobalValues

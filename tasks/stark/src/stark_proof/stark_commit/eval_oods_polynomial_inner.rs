@@ -212,6 +212,8 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
+                    _,
+                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
