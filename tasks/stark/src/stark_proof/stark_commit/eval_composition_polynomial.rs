@@ -144,7 +144,7 @@ impl Executable for EvalCompositionPolynomial {
                 vec![]
             }
             EvalCompositionStep::ComputePublicMemoryProductRatio => {
-                let public_memory_column_size = self
+                let _public_memory_column_size = self
                     .trace_domain_size
                     .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
 

@@ -4,4 +4,4 @@ rm -rf test-ledger/
 cd programs/verifier
 RUSTFLAGS="-Cllvm-args=--inline-threshold=150" cargo build-sbf
 cd ../..
-cargo run --example stark_commit
+cargo run --example full_flow
