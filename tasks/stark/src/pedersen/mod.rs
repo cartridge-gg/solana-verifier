@@ -6,7 +6,7 @@ use lambdaworks_math::elliptic_curve::short_weierstrass::{
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 pub mod constants;
-
+pub mod points;
 #[repr(C)]
 pub struct PedersenHash {
     phase: PerdersenPhase,

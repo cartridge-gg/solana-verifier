@@ -3,5 +3,5 @@ RUST_LOG = "info"
 RUST_MIN_STACK = "16777216"
 [target.sbpf-solana-solana]
 rustflags = [
-      "-C", "llvm-args=--inline-threshold=255"
+      "-C", "llvm-args=--inline-threshold=150"
 ]

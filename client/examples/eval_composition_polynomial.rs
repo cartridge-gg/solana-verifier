@@ -9,7 +9,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
+use stark::stark_proof::stark_commit::EvalCompositionPolynomial;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
@@ -92,17 +92,15 @@ async fn main() -> client::Result<()> {
     send_and_confirm_transactions(&client, &transactions).await?;
     println!("All data set successfully");
 
-    // Push the EvalCompositionPolynomialInner task to the stack
-    let validate_task = EvalCompositionPolynomialInner::new();
-
+    let task = EvalCompositionPolynomial::new();
     println!(
-        "Using EvalCompositionPolynomialInner with TYPE_TAG: {}",
-        EvalCompositionPolynomialInner::TYPE_TAG
+        "Using EvalCompositionPolynomial with TYPE_TAG: {}",
+        EvalCompositionPolynomial::TYPE_TAG
     );
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushTask(validate_task.to_vec_with_type_tag()),
+        &VerifierInstruction::PushTask(task.to_vec_with_type_tag()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
@@ -116,64 +114,62 @@ async fn main() -> client::Result<()> {
     .await?;
     println!("EvalCompositionPolynomialInner task pushed: {signature}");
 
-    // Push parameters to the stack in the correct order (they will be popped in reverse order)
-    // Order: point, trace_generator (will be popped as: trace_generator, point)
-
+    // Test parameters
+    let point = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
+        .unwrap();
     let trace_generator =
         Felt::from_hex("0x57a797181c06d8427145cb66056f032751615d8617c5468258e96d2bb6422f9")
             .unwrap();
-    let trace_generator_bytes = trace_generator.to_bytes_be();
+    let trace_domain_size = Felt::from_hex("0x10000000").unwrap(); // 2^24
 
-    let point = Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
-        .unwrap();
-    let point_bytes = point.to_bytes_be();
-
-    // Push parameters to stack
+    let push_trace_domain_size_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushData(trace_domain_size.to_bytes_be().to_vec()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
     let push_trace_generator_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushData(trace_generator_bytes.to_vec()),
+        &VerifierInstruction::PushData(trace_generator.to_bytes_be().to_vec()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
-
     let push_point_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushData(point_bytes.to_vec()),
+        &VerifierInstruction::PushData(point.to_bytes_be().to_vec()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
-
     let signature = interact_with_program_instructions(
         &client,
         &payer,
         &program_id,
         &stack_account,
-        &[push_trace_generator_ix, push_point_ix],
+        &[
+            push_trace_domain_size_ix,
+            push_trace_generator_ix,
+            push_point_ix,
+        ],
     )
     .await?;
-    println!("Parameters pushed to stack: {signature}");
+
+    println!("Test parameters pushed: {signature}");
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
-        .map_err(ClientError::SolanaClientError)?;
-
+        .map_err(ClientError::from)?;
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate();
-    let result_bytes = stack.borrow_front();
-    let result = Felt::from_bytes_be_slice(result_bytes);
-    println!("Pre-simulation result: {result:?}");
-    println!("Steps in simulation: {simulation_steps}");
+    let simulation_steps = stack.simulate() as usize;
+    println!("Simulation steps: {simulation_steps}");
 
-    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(900_000);
-    let simulation_steps_usize = simulation_steps as usize;
+    let limit_instruction = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
 
-    for i in 0..simulation_steps_usize {
+    for i in 0..simulation_steps {
         let execute_ix = Instruction::new_with_borsh(
             program_id,
             &VerifierInstruction::Execute(i as u32),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
         let execute_tx = Transaction::new_signed_with_payer(
-            &[limit_instructions.clone(), execute_ix],
+            &[limit_instruction.clone(), execute_ix],
             Some(&payer.pubkey()),
             &[&payer],
             client.get_latest_blockhash().await?,
@@ -185,9 +181,8 @@ async fn main() -> client::Result<()> {
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
-        .map_err(ClientError::SolanaClientError)?;
+        .map_err(ClientError::from)?;
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-
     let result = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
 
@@ -208,29 +203,33 @@ async fn main() -> client::Result<()> {
         stack.is_empty_front(),
         "Stack should be empty after popping result"
     );
-    println!("EvalCompositionPolynomialInner executed successfully, result: {result}");
+    println!("EvalCompositionPolynomial executed successfully, result: {result}");
     Ok(())
 }
 
 mod prepare_input {
+    use felt::Felt;
+    use stark::swiftness::stark::types::cast_struct_to_slice_mut;
 
-    use stark::swiftness::stark::types::cast_struct_to_slice;
-
+    use stark::swiftness::stark::types::StarkCommitment;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
+    use utils::global_values::InteractionElements;
+    use utils::StarkCommitmentTrait;
     use verifier::state::BidirectionalStackAccount;
-    // Add these imports for the new types
-    use crate::{constraint_coefficients, global_values};
+
+    use crate::constraint_coefficients;
 
     pub fn get_bytes() -> Vec<u8> {
-        let input = include_str!("../../example_proof/saya.json");
-        let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
+        let mut stack = BidirectionalStackAccount::default();
+
+        let proof_str = include_str!("../../example_proof/saya.json");
+        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
-
-        let mut stack = BidirectionalStackAccount::default();
         stack.proof = proof_verifier.clone();
+
         stack.constraint_coefficients = constraint_coefficients::get()
             .as_slice()
             .try_into()
@@ -241,105 +240,54 @@ mod prepare_input {
             .as_slice()
             .try_into()
             .unwrap();
-        stack.global_values = global_values::get();
-        cast_struct_to_slice(&mut stack).to_vec()
-    }
-}
-mod global_values {
-    use felt::Felt;
-    use utils::global_values::{EcPoint, GlobalValues};
 
-    pub fn get() -> GlobalValues {
-        GlobalValues {
-            trace_length: Felt::from_hex("0x10000000").unwrap(),
-            initial_pc: Felt::from_hex("0x1").unwrap(),
-            final_pc: Felt::from_hex("0x5").unwrap(),
-            initial_ap: Felt::from_hex("0x1c6").unwrap(),
-            final_ap: Felt::from_hex("0x1c43b3").unwrap(),
-            initial_pedersen_addr: Felt::from_hex("0x1c43b8").unwrap(),
-            initial_range_check_addr: Felt::from_hex("0x1f43b8").unwrap(),
-            initial_bitwise_addr: Felt::from_hex("0x2f43b8").unwrap(),
-            initial_poseidon_addr: Felt::from_hex("0x7f43b8").unwrap(),
-            range_check_min: Felt::from_hex("0x0").unwrap(),
-            range_check_max: Felt::from_hex("0xffff").unwrap(),
-            offset_size: Felt::from_hex("0x10000").unwrap(),
-            half_offset_size: Felt::from_hex("0x8000").unwrap(),
-            pedersen_shift_point: EcPoint {
-                x: Felt::from_hex(
-                    "0x49ee3eba8c1600700ee1b87eb599f16716b0b1022947733551fde4050ca6804",
-                )
-                .unwrap(),
-                y: Felt::from_hex(
-                    "0x3ca0cfe4b3bc6ddf346d49d06ea0ed34e621062c0e056c1d0405d266e10268a",
-                )
-                .unwrap(),
-            },
-            pedersen_points_x: Felt::from_hex(
-                "0x598904d65b0434a87c175e65222359d01fff2522cade3bb409c28885b7671e",
-            )
-            .unwrap(),
-            pedersen_points_y: Felt::from_hex(
-                "0x4fe4068e06eefa17eefab622b3c9d9433bc11552fd96bf324893028770e40f4",
-            )
-            .unwrap(),
-            poseidon_poseidon_full_round_key0: Felt::from_hex(
-                "0x4f7c465fb34210b739758542eb985867c6ba4ec77b078ccb61b8e4288cbbae8",
-            )
-            .unwrap(),
-            poseidon_poseidon_full_round_key1: Felt::from_hex(
-                "0x2f96e26e8a7034b6317c2483e935e6bd1d5ea8efa42dc84ebba571760a1527d",
-            )
-            .unwrap(),
-            poseidon_poseidon_full_round_key2: Felt::from_hex(
-                "0x79e52af7b64407d08c6b7b54d92ea2477b7120da296f986f0d52705a850043d",
-            )
-            .unwrap(),
-            poseidon_poseidon_partial_round_key0: Felt::from_hex(
-                "0x17d8c8dc5aaa6ac1879e160be09a2012f52e1d6df8e3528255e00fa01f13020",
-            )
-            .unwrap(),
-            poseidon_poseidon_partial_round_key1: Felt::from_hex(
-                "0x786dda7880b1250660bec5c62a9c1a255f95c69b9d050d5bc4a89b4accdd89d",
-            )
-            .unwrap(),
-            memory_multi_column_perm_perm_interaction_elm: Felt::from_hex(
-                "0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64",
-            )
-            .unwrap(),
-            memory_multi_column_perm_hash_interaction_elm0: Felt::from_hex(
-                "0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288",
-            )
-            .unwrap(),
-            range_check16_perm_interaction_elm: Felt::from_hex(
-                "0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c",
-            )
-            .unwrap(),
-            diluted_check_permutation_interaction_elm: Felt::from_hex(
-                "0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322",
-            )
-            .unwrap(),
-            diluted_check_interaction_z: Felt::from_hex(
-                "0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48",
-            )
-            .unwrap(),
-            diluted_check_interaction_alpha: Felt::from_hex(
-                "0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822",
-            )
-            .unwrap(),
-            memory_multi_column_perm_perm_public_memory_prod: Felt::from_hex(
-                "0x5593c3e7c28433d4bed879adb1cb8081b0a46decda462e76da45b0d7244cbf0",
-            )
-            .unwrap(),
-            range_check16_perm_public_memory_prod: Felt::from_hex("0x1").unwrap(),
-            diluted_check_first_elm: Felt::from_hex("0x0").unwrap(),
-            diluted_check_permutation_public_memory_prod: Felt::from_hex("0x1").unwrap(),
-            diluted_check_final_cum_val: Felt::from_hex(
-                "0x5f16ce646fe7bef242b9158006cb52930937bf075c6e8bc638bba2b8244dfa",
-            )
-            .unwrap(),
-        }
+        // Set interaction elements (these would normally come from StarkCommit::GenerateCompositionAlpha)
+
+        let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
+        stark_commitment
+            .traces
+            .interaction_elements
+            .diluted_check_interaction_alpha =
+            Felt::from_hex("0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822")
+                .unwrap();
+        stark_commitment
+            .traces
+            .interaction_elements
+            .diluted_check_interaction_z =
+            Felt::from_hex("0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48")
+                .unwrap();
+        stark_commitment
+            .traces
+            .interaction_elements
+            .diluted_check_permutation_interaction_elm =
+            Felt::from_hex("0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322")
+                .unwrap();
+        stark_commitment
+            .traces
+            .interaction_elements
+            .memory_multi_column_perm_perm_interaction_elm =
+            Felt::from_hex("0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64")
+                .unwrap();
+        stark_commitment
+            .traces
+            .interaction_elements
+            .memory_multi_column_perm_hash_interaction_elm0 =
+            Felt::from_hex("0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288")
+                .unwrap();
+
+        stark_commitment
+            .traces
+            .interaction_elements
+            .range_check16_perm_interaction_elm =
+            Felt::from_hex("0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c")
+                .unwrap();
+
+        stack.set_stark_commitment(&stark_commitment);
+        let bytes = cast_struct_to_slice_mut(&mut stack).to_vec();
+        bytes
     }
 }
+
 mod constraint_coefficients {
     use felt::Felt;
     use stark::funvec::FunVec;

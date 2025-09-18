@@ -44,6 +44,7 @@ fn test_stark_commit_with_reference_values() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("After step {}", steps);
         steps += 1;
     }
 
