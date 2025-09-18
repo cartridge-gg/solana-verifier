@@ -1,19 +1,11 @@
-use crate::fixtures::authentications;
 use crate::fixtures::constraint_coefficients;
-use crate::fixtures::decommitment;
-use crate::fixtures::stark_config;
-use crate::fixtures::trace_decommitment;
+use crate::fixtures::stark_commitment;
 use felt::Felt;
-use fixtures::trace_commitment;
 use stark::funvec::FunVec;
 use stark::stark_proof::stark_verify::StarkVerify;
 use stark::swiftness::commitment::types::Decommitment;
-use stark::swiftness::fri;
-use stark::swiftness::stark::types::StarkCommitment;
-use stark::swiftness::stark::types::StarkProof;
 use swiftness_proof_parser::json_parser;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
-use utils::global_values::InteractionElements;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
@@ -29,8 +21,6 @@ fn test_stark_verify() {
     let proof_verifier = StarkProofParser::try_from(proof_json).unwrap();
     let proof_verifier_transformed = proof_verifier.transform_to();
 
-    let mut proof = StarkProof::default();
-
     stack.constraint_coefficients =
         constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods()
             .as_slice()
@@ -43,38 +33,8 @@ fn test_stark_verify() {
         .try_into()
         .unwrap();
 
-    let mut stark_commitment = StarkCommitment::<InteractionElements>::default();
-
-    let trace_decommitment = trace_decommitment::get();
-    proof.witness.traces_decommitment = trace_decommitment;
-
-    let original_authentications = authentications::get_original_authentications();
-    let interaction_authentications = authentications::get_interaction_authentications();
-    let composition_authentications = authentications::get_composition_authentications();
-
-    proof.witness.traces_witness.original.vector.authentications = original_authentications;
-
-    proof
-        .witness
-        .traces_witness
-        .interaction
-        .vector
-        .authentications = interaction_authentications;
-
-    proof.witness.composition_witness.vector.authentications = composition_authentications;
-    proof.witness.composition_decommitment.values = decommitment::get_composition_decommitment();
-    stark_commitment.composition = trace_commitment::get_composition_commitment();
-
-    let trace_commitment = trace_commitment::get();
-    stark_commitment.traces = trace_commitment;
-    stark_commitment.fri = fixtures::fri_commitment::get();
-    proof.config = stark_config::get();
-    proof.witness.fri_witness = fixtures::witness::get();
-    stack.proof = proof;
-    stark_commitment.interaction_after_composition =
-        Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
-            .unwrap();
-    stack.stark_commitment = stark_commitment;
+    stack.proof = proof_verifier_transformed.clone();
+    stack.stark_commitment = stark_commitment::get();
 
     stack.push_task(StarkVerify::new());
 
@@ -83,6 +43,9 @@ fn test_stark_verify() {
         stack.execute();
         steps += 1;
     }
+
+    assert_eq!(stack.proof, proof_verifier_transformed);
+    assert_eq!(stack.stark_commitment, stark_commitment::get());
 
     println!("Executed {} steps", steps);
 

@@ -1,9 +1,15 @@
 use felt::{Felt, NonZeroFelt};
-use utils::{global_values::InteractionElements, impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::{
+    global_values::InteractionElements, impl_type_identifiable, BidirectionalStack, Executable,
+    ProofData, TypeIdentifiable,
+};
 
 use crate::{
     stark_proof::stark_verify::FriVerifyLayers,
-    swiftness::{fri::types::FriLayerQuery, stark::types::{FriVerifyData, StarkCommitment, StarkProof}},
+    swiftness::{
+        fri::types::FriLayerQuery,
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
+    },
 };
 
 // FriVerify task
@@ -77,21 +83,19 @@ impl Executable for FriVerify {
             FriVerifyStep::VerifyLastLayer => {
                 // Use the new extended API to get all data in one call, avoiding borrowing conflicts
                 let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
-                    StarkCommitment<InteractionElements>, 
-                    StarkProof, 
+                    StarkCommitment<InteractionElements>,
+                    StarkProof,
                     FriVerifyData
                 >();
-                
+
                 let fri_commitment = &stark_commitment.fri;
                 let working_queries_len = fri_verify_data.working_queries.len();
 
                 for i in 0..working_queries_len {
                     let query = fri_verify_data.working_queries.get(i).unwrap();
-    
+
                     let horner_result = self.horner_eval(
-                        fri_commitment
-                            .last_layer_coefficients
-                            .as_slice(),
+                        fri_commitment.last_layer_coefficients.as_slice(),
                         Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
                     );
 
@@ -102,7 +106,7 @@ impl Executable for FriVerify {
                         );
                     }
                 }
-                
+
                 self.stage = FriVerifyStep::Done;
                 vec![]
             }

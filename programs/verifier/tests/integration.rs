@@ -15,15 +15,14 @@ pub fn test_proof_verification() {
     let proof = StarkProofParser::try_from(proof_json).unwrap();
     let proof_verifier = proof.transform_to();
 
-    //    proof_verifier.witness.fri_witness.layers.at_mut(0).leaves = fixtures::witness::get_layers()[0].leaves.clone();
-
-    stack.proof = proof_verifier.clone();
     stack.oods_values = proof_verifier
         .unsent_commitment
         .oods_values
         .as_slice()
         .try_into()
         .unwrap();
+
+    stack.proof = proof_verifier.clone();
 
     let task = Verify::new();
     stack.push_task(task);

@@ -32,8 +32,8 @@ fn get_hash() {
     let result = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
     assert_eq!(expected, result);
-    assert_eq!(stack.front_index, 0, "Stack should be empty");
-    assert_eq!(stack.back_index, 65536, "Stack should be empty");
+    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
 }
 
 // This implements the original get_hash logic synchronously for comparison

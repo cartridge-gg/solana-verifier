@@ -11,10 +11,10 @@ use crate::stark_proof::stark_verify::StarkVerify;
 use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
 use crate::swiftness::air::domains::StarkDomains;
+use crate::swiftness::stark::types::StarkProof;
 use crate::swiftness::stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment};
 use crate::swiftness::transcript::TranscriptRandomFelt;
 use felt::Felt;
-use crate::swiftness::stark::types::StarkProof;
 
 const DIVISOR: Felt = Felt::from_hex_unchecked("0x100000000000000000000000000000000");
 
@@ -131,7 +131,7 @@ impl Executable for Verify {
                 };
                 let log_eval_domain_size = log_trace_domain_size + log_n_cosets;
                 let eval_domain_size = Felt::TWO.pow_felt(&log_eval_domain_size);
-            
+
                 self.query_upper_bound = eval_domain_size;
                 self.current_index = 0;
                 self.step = VerifyStep::GenerateQueriesLoop;
@@ -146,10 +146,11 @@ impl Executable for Verify {
 
                 // Process the random felt to get a sample
                 let (_, low) = random_felt.div_rem(&NonZeroFelt::from_felt_unchecked(DIVISOR));
-                let (_, sample) = low.div_rem(&NonZeroFelt::try_from(self.query_upper_bound).unwrap());
+                let (_, sample) =
+                    low.div_rem(&NonZeroFelt::try_from(self.query_upper_bound).unwrap());
                 self.samples.push(sample);
                 self.current_index += 1;
-                
+
                 if self.current_index < self.total_queries {
                     // Generate next random felt - stay in the same step
                     vec![TranscriptRandomFelt::new(self.digest, self.counter).to_vec_with_type_tag()]
@@ -157,17 +158,19 @@ impl Executable for Verify {
                     // Sort the samples directly
                     let mut sorted_samples = self.samples.to_vec();
                     sorted_samples.sort();
-                    
+
                     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                     fri_verify_data.queries = FunVec::from_vec(sorted_samples);
-                    
+
                     self.step = VerifyStep::StarkVerify;
                     vec![]
                 }
-
             }
             VerifyStep::StarkVerify => {
-                assert!(stack.is_empty_front(), "Stack should be empty before StarkVerify");
+                assert!(
+                    stack.is_empty_front(),
+                    "Stack should be empty before StarkVerify"
+                );
 
                 self.step = VerifyStep::VerifyPublicInput;
                 vec![StarkVerify::new().to_vec_with_type_tag()]
