@@ -3,6 +3,9 @@ use felt::Felt;
 use stark::funvec::FunVec;
 use stark::swiftness::commitment;
 use stark::swiftness::fri;
+use stark::swiftness::stark::types::StarkCommitment;
+use stark::swiftness::stark::types::StarkProof;
+use utils::global_values::InteractionElements;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
@@ -13,6 +16,14 @@ fn test_fri_verify() {
     let task = stark::stark_proof::stark_verify::fri_verify::FriVerify::new();
     push_data(&mut stack);
     stack.push_task(task);
+    
+    let mut proof = StarkProof::default();
+    proof.witness.fri_witness = fixtures::witness::get();
+    stack.proof = proof;
+    
+    let mut stark_commitment = StarkCommitment::<InteractionElements>::default();
+    stark_commitment.fri =  fixtures::fri_commitment::get();
+    stack.stark_commitment = stark_commitment;
 
     while !stack.is_empty_back() {
         stack.execute();
@@ -31,14 +42,10 @@ fn test_fri_verify() {
 // └────────────────────────────────────────────────────────────┘  <- front (stack front)
 fn push_data(stack: &mut BidirectionalStackAccount) {
     let queries = fixtures::queries::get();
-    let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
     let fri_decommitment: commitment::types::Decommitment = fixtures::fri_decommitment::get();
-    let witness: fri::types::Witness = fixtures::witness::get();
     let fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
         queries: FunVec::from_vec(queries.clone()),
-        fri_commitment: fri_commitment,
         fri_decommitment: fri_decommitment,
-        witness: witness.clone(),
         current_layer: 0,
         working_queries: FunVec::default(),
         working_elements: FunVec::default(),

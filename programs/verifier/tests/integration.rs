@@ -5,6 +5,7 @@ use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofPar
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;
+mod fixtures;
 
 #[test]
 pub fn test_proof_verification() {
@@ -14,6 +15,8 @@ pub fn test_proof_verification() {
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
     let proof = StarkProofParser::try_from(proof_json).unwrap();
     let proof_verifier = proof.transform_to();
+
+    //    proof_verifier.witness.fri_witness.layers.at_mut(0).leaves = fixtures::witness::get_layers()[0].leaves.clone();
 
     stack.proof = proof_verifier.clone();
     stack.oods_values = proof_verifier

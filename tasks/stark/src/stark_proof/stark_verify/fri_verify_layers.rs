@@ -1,4 +1,5 @@
 use felt::Felt;
+use utils::global_values::InteractionElements;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -7,7 +8,7 @@ use utils::{
 use super::table_decommit::TableDecommit;
 use super::ComputeNextLayer;
 use crate::swiftness::commitment::vector::types::CommitmentTrait;
-use crate::swiftness::stark::types::{FriVerifyData, VerifyVariables};
+use crate::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables};
 
 // Task for verifying FRI layers
 #[derive(Debug, Clone)]
@@ -49,10 +50,16 @@ impl Executable for FriVerifyLayers {
     ) -> Vec<Vec<u8>> {
         match self.stage {
             FriVerifyLayersStep::Init => {
-                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
+                // let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                let n_layers_usize: usize = fri_verify_data
-                    .fri_commitment
+                let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
+                StarkCommitment<InteractionElements>, 
+                StarkProof, 
+                FriVerifyData
+            >();
+                let fri_commitment = &stark_commitment.fri;
+                fri_verify_data.current_layer = 0;
+                let n_layers_usize: usize = fri_commitment
                     .config
                     .n_layers
                     .to_biguint()
@@ -67,10 +74,18 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::ProcessLayer => {
-                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
+                // Use the new extended API to get all data in one call, avoiding borrowing conflicts
+                let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
+                    StarkCommitment<InteractionElements>, 
+                    StarkProof, 
+                    FriVerifyData
+                >();
+                
+                let fri_commitment = &stark_commitment.fri;
+                let fri_witness = &proof.witness.fri_witness;
+                // println!("fri_witness: {:?}", fri_witness);
 
-                let n_layers_usize: usize = fri_verify_data
-                    .fri_commitment
+                let n_layers_usize: usize = fri_commitment
                     .config
                     .n_layers
                     .to_biguint()
@@ -81,26 +96,26 @@ impl Executable for FriVerifyLayers {
                 // Last layer is handled by VerifyLastLayer
                 if fri_verify_data.current_layer < n_layers_usize - 1 {
                     // Get current layer witness
-                    let target_layer_witness = fri_verify_data
-                        .witness
+                    let target_layer_witness = fri_witness
                         .layers
                         .get(fri_verify_data.current_layer)
                         .unwrap();
+                    println!("target_layer_witness: {:?}", target_layer_witness);
 
                     // Prepare parameters for compute_next_layer
-                    let step_size = fri_verify_data
-                        .fri_commitment
+                    let step_size = fri_commitment
                         .config
                         .fri_step_sizes
                         .get(fri_verify_data.current_layer + 1)
                         .unwrap();
+                    
                     fri_verify_data.coset_size = Felt::TWO.pow_felt(step_size);
-                    fri_verify_data.eval_point = *fri_verify_data
-                        .fri_commitment
+                    fri_verify_data.eval_point = *fri_commitment
                         .eval_points
                         .get(fri_verify_data.current_layer)
                         .unwrap();
 
+                    println!("target_layer_witness.leaves_len: {:?}", target_layer_witness.leaves.len());
                     for i in 0..target_layer_witness.leaves.len() {
                         if let Some(value) = target_layer_witness.leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
@@ -117,7 +132,14 @@ impl Executable for FriVerifyLayers {
 
             FriVerifyLayersStep::PushTableData => {
                 let (y_values, indices, table_witness, target_commitment) = {
-                    let fri_verify_data = stack.borrow_from_cache::<FriVerifyData>();
+                    // Use the new extended API to get all data in one call
+                    let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                        StarkCommitment<InteractionElements>, 
+                        StarkProof, 
+                        FriVerifyData
+                    >();
+                    let fri_commitment = &stark_commitment.fri;
+                    let fri_witness = &proof.witness.fri_witness;
                     let current_layer = fri_verify_data.current_layer;
 
                     let mut y_values = Vec::new();
@@ -134,14 +156,12 @@ impl Executable for FriVerifyLayers {
                         }
                     }
 
-                    let table_witness = fri_verify_data
-                        .witness
+                    let table_witness = fri_witness
                         .layers
                         .get(current_layer)
                         .unwrap()
                         .table_witness;
-                    let target_commitment = fri_verify_data
-                        .fri_commitment
+                    let target_commitment = fri_commitment
                         .inner_layers
                         .get(current_layer)
                         .unwrap();
@@ -181,7 +201,13 @@ impl Executable for FriVerifyLayers {
 
                 target_commitment.push_to_stack(stack);
 
+                // println!("target_commitment: {:?}", target_commitment);
+                // println!("y_values: {:?}", y_values);
+                // println!("indices: {:?}", indices);
+                // println!("table_witness: {:?}", table_witness);
+
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;
+                println!("Pushing FriVerifyLayers TableDecommit task");
                 vec![TableDecommit::new().to_vec_with_type_tag()]
             }
 

@@ -67,9 +67,9 @@ fn test_stark_verify() {
 
     let trace_commitment = trace_commitment::get();
     stark_commitment.traces = trace_commitment;
-
+    stark_commitment.fri = fixtures::fri_commitment::get();
     proof.config = stark_config::get();
-
+    proof.witness.fri_witness = fixtures::witness::get();
     stack.proof = proof;
     stark_commitment.interaction_after_composition =
         Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
@@ -95,15 +95,10 @@ fn test_stark_verify() {
 
 fn push_data(stack: &mut BidirectionalStackAccount) {
     let queries = fixtures::queries::get();
-    let fri_commitment: stark::swiftness::fri::types::Commitment = fixtures::fri_commitment::get();
-    // let fri_decommitment: commitment::types::Decommitment = fixtures::fri_decommitment::get();
-    let witness: fri::types::Witness = fixtures::witness::get();
 
     let fri_verify_data = stark::swiftness::stark::types::FriVerifyData {
         queries: FunVec::from_vec(queries.clone()),
-        fri_commitment: fri_commitment,
         fri_decommitment: Decommitment::default(),
-        witness: witness.clone(),
         current_layer: 0,
         working_queries: FunVec::default(),
         working_elements: FunVec::default(),
@@ -118,7 +113,6 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
         coset_elements: FunVec::default(),
         current_coset_index: 0,
     };
-    // Użyj nowej metody do przechowania FriVerifyData w cache
     stack.store_in_cache(&fri_verify_data);
     println!("FriVerifyData stored in cache");
 }

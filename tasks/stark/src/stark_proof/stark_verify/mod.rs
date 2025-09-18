@@ -105,8 +105,8 @@ impl Executable for StarkVerify {
                     let decommitment_values = &proof.witness.composition_decommitment.values;
                     (authentications.len(), decommitment_values.len())
                 };
-                println!("authentications_len: {}", authentications_len);
-                println!("decommitment_values_len: {}", decommitment_values_len);
+                // println!("authentications_len: {}", authentications_len);
+                // println!("decommitment_values_len: {}", decommitment_values_len);
 
                 {
                     for i in (0..authentications_len).rev() {
@@ -142,6 +142,7 @@ impl Executable for StarkVerify {
                     let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
                     fri_verify_data.queries.len()
                 };
+                // println!("queries_len: {:?}", queries_len);
 
                 for i in (0..queries_len).rev() {
                     let index = {
