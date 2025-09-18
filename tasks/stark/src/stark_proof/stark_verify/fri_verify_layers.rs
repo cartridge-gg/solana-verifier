@@ -83,7 +83,6 @@ impl Executable for FriVerifyLayers {
 
                 let fri_commitment = &stark_commitment.fri;
                 let fri_witness = &proof.witness.fri_witness;
-                // println!("fri_witness: {:?}", fri_witness);
 
                 let n_layers_usize: usize = fri_commitment
                     .config
@@ -100,7 +99,6 @@ impl Executable for FriVerifyLayers {
                         .layers
                         .get(fri_verify_data.current_layer)
                         .unwrap();
-                    println!("target_layer_witness: {:?}", target_layer_witness);
 
                     // Prepare parameters for compute_next_layer
                     let step_size = fri_commitment
@@ -115,10 +113,6 @@ impl Executable for FriVerifyLayers {
                         .get(fri_verify_data.current_layer)
                         .unwrap();
 
-                    println!(
-                        "target_layer_witness.leaves_len: {:?}",
-                        target_layer_witness.leaves.len()
-                    );
                     for i in 0..target_layer_witness.leaves.len() {
                         if let Some(value) = target_layer_witness.leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
@@ -198,13 +192,7 @@ impl Executable for FriVerifyLayers {
 
                 target_commitment.push_to_stack(stack);
 
-                // println!("target_commitment: {:?}", target_commitment);
-                // println!("y_values: {:?}", y_values);
-                // println!("indices: {:?}", indices);
-                // println!("table_witness: {:?}", table_witness);
-
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;
-                println!("Pushing FriVerifyLayers TableDecommit task");
                 vec![TableDecommit::new().to_vec_with_type_tag()]
             }
 

@@ -51,9 +51,6 @@ fn test_stark_commit_with_reference_values() {
     let _digest = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
 
-    // assert_eq!(stack.constraint_coefficients.to_vec(), constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods().to_vec());
-    // assert_eq!(stack.constraint_coefficients.to_vec(), constraint_coefficients::get().to_vec());
-
     assert_eq!(stack.proof, proof_verifier);
 
     println!("StarkCommit completed in {} steps", steps);
