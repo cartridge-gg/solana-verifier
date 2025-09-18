@@ -19,6 +19,11 @@ pub enum PedersenPointsYPhase {
 }
 
 impl_type_identifiable!(PedersenPointsY);
+
+/// Evaluates a periodic column at a point.
+/// A periodic column of N values yields these values on the subgroup of size N.
+/// To simulate a periodic column with 2**k repetitions, one should evaluate at point**(2**k)
+/// instead.
 #[repr(C)]
 pub struct PedersenPointsY {
     step: PedersenPointsYPhase,
