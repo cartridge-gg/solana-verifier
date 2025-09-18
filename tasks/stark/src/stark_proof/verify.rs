@@ -1,7 +1,4 @@
-use std::fs;
-
 use felt::NonZeroFelt;
-use utils::global_values::InteractionElements;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 use crate::funvec::FunVec;
@@ -11,8 +8,8 @@ use crate::stark_proof::stark_verify::StarkVerify;
 use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
 use crate::swiftness::air::domains::StarkDomains;
+use crate::swiftness::stark::types::FriVerifyData;
 use crate::swiftness::stark::types::StarkProof;
-use crate::swiftness::stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment};
 use crate::swiftness::transcript::TranscriptRandomFelt;
 use felt::Felt;
 
