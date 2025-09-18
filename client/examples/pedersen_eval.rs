@@ -187,8 +187,7 @@ async fn main() -> client::Result<()> {
             .unwrap();
 
     let expected_point_x =
-        Felt::from_hex("0x598904d65b0434a87c175e65222359d01fff2522cade3bb409c28885b7671e")
-            .unwrap();
+        Felt::from_hex("0x598904d65b0434a87c175e65222359d01fff2522cade3bb409c28885b7671e").unwrap();
     assert_eq!(pedersen_point_y, expected_point_y);
     assert_eq!(pedersen_point_x, expected_point_x);
     println!("Pedersen evaluation successful and verified!");

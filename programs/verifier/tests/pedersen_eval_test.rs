@@ -32,4 +32,3 @@ fn test_pedersen_eval() {
     assert_eq!(result_x, expected_pedersen_points_x);
     assert!(stack.is_empty_front());
 }
-  
