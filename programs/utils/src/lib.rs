@@ -125,6 +125,10 @@ pub trait ProofData {
     fn set_global_values(&mut self, global_values: GlobalValues);
     fn get_stark_commitment_and_proof<T: Sized, P: Sized>(&self) -> (&T, &P);
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
+    
+    // Extended API that includes cache data to avoid borrowing conflicts
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C);
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(&mut self) -> (&mut T, &mut P, &mut C);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
 }

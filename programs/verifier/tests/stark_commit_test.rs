@@ -46,11 +46,16 @@ fn test_stark_commit_with_reference_values() {
         stack.execute();
         steps += 1;
     }
+    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
 
     println!("StarkCommit completed in {} steps", steps);
 
     let stark_commitment = stack.stark_commitment;
     let expected_stark_commitment = stark_commitment::get();
+    assert!(expected_stark_commitment == stark_commitment);
 
     assert_eq!(
         stark_commitment
@@ -129,7 +134,7 @@ fn test_stark_commit_with_reference_values() {
 
     // Check that stack is empty
     assert_eq!(stack.front_index, 0, "Stack should be empty");
-    assert_eq!(stack.back_index, 65536, "Stack should be empty");
+    assert_eq!(stack.back_index, 131072, "Stack should be empty");
 
     println!("StarkCommit test completed successfully!");
 }

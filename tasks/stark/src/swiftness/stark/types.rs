@@ -118,10 +118,7 @@ impl Default for VerifyVariables {
 #[repr(C)]
 pub struct FriVerifyData {
     pub queries: FunVec<Felt, FUNVEC_QUERIES>,
-    pub fri_commitment: fri::types::Commitment,
     pub fri_decommitment: commitment::types::Decommitment,
-    pub witness: fri::types::Witness,
-    // Working fields for FRI verification
     pub current_layer: usize,
     pub working_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>,
     pub next_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>, // For storing next layer queries
@@ -141,9 +138,7 @@ impl Default for FriVerifyData {
     fn default() -> Self {
         Self {
             queries: FunVec::default(),
-            fri_commitment: fri::types::Commitment::default(),
             fri_decommitment: commitment::types::Decommitment::default(),
-            witness: fri::types::Witness::default(),
             current_layer: 0,
             working_queries: FunVec::default(),
             next_queries: FunVec::default(),

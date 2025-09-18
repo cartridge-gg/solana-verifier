@@ -344,6 +344,44 @@ impl ProofData for BidirectionalStackAccount {
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         &mut self.constraint_coefficients
     }
+
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
+        let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice(&self.proof);
+        
+        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache does
+        let cache_size = std::mem::size_of::<C>();
+        let cache_bytes = &self.cached_data[..cache_size];
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+
+        let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
+        let cache = unsafe { &*(cache_bytes.as_ptr() as *const C) };
+
+        (stark_commitment, proof, cache)
+    }
+
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(&mut self) -> (&mut T, &mut P, &mut C) {
+        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+        
+        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache_mut does
+        let cache_size = std::mem::size_of::<C>();
+        let cache_bytes = &mut self.cached_data[..cache_size];
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+
+        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+        let cache = unsafe { &mut *(cache_bytes.as_mut_ptr() as *mut C) };
+
+        (stark_commitment, proof, cache)
+    }
 }
 
 #[cfg(test)]
