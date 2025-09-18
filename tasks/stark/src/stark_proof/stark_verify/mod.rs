@@ -225,6 +225,14 @@ impl Executable for StarkVerify {
                 }
                 stack.push_front(&points_len.to_bytes_be()).unwrap();
 
+                {
+                    let (stark_commitment, _) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                    //unsafe
+                    stack.set_constraint_coefficients(
+                        stark_commitment.interaction_after_oods.as_slice(),
+                    );
+                }
+
                 self.step = StarkVerifyStep::FriVerify;
                 println!("Pushing EvalOodsBoundaryPoly task");
                 vec![EvalOodsBoundaryPolyAtPoints::new().to_vec_with_type_tag()]

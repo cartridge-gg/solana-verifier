@@ -99,10 +99,13 @@ impl Executable for ComputeCosetElements {
                         // Use sibling witness from global sibling_witness (like original else clause: sibling_witness.drain(0..1))
                         if !fri_verify_data.sibling_witness.is_empty() {
                             let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
-                            
+
                             // Debug: check if we're using zero values
                             if witness_value == Felt::ZERO {
-                                println!("WARNING: Using zero witness value at index {}", self.current_index);
+                                println!(
+                                    "WARNING: Using zero witness value at index {}",
+                                    self.current_index
+                                );
                             }
 
                             // Remove first witness from global sibling_witness (simulate drain(0..1))

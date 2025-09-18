@@ -16,18 +16,19 @@ fn test_fri_verify() {
     let task = stark::stark_proof::stark_verify::fri_verify::FriVerify::new();
     push_data(&mut stack);
     stack.push_task(task);
-    
+
     let mut proof = StarkProof::default();
     proof.witness.fri_witness = fixtures::witness::get();
     stack.proof = proof;
-    
+
     let mut stark_commitment = StarkCommitment::<InteractionElements>::default();
-    stark_commitment.fri =  fixtures::fri_commitment::get();
+    stark_commitment.fri = fixtures::fri_commitment::get();
     stack.stark_commitment = stark_commitment;
 
     while !stack.is_empty_back() {
         stack.execute();
     }
+
     assert_eq!(stack.front_index, 0);
     assert_eq!(stack.back_index, 131072);
     println!("SUCCESSFULLY EXECUTED FRI VERIFY");

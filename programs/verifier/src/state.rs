@@ -359,10 +359,20 @@ impl ProofData for BidirectionalStackAccount {
         &mut self.constraint_coefficients
     }
 
+    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+        assert_eq!(coefficients.len(), N_CONSTRAINTS);
+        unsafe {
+            let constraint_coefficients_ptr = &self.constraint_coefficients
+                as *const [Felt; N_CONSTRAINTS]
+                as *mut [Felt; N_CONSTRAINTS];
+            (*constraint_coefficients_ptr).copy_from_slice(coefficients);
+        }
+    }
+
     fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         let proof_bytes = cast_struct_to_slice(&self.proof);
-        
+
         // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache does
         let cache_size = std::mem::size_of::<C>();
         let cache_bytes = &self.cached_data[..cache_size];
@@ -378,10 +388,12 @@ impl ProofData for BidirectionalStackAccount {
         (stark_commitment, proof, cache)
     }
 
-    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(&mut self) -> (&mut T, &mut P, &mut C) {
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut C) {
         let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
         let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
-        
+
         // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache_mut does
         let cache_size = std::mem::size_of::<C>();
         let cache_bytes = &mut self.cached_data[..cache_size];

@@ -53,8 +53,8 @@ impl Executable for FriVerifyLayers {
                 // let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
                 let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
-                StarkCommitment<InteractionElements>, 
-                StarkProof, 
+                StarkCommitment<InteractionElements>,
+                StarkProof,
                 FriVerifyData
             >();
                 let fri_commitment = &stark_commitment.fri;
@@ -76,11 +76,11 @@ impl Executable for FriVerifyLayers {
             FriVerifyLayersStep::ProcessLayer => {
                 // Use the new extended API to get all data in one call, avoiding borrowing conflicts
                 let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
-                    StarkCommitment<InteractionElements>, 
-                    StarkProof, 
+                    StarkCommitment<InteractionElements>,
+                    StarkProof,
                     FriVerifyData
                 >();
-                
+
                 let fri_commitment = &stark_commitment.fri;
                 let fri_witness = &proof.witness.fri_witness;
                 // println!("fri_witness: {:?}", fri_witness);
@@ -108,14 +108,17 @@ impl Executable for FriVerifyLayers {
                         .fri_step_sizes
                         .get(fri_verify_data.current_layer + 1)
                         .unwrap();
-                    
+
                     fri_verify_data.coset_size = Felt::TWO.pow_felt(step_size);
                     fri_verify_data.eval_point = *fri_commitment
                         .eval_points
                         .get(fri_verify_data.current_layer)
                         .unwrap();
 
-                    println!("target_layer_witness.leaves_len: {:?}", target_layer_witness.leaves.len());
+                    println!(
+                        "target_layer_witness.leaves_len: {:?}",
+                        target_layer_witness.leaves.len()
+                    );
                     for i in 0..target_layer_witness.leaves.len() {
                         if let Some(value) = target_layer_witness.leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
@@ -134,8 +137,8 @@ impl Executable for FriVerifyLayers {
                 let (y_values, indices, table_witness, target_commitment) = {
                     // Use the new extended API to get all data in one call
                     let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
-                        StarkCommitment<InteractionElements>, 
-                        StarkProof, 
+                        StarkCommitment<InteractionElements>,
+                        StarkProof,
                         FriVerifyData
                     >();
                     let fri_commitment = &stark_commitment.fri;
@@ -156,15 +159,9 @@ impl Executable for FriVerifyLayers {
                         }
                     }
 
-                    let table_witness = fri_witness
-                        .layers
-                        .get(current_layer)
-                        .unwrap()
-                        .table_witness;
-                    let target_commitment = fri_commitment
-                        .inner_layers
-                        .get(current_layer)
-                        .unwrap();
+                    let table_witness =
+                        fri_witness.layers.get(current_layer).unwrap().table_witness;
+                    let target_commitment = fri_commitment.inner_layers.get(current_layer).unwrap();
 
                     (y_values, indices, table_witness, *target_commitment)
                 };
