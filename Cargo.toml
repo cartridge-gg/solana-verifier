@@ -17,10 +17,8 @@ num-bigint = "0.4.6"
 size-of = "0.1.5"
 
 client = { path = "./client" }
-greeting = { path = "./programs/greeting" }
 verifier = { path = "./programs/verifier" }
 utils = { path = "./programs/utils" }
 
-arithmetic = { path = "./tasks/arithmetic" }
 felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }

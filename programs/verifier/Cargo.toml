@@ -16,7 +16,6 @@ thiserror.workspace = true
 
 utils.workspace = true
 
-arithmetic.workspace = true
 stark.workspace = true
 felt.workspace = true
 
