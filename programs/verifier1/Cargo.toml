@@ -17,6 +17,7 @@ thiserror.workspace = true
 utils-1.workspace = true
 felt.workspace = true
 validate-public-input.workspace = true
+types.workspace = true
 
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }

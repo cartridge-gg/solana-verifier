@@ -1,5 +1,6 @@
 use crate::error::VerifierError;
-use utils_1::{AccountCast, BidirectionalStack};
+use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
+use utils_1::{AccountCast, BidirectionalStack, ProofData};
 use utils_1::{CAPACITY, LENGTH_SIZE};
 
 /// Define the type of state stored in accounts
@@ -9,6 +10,7 @@ pub struct BidirectionalStackAccount {
     pub front_index: usize,
     pub back_index: usize,
     pub buffer: [u8; CAPACITY],
+    pub proof: StarkProof,
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -16,6 +18,7 @@ impl Default for BidirectionalStackAccount {
             front_index: 0,
             back_index: CAPACITY,
             buffer: [0; CAPACITY],
+            proof: StarkProof::default(),
         }
     }
 }
@@ -141,6 +144,11 @@ impl BidirectionalStack for BidirectionalStackAccount {
     }
 }
 
+impl ProofData for BidirectionalStackAccount {
+    fn get_proof_bytes(&self) -> &[u8] {
+        cast_struct_to_slice(&self.proof)
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::state::{BidirectionalStackAccount, CAPACITY};

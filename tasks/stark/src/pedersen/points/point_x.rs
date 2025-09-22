@@ -1,10 +1,9 @@
 use felt::Felt;
+use types::swiftness::air::consts::FELT_0;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
     TypeIdentifiable,
 };
-
-use crate::stark_proof::validate_public_input::FELT_0;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PedersenPointsXPhase {

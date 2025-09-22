@@ -62,6 +62,15 @@ pub trait Scheduler: BidirectionalStack {
     }
 }
 
+pub trait ProofData {
+    /// Get a reference to the proof data as any type T
+    fn get_proof_reference<T: Sized>(&self) -> &T {
+        let bytes = self.get_proof_bytes();
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &*(bytes.as_ptr() as *const T) }
+    }
+    fn get_proof_bytes(&self) -> &[u8];
+}
 /// Trait for providing automatic type identification with cryptographic hashing
 pub trait TypeIdentifiable {
     /// Returns a unique type ID based on the type name using a cryptographic hash
@@ -104,7 +113,7 @@ pub trait Executable: Sized + TypeIdentifiable {
     /// The type tag is now automatically derived from TypeIdentifiable trait
     /// Using u32 instead of u8 for a much larger ID space
     const TYPE_TAG: u32 = Self::TYPE_ID;
-    fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>>;
+    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>>;
     fn is_finished(&mut self) -> bool {
         false
     }

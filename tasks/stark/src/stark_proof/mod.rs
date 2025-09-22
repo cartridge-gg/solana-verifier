@@ -7,7 +7,6 @@ use types::swiftness::stark::types::StarkProof;
 pub mod get_hash;
 pub mod stark_commit;
 pub mod stark_verify;
-pub mod validate_public_input;
 pub mod verify;
 
 // Constants for validation

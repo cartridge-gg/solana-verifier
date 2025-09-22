@@ -17,11 +17,16 @@ num-bigint = "0.4.6"
 size-of = "0.1.5"
 
 client = { path = "./client" }
+
 verifier = { path = "./programs/verifier" }
+verifier-1 = { path = "./programs/verifier1" }
+
 utils = { path = "./programs/utils" }
+utils-1 = { path = "./programs/utils1" }
+
 
 felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }
 validate-public-input = { path = "./tasks/validate_public_input" }
-utils-1 = { path = "./programs/utils1" }
+
 types = { path = "./tasks/types" }

@@ -12,23 +12,24 @@ use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::stark::types::cast_struct_to_slice;
-use utils::{AccountCast, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use utils_1::{AccountCast, Executable};
+use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
-use stark::stark_proof::validate_public_input::ValidatePublicInput;
+use validate_public_input::validate::ValidatePublicInput;
 
 pub const CHUNK_SIZE: usize = 1000;
 
 #[tokio::main]
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
-    let config = Config::parse_args();
+    let parse_args = Config::parse_args();
+    let config = parse_args;
 
     let client = initialize_client(&config).await?;
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -60,39 +61,17 @@ async fn main() -> client::Result<()> {
         .await?;
     println!("Account created successfully: {signature}");
 
-    let mut stack_init_input: [u64; 2] = [0, 65536];
-    let stack_init_bytes = cast_struct_to_slice(&mut stack_init_input);
-
-    let init_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::SetAccountData(0, stack_init_bytes.to_vec()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
-
-    let signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[init_ix],
-    )
-    .await?;
-    println!("Account initialized: {signature}");
-
     println!("\nValidatePublicInput Task on Solana");
     println!("==================================");
 
     let input = include_str!("../../example_proof/saya.json");
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
     let proof = StarkProofParser::try_from(proof_json).unwrap();
+    let proof_verifier = proof.transform_to();
 
-    let mut proof_verifier = proof.transform_to();
-
-    let mut stack_init_input: [u64; 2] = [0, 65536];
-    let stack_init_bytes = cast_struct_to_slice(&mut stack_init_input);
-    let proof_bytes = cast_struct_to_slice(&mut proof_verifier).to_vec();
-    let mut init_calldata = stack_init_bytes.to_vec();
-    init_calldata.extend(proof_bytes.clone());
+    let mut stack = BidirectionalStackAccount::default();
+    stack.proof = proof_verifier;
+    let init_calldata = cast_struct_to_slice(&mut stack);
 
     println!("Proof bytes in kb: {:?}", init_calldata.len() / 1024);
     let instructions = init_calldata

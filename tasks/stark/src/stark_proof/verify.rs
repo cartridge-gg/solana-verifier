@@ -3,13 +3,11 @@ use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, T
 use crate::stark_proof::get_hash::GetHash;
 use crate::stark_proof::stark_commit::StarkCommit;
 use crate::stark_proof::stark_verify::StarkVerify;
-use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
 use types::swiftness::air::domains::StarkDomains;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
-    ValidatePublicInput,
     GetHash,
     StarkCommit,
     StarkVerify,
@@ -27,7 +25,7 @@ impl_type_identifiable!(Verify);
 impl Verify {
     pub fn new() -> Self {
         Self {
-            step: VerifyStep::ValidatePublicInput,
+            step: VerifyStep::GetHash,
         }
     }
 }
@@ -41,10 +39,6 @@ impl Default for Verify {
 impl Executable for Verify {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
-            VerifyStep::ValidatePublicInput => {
-                self.step = VerifyStep::GetHash;
-                vec![ValidatePublicInput::new().to_vec_with_type_tag()]
-            }
             VerifyStep::GetHash => {
                 let proof =
                     stack.get_proof_reference::<types::swiftness::stark::types::StarkProof>();
