@@ -11,8 +11,9 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::{stark_proof::HashPublicInputs, swiftness::stark::types::cast_struct_to_slice};
+use stark::stark_proof::HashPublicInputs;
 use std::path::Path;
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};

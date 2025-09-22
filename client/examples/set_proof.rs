@@ -9,9 +9,9 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use std::path::Path;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::AccountCast;
 use utils::BidirectionalStack;
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};

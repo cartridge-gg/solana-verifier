@@ -9,15 +9,16 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::swiftness::stark::types::StarkCommitment;
-use stark::{stark_proof::verify::Verify, swiftness::stark::types::cast_struct_to_slice};
+use stark::stark_proof::verify::Verify;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use utils::BidirectionalStack;
-use utils::{
+use types::swiftness::stark::types::cast_struct_to_slice;
+use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
-    AccountCast, Executable,
+    stark::types::StarkCommitment,
 };
+use utils::BidirectionalStack;
+use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;

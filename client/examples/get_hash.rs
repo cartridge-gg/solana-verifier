@@ -10,10 +10,10 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use starknet_crypto::{pedersen_hash, poseidon_hash_many, Felt as StarkFelt};
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
@@ -234,7 +234,7 @@ async fn main() -> client::Result<()> {
 
 // This implements the original get_hash logic synchronously for comparison
 fn calculate_expected_get_hash(
-    public_input: &stark::swiftness::air::public_memory::PublicInput,
+    public_input: &types::swiftness::air::public_memory::PublicInput,
     n_verifier_friendly_commitment_layers: Felt,
 ) -> Felt {
     let mut main_page_hash = StarkFelt::ZERO;

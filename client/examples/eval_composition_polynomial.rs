@@ -209,13 +209,13 @@ async fn main() -> client::Result<()> {
 
 mod prepare_input {
     use felt::Felt;
-    use stark::swiftness::stark::types::cast_struct_to_slice_mut;
+    use types::swiftness::global_values::InteractionElements;
+    use types::swiftness::stark::types::cast_struct_to_slice_mut;
 
-    use stark::swiftness::stark::types::StarkCommitment;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use utils::global_values::InteractionElements;
+    use types::swiftness::stark::types::StarkCommitment;
     use utils::StarkCommitmentTrait;
     use verifier::state::BidirectionalStackAccount;
 
@@ -290,7 +290,7 @@ mod prepare_input {
 
 mod constraint_coefficients {
     use felt::Felt;
-    use stark::funvec::FunVec;
+    use types::funvec::FunVec;
 
     pub fn get() -> FunVec<Felt, 194> {
         FunVec::from_vec(

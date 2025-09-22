@@ -11,9 +11,9 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::stark_proof::stark_commit::proof_of_work::ProofOfWork;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 

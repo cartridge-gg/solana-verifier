@@ -11,8 +11,8 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark::poseidon::hades::HadesPermutation;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 // use felt::Felt;
