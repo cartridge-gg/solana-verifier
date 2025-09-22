@@ -1,7 +1,8 @@
-use crate::swiftness::stark::types::StarkProof;
-use crate::swiftness::transcript::TranscriptReadFelt;
 use felt::Felt;
+use types::swiftness::stark::types::StarkProof;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+
+use crate::stark_proof::stark_commit::transcript_random_felt::TranscriptReadFelt;
 
 // Constants
 pub const MAGIC: u64 = 0x0123456789abcded;

@@ -5,21 +5,20 @@ use crate::stark_proof::stark_commit::helpers::{
     DILUTED_N_BITS, DILUTED_SPACING, FELT_2, PEDERSEN_BUILTIN_RATIO, PEDERSEN_BUILTIN_REPETITIONS,
     POSEIDON_RATIO,
 };
-use crate::swiftness::air::consts::*;
-use crate::swiftness::air::periodic_columns::{
+use felt::Felt;
+use felt::NonZeroFelt;
+use types::swiftness::air::consts::*;
+use types::swiftness::air::periodic_columns::{
     eval_poseidon_poseidon_full_round_key0, eval_poseidon_poseidon_full_round_key1,
     eval_poseidon_poseidon_full_round_key2, eval_poseidon_poseidon_partial_round_key0,
     eval_poseidon_poseidon_partial_round_key1,
 };
-use crate::swiftness::air::recursive_with_poseidon::segments;
-use crate::swiftness::air::recursive_with_poseidon::GlobalValues;
-use crate::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
-use crate::swiftness::air::recursive_with_poseidon::{SHIFT_POINT_X, SHIFT_POINT_Y};
-use crate::swiftness::stark::types::StarkCommitment;
-use crate::swiftness::stark::types::StarkProof;
-use felt::Felt;
-use felt::NonZeroFelt;
-use utils::global_values::InteractionElements;
+use types::swiftness::air::recursive_with_poseidon::segments;
+use types::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
+use types::swiftness::air::recursive_with_poseidon::{SHIFT_POINT_X, SHIFT_POINT_Y};
+use types::swiftness::global_values::{GlobalValues, InteractionElements};
+use types::swiftness::stark::types::StarkCommitment;
+use types::swiftness::stark::types::StarkProof;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
     TypeIdentifiable,
@@ -287,7 +286,7 @@ impl Executable for EvalCompositionPolynomial {
                     range_check_max: public_input.range_check_max,
                     offset_size: FELT_65536,
                     half_offset_size: FELT_32768,
-                    pedersen_shift_point: utils::global_values::EcPoint {
+                    pedersen_shift_point: types::swiftness::global_values::EcPoint {
                         x: SHIFT_POINT_X,
                         y: SHIFT_POINT_Y,
                     },

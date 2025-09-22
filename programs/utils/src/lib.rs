@@ -1,9 +1,6 @@
 use felt::Felt;
 use std::fmt::Debug;
-
-pub mod global_values;
-use crate::global_values::GlobalValues;
-pub mod transcript;
+use types::swiftness::global_values::GlobalValues;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;

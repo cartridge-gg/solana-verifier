@@ -1,8 +1,8 @@
 use crate::stark_proof::segments;
 use crate::stark_proof::{MAX_LOG_N_STEPS, MAX_RANGE_CHECK};
-use crate::swiftness::stark::types::StarkProof;
 use felt::Felt;
 use felt::NonZeroFelt;
+use types::swiftness::stark::types::StarkProof;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

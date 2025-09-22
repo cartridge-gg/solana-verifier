@@ -1,8 +1,8 @@
+use crate::stark_proof::stark_commit::transcript_random_felt::TranscriptRandomFelt;
 use crate::stark_proof::stark_commit::{TableCommit, TranscriptReadFeltVector};
-use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
-use crate::swiftness::transcript::TranscriptRandomFelt;
 use felt::Felt;
-use utils::global_values::InteractionElements;
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::{StarkCommitment, StarkProof};
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
     TypeIdentifiable,

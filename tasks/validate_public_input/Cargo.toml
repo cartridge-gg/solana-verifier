@@ -1,0 +1,9 @@
+[package]
+name = "validate-public-input"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+felt.workspace = true
+utils-1.workspace = true
+types.workspace = true

@@ -1,13 +1,13 @@
 use felt::Felt;
 use sha3::{Digest, Keccak256};
+use types::funvec::FUNVEC_QUERIES;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
 };
 
 use crate::poseidon::PoseidonHash;
-use crate::swiftness::commitment::vector::types::QueryWithDepth;
-use crate::swiftness::stark::types::VerifyVariables;
+use types::swiftness::stark::types::VerifyVariables;
 
 // New tasks to replace method calls
 #[derive(Debug, Clone)]
@@ -155,7 +155,7 @@ impl Executable for HashComputationWithQueries {
                     let hash = keccak_hash(self.x, self.y);
 
                     // Read queue using trait method
-                    QueryWithDepth::read_queries_with_depth_from_stack(stack);
+                    read_queries_with_depth_from_stack(stack);
 
                     // Add new query to pre-allocated array
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -195,7 +195,7 @@ impl Executable for HashComputationWithQueries {
                         }
                         count
                     };
-                    QueryWithDepth::push_queries_with_depth_to_stack(actual_count, stack);
+                    push_queries_with_depth_to_stack(actual_count, stack);
 
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -210,7 +210,7 @@ impl Executable for HashComputationWithQueries {
                 stack.pop_front();
 
                 // Read queue using trait method
-                QueryWithDepth::read_queries_with_depth_from_stack(stack);
+                read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -249,7 +249,7 @@ impl Executable for HashComputationWithQueries {
                     }
                     count
                 };
-                QueryWithDepth::push_queries_with_depth_to_stack(actual_count, stack);
+                push_queries_with_depth_to_stack(actual_count, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -264,5 +264,70 @@ impl Executable for HashComputationWithQueries {
 
     fn is_finished(&mut self) -> bool {
         self.step == HashComputationWithQueriesStep::Done
+    }
+}
+
+/// Push queries with depth from a slice to stack (no allocation)
+pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    count: usize,
+    stack: &mut T,
+) {
+    // Push queries in reverse order - no allocation
+    for i in (0..count).rev() {
+        let (depth_bytes, value_bytes, index_bytes) = {
+            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+            let queries_slice = &mut verify_variables.queries;
+            let depth = queries_slice[i * 3 + 2];
+            let value = queries_slice[i * 3 + 1];
+            let index = queries_slice[i * 3];
+            (
+                depth.to_bytes_be(),
+                value.to_bytes_be(),
+                index.to_bytes_be(),
+            )
+        };
+
+        stack.push_front(&depth_bytes).unwrap();
+        stack.push_front(&value_bytes).unwrap();
+        stack.push_front(&index_bytes).unwrap();
+    }
+    // Push length
+    stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
+}
+
+/// Read queries with depth from stack and store them in a mutable slice (no allocation)
+pub fn read_queries_with_depth_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+    let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    let n_queries_usize: usize = n_queries.try_into().unwrap();
+    assert!(
+        n_queries_usize <= FUNVEC_QUERIES,
+        "Too many queries: {} > {}",
+        n_queries_usize,
+        FUNVEC_QUERIES
+    );
+
+    // Clear the entire queries array first
+    {
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        let queries_slice = &mut verify_variables.queries;
+        queries_slice.fill(Felt::ZERO);
+    }
+
+    for i in 0..n_queries_usize {
+        let index = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let value = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let depth = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        let queries_slice = &mut verify_variables.queries;
+
+        queries_slice[i * 3] = index;
+        queries_slice[i * 3 + 1] = value;
+        queries_slice[i * 3 + 2] = depth;
     }
 }

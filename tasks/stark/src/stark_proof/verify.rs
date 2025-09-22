@@ -5,7 +5,7 @@ use crate::stark_proof::stark_commit::StarkCommit;
 use crate::stark_proof::stark_verify::StarkVerify;
 use crate::stark_proof::validate_public_input::ValidatePublicInput;
 use crate::stark_proof::VerifyPublicInput;
-use crate::swiftness::air::domains::StarkDomains;
+use types::swiftness::air::domains::StarkDomains;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
@@ -47,7 +47,7 @@ impl Executable for Verify {
             }
             VerifyStep::GetHash => {
                 let proof =
-                    stack.get_proof_reference::<crate::swiftness::stark::types::StarkProof>();
+                    stack.get_proof_reference::<types::swiftness::stark::types::StarkProof>();
                 let n_verifier_friendly_commitment_layers =
                     proof.config.n_verifier_friendly_commitment_layers;
                 assert!(
@@ -67,7 +67,7 @@ impl Executable for Verify {
                 );
 
                 let proof =
-                    stack.get_proof_reference::<crate::swiftness::stark::types::StarkProof>();
+                    stack.get_proof_reference::<types::swiftness::stark::types::StarkProof>();
 
                 let stark_domain = StarkDomains::new(
                     proof.config.log_trace_domain_size,

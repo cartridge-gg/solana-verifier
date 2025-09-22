@@ -18,6 +18,7 @@ utils.workspace = true
 
 stark.workspace = true
 felt.workspace = true
+types.workspace = true
 
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }

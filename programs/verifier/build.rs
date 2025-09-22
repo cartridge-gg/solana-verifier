@@ -155,6 +155,12 @@ fn get_workspace_members(workspace_root: &Path) -> Vec<PathBuf> {
                                             let rel_path =
                                                 pathdiff::diff_paths(&path, workspace_root)
                                                     .unwrap_or_else(|| path.clone());
+
+                                            if rel_path
+                                                == PathBuf::from("tasks/validate_public_input")
+                                            {
+                                                continue;
+                                            }
                                             members.push(rel_path);
                                         }
                                     }

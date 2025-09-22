@@ -1,6 +1,5 @@
 use std::ops::Deref;
 
-use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::log::sol_log_64;
 
 use felt::Felt;
@@ -66,7 +65,7 @@ pub fn print_frame(i: u64, label: u64) {
     // print_frame(i + 1);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FunVec<T: Default, const N: usize> {
     len: usize,
     data: [T; N],

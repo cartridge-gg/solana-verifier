@@ -1,9 +1,9 @@
 use crate::poseidon::PoseidonHash;
 use crate::stark_proof::PoseidonHashMany;
-use crate::swiftness::stark::types::StarkCommitment;
-use crate::swiftness::stark::types::StarkProof;
 use felt::Felt;
-use utils::global_values::InteractionElements;
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::StarkCommitment;
+use types::swiftness::stark::types::StarkProof;
 use utils::StarkCommitmentTrait;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 

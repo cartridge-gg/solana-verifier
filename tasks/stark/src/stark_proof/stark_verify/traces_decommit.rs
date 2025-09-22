@@ -1,14 +1,16 @@
 use felt::Felt;
-use utils::global_values::InteractionElements;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
 };
 
-use crate::funvec::{FunVec, FUNVEC_QUERY_INDICES};
 use crate::stark_proof::stark_verify::table_decommit::TableDecommit;
-use crate::swiftness::stark::types::{
+use types::swiftness::stark::types::{
     cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
+};
+use types::{
+    funvec::{FunVec, FUNVEC_QUERY_INDICES},
+    swiftness::global_values::InteractionElements,
 };
 
 // TracesDecommit task phases

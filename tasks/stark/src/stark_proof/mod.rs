@@ -1,7 +1,8 @@
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::{poseidon::PoseidonHashMany, swiftness::stark::types::StarkProof};
+use crate::poseidon::PoseidonHashMany;
 use felt::Felt;
+use types::swiftness::stark::types::StarkProof;
 
 pub mod get_hash;
 pub mod stark_commit;

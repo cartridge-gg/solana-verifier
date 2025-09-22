@@ -12,8 +12,8 @@ use solana_sdk::{
     signer::Signer,
 };
 use stark::stark_proof::verify::Verify;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::AccountCast;
 use utils::BidirectionalStack;
 use utils::Executable;

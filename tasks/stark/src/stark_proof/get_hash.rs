@@ -1,6 +1,6 @@
-use crate::{
-    pedersen::PedersenHash, poseidon::PoseidonHashMany, swiftness::stark::types::StarkProof,
-};
+use crate::{pedersen::PedersenHash, poseidon::PoseidonHashMany};
+use types::swiftness::stark::types::StarkProof;
+
 use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 

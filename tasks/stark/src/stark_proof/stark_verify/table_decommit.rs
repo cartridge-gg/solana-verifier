@@ -1,5 +1,6 @@
 use felt::Felt;
 use sha3::{Digest, Keccak256};
+use types::funvec::FUNVEC_AUTHENTICATIONS;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -7,11 +8,11 @@ use utils::{
 
 use crate::poseidon::PoseidonHashMany;
 use crate::stark_proof::stark_verify::vector_decommit::VectorDecommit;
-use crate::swiftness::commitment::table::types::{Commitment as TableCommitment, Decommitment};
-use crate::swiftness::commitment::vector::types::{
-    CommitmentTrait, Query, Witness as VectorWitness,
-};
-use crate::swiftness::stark::types::VerifyVariables;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::types::{Commitment, Query};
+use types::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice, VerifyVariables};
+pub const MONTGOMERY_R: Felt =
+    Felt::from_hex_unchecked("0x7FFFFFFFFFFFDF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1");
 
 // TableDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,7 +70,7 @@ impl Executable for TableDecommit {
         match self.step {
             TableDecommitStep::PrepareVectorQueries => {
                 // Read table commitment
-                let table_commitment = TableCommitment::from_stack(stack);
+                let table_commitment = commitment_from_stack(stack);
                 println!("Table commitment: {:?}", table_commitment);
                 self.commitment = table_commitment;
 
@@ -110,7 +111,7 @@ impl Executable for TableDecommit {
                 println!("Total queries: {}", self.total_queries);
 
                 // Read decommitment
-                Decommitment::from_stack(stack);
+                decommitment_from_stack(stack);
 
                 // Validate montgomery values length
                 let montgomery_values_len = {
@@ -126,7 +127,7 @@ impl Executable for TableDecommit {
                 );
 
                 // Read witness
-                self.n_authentications = VectorWitness::from_stack(stack);
+                self.n_authentications = witness_from_stack(stack);
 
                 // Initialize vector queries with indices
                 self.vector_queries = query_indices
@@ -187,7 +188,7 @@ impl Executable for TableDecommit {
             }
 
             TableDecommitStep::PrepareVectorDecommit => {
-                VectorWitness::push_to_stack_static(stack, self.n_authentications);
+                witness_push_to_stack_static(stack, self.n_authentications);
                 println!("DEBUG: n_authentications = {}", self.n_authentications);
 
                 // Push all vector queries to stack
@@ -201,7 +202,7 @@ impl Executable for TableDecommit {
                 println!("DEBUG: total_queries = {}", self.total_queries);
 
                 // Push vector commitment
-                self.commitment.vector_commitment.push_to_stack(stack);
+                commitment_push_to_stack(&self.commitment.vector_commitment, stack);
 
                 self.step = TableDecommitStep::ExecuteVectorDecommit;
                 vec![VectorDecommit::new().to_vec_with_type_tag()]
@@ -364,4 +365,80 @@ impl Executable for GenerateVectorQueries {
     fn is_finished(&mut self) -> bool {
         self.step == GenerateVectorQueriesStep::Done
     }
+}
+
+fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> usize {
+    let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    let n_auth_usize: usize = n_authentications.try_into().unwrap();
+    assert!(
+        n_auth_usize <= FUNVEC_AUTHENTICATIONS,
+        "Too many authentications: {} > {}",
+        n_auth_usize,
+        FUNVEC_AUTHENTICATIONS
+    );
+    println!(
+        "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
+        n_auth_usize
+    );
+
+    for i in 0..n_auth_usize {
+        let auth = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        verify_variables.authentications[i] = auth;
+    }
+    n_auth_usize
+}
+
+pub fn witness_push_to_stack_static<T: BidirectionalStack + StarkVerifyTrait>(
+    stack: &mut T,
+    count: usize,
+) {
+    // Push authentications in reverse order (for stack) - no allocation
+    for i in (0..count).rev() {
+        let auth_bytes = {
+            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+            verify_variables.authentications[i].to_bytes_be()
+        };
+        stack.push_front(&auth_bytes).unwrap();
+    }
+    stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
+}
+
+fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    commitment: &Commitment,
+    stack: &mut T,
+) {
+    let commitment_bytes = cast_struct_to_slice(commitment);
+    stack.push_front(commitment_bytes).unwrap();
+}
+
+fn decommitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+    // Read values length first (back to original approach for transaction size)
+    let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let count: usize = values_len.to_biguint().try_into().unwrap();
+
+    // Read decommitment_values and convert to Montgomery form
+    for i in 0..count {
+        let value = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        verify_variables.decommitment_values[i] = value;
+        // Convert to Montgomery form for commitment verification
+        verify_variables.montgomery_values[i] = value * MONTGOMERY_R;
+    }
+}
+
+fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    stack: &mut T,
+) -> TableCommitment {
+    let data = stack.borrow_front();
+    let commitment_ref = cast_slice_to_struct::<TableCommitment>(data);
+    let commitment = *commitment_ref; // Copy only when needed
+    stack.pop_front();
+    commitment
 }

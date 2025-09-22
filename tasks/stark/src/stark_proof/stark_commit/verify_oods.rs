@@ -1,6 +1,6 @@
 use crate::stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial;
-use crate::swiftness::stark::types::StarkProof;
 use felt::Felt;
+use types::swiftness::stark::types::StarkProof;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

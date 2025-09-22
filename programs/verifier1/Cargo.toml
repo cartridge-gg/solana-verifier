@@ -1,0 +1,27 @@
+[package]
+name = "verifier-1"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+borsh.workspace = true
+solana-program.workspace = true
+thiserror.workspace = true
+
+utils-1.workspace = true
+felt.workspace = true
+validate-public-input.workspace = true
+
+[dev-dependencies]
+swiftness_proof_parser = { path = "../../parser" }
+serde_json = "1.0"
+starknet-crypto = "0.7.1"
+
+[build-dependencies]
+pathdiff = "0.2.1"

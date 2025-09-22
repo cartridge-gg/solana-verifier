@@ -21,3 +21,4 @@ sha3 = { version = "0.10.8", default-features = false }
 utils.workspace = true
 felt.workspace = true
 solana-program.workspace = true
+types.workspace = true

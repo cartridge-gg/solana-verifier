@@ -1,11 +1,11 @@
-use crate::funvec::FUNVEC_QUERY_INDICES;
 use crate::stark_proof::stark_verify::eval_oods_polynomial::EvalOodsPolynomial;
-use crate::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
-use crate::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
-use crate::swiftness::stark::types::{StarkCommitment, StarkProof};
 use felt::{Felt, NonZeroFelt};
 use std::println;
-use utils::global_values::InteractionElements;
+use types::funvec::FUNVEC_QUERY_INDICES;
+use types::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
+use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::{StarkCommitment, StarkProof};
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable, CONSTRAINT_DEGREE,

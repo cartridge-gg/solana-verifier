@@ -3,7 +3,7 @@
 
 use crate::poseidon::{PoseidonHash, PoseidonHashMany};
 use felt::Felt;
-pub use utils::transcript::Transcript;
+
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[repr(C)]

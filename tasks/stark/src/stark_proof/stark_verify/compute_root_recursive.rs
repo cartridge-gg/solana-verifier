@@ -4,13 +4,13 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_QUERIES};
 use crate::stark_proof::stark_verify::hash_computation::{
     HashComputation, HashComputationWithQueries,
 };
-use crate::swiftness::commitment::vector::config::{Config as VectorConfig, ConfigTrait};
-use crate::swiftness::commitment::vector::types::QueryWithDepth;
-use crate::swiftness::stark::types::VerifyVariables;
+use types::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_QUERIES};
+use types::swiftness::commitment::vector::config::Config as VectorConfig;
+use types::swiftness::commitment::vector::types::QueryWithDepth;
+use types::swiftness::stark::types::VerifyVariables;
 
 // ComputeRootRecursive task - handles one step of the recursive root computation
 #[derive(Debug, Clone)]
@@ -118,7 +118,7 @@ impl Executable for ComputeRootRecursive {
                 }
 
                 // Read vector config using trait method
-                let vector_config = VectorConfig::from_stack(stack);
+                let vector_config = from_stack(stack);
                 let n_verifier_friendly_layers =
                     vector_config.n_verifier_friendly_commitment_layers;
 
@@ -163,7 +163,7 @@ impl Executable for ComputeRootRecursive {
 
                             if self.current.index + Felt::ONE == next_index {
                                 // Push vector config using trait method
-                                vector_config.push_to_stack(stack);
+                                push_to_stack(&vector_config, stack);
 
                                 for i in (0..n_auth_usize).rev() {
                                     let auth = {
@@ -186,10 +186,7 @@ impl Executable for ComputeRootRecursive {
                                     .unwrap();
 
                                 // Push queries using trait method
-                                QueryWithDepth::push_queries_with_depth_to_stack(
-                                    n_queries_usize,
-                                    stack,
-                                );
+                                push_queries_with_depth_to_stack(n_queries_usize, stack);
 
                                 self.step = ComputeRootRecursiveStep::ProcessCurrent;
 
@@ -205,7 +202,7 @@ impl Executable for ComputeRootRecursive {
                         }
 
                         // Push vector config using trait method
-                        vector_config.push_to_stack(stack);
+                        push_to_stack(&vector_config, stack);
 
                         for i in (0..n_auth_usize).rev() {
                             let auth = {
@@ -228,7 +225,7 @@ impl Executable for ComputeRootRecursive {
                             .unwrap();
 
                         // Push queries using trait method
-                        QueryWithDepth::push_queries_with_depth_to_stack(n_queries_usize, stack);
+                        push_queries_with_depth_to_stack(n_queries_usize, stack);
 
                         self.step = ComputeRootRecursiveStep::ReadHash;
                         vec![HashComputation::new(
@@ -244,7 +241,7 @@ impl Executable for ComputeRootRecursive {
                         .to_vec_with_type_tag()]
                     } else {
                         // Push vector config using trait method
-                        vector_config.push_to_stack(stack);
+                        push_to_stack(&vector_config, stack);
 
                         for i in (0..n_auth_usize).rev() {
                             let auth = {
@@ -266,7 +263,7 @@ impl Executable for ComputeRootRecursive {
                             .unwrap();
 
                         // Push queries using trait method
-                        QueryWithDepth::push_queries_with_depth_to_stack(n_queries_usize, stack);
+                        push_queries_with_depth_to_stack(n_queries_usize, stack);
 
                         self.step = ComputeRootRecursiveStep::ReadHash;
                         // Create hash computation task
@@ -289,7 +286,7 @@ impl Executable for ComputeRootRecursive {
                 stack.pop_front();
 
                 // Read queries into pre-allocated array
-                QueryWithDepth::read_queries_with_depth_from_stack(stack);
+                read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -325,7 +322,7 @@ impl Executable for ComputeRootRecursive {
                     }
                     count
                 };
-                QueryWithDepth::push_queries_with_depth_to_stack(actual_count, stack);
+                push_queries_with_depth_to_stack(actual_count, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -342,4 +339,84 @@ impl Executable for ComputeRootRecursive {
     fn is_finished(&mut self) -> bool {
         self.step == ComputeRootRecursiveStep::Done
     }
+}
+
+/// Push queries with depth from a slice to stack (no allocation)
+pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    count: usize,
+    stack: &mut T,
+) {
+    // Push queries in reverse order - no allocation
+    for i in (0..count).rev() {
+        let (depth_bytes, value_bytes, index_bytes) = {
+            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+            let queries_slice = &mut verify_variables.queries;
+            let depth = queries_slice[i * 3 + 2];
+            let value = queries_slice[i * 3 + 1];
+            let index = queries_slice[i * 3];
+            (
+                depth.to_bytes_be(),
+                value.to_bytes_be(),
+                index.to_bytes_be(),
+            )
+        };
+
+        stack.push_front(&depth_bytes).unwrap();
+        stack.push_front(&value_bytes).unwrap();
+        stack.push_front(&index_bytes).unwrap();
+    }
+    // Push length
+    stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
+}
+
+/// Read queries with depth from stack and store them in a mutable slice (no allocation)
+pub fn read_queries_with_depth_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
+    let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    let n_queries_usize: usize = n_queries.try_into().unwrap();
+    assert!(
+        n_queries_usize <= FUNVEC_QUERIES,
+        "Too many queries: {} > {}",
+        n_queries_usize,
+        FUNVEC_QUERIES
+    );
+
+    // Clear the entire queries array first
+    {
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        let queries_slice = &mut verify_variables.queries;
+        queries_slice.fill(Felt::ZERO);
+    }
+
+    for i in 0..n_queries_usize {
+        let index = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let value = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        let depth = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+        let queries_slice = &mut verify_variables.queries;
+
+        queries_slice[i * 3] = index;
+        queries_slice[i * 3 + 1] = value;
+        queries_slice[i * 3 + 2] = depth;
+    }
+}
+
+fn from_stack<T: BidirectionalStack>(stack: &mut T) -> VectorConfig {
+    let height = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let n_verifier_friendly_commitment_layers = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    VectorConfig::new(height, n_verifier_friendly_commitment_layers)
+}
+
+fn push_to_stack<T: BidirectionalStack>(config: &VectorConfig, stack: &mut T) {
+    stack
+        .push_front(&config.n_verifier_friendly_commitment_layers.to_bytes_be())
+        .unwrap();
+    stack.push_front(&config.height.to_bytes_be()).unwrap();
 }
