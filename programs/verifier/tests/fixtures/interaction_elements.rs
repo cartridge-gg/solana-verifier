@@ -1,5 +1,5 @@
 use felt::Felt;
-use utils::global_values::InteractionElements;
+use types::swiftness::global_values::InteractionElements;
 
 pub fn get() -> InteractionElements {
     InteractionElements {

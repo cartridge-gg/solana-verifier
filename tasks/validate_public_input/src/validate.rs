@@ -28,7 +28,7 @@ impl Default for ValidatePublicInput {
 }
 
 impl Executable for ValidatePublicInput {
-    fn execute<T: utils_1::BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: utils_1::BidirectionalStack>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
         match self.step {
             ValidatePublicInputStep::Validate => {
                 // Here you would add the actual validation logic

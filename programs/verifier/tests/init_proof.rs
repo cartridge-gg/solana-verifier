@@ -1,5 +1,5 @@
 mod tests {
-    use stark::swiftness::{
+    use types::swiftness::{
         air::public_memory::PublicInput,
         stark::{
             config::StarkConfig,

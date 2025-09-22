@@ -3,10 +3,6 @@ use crate::swiftness::commitment::table::config::{Config, TableConfigBytes};
 use crate::swiftness::commitment::vector::types::VectorCommitmentBytes;
 use crate::swiftness::commitment::vector::{self};
 use felt::Felt;
-
-const MONTGOMERY_R: Felt =
-    Felt::from_hex_unchecked("0x7FFFFFFFFFFFDF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1");
-
 // Commitment for a table (n_rows x n_columns) of field elements in montgomery form.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Commitment {

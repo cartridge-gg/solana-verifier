@@ -2,13 +2,13 @@ use super::oods_values;
 use crate::fixtures::commitment;
 use crate::fixtures::fri_commitment;
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::commitment::table::config::Config as TableCommitmentConfig;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::swiftness::stark::types::StarkCommitment;
-use utils::global_values::InteractionElements;
+use types::funvec::FunVec;
+use types::swiftness::commitment::table::config::Config as TableCommitmentConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::StarkCommitment;
 
 pub fn get() -> StarkCommitment<InteractionElements> {
     StarkCommitment {

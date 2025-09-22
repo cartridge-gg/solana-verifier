@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::swiftness::air::domains::StarkDomains;
+use types::swiftness::air::domains::StarkDomains;
 
 pub fn get() -> StarkDomains {
     StarkDomains {

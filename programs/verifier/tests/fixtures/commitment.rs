@@ -1,10 +1,10 @@
 use felt::Felt;
-use stark::swiftness::air::trace::Commitment;
-use stark::swiftness::commitment::table::config::Config as TableCommitmentConfig;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use utils::global_values::InteractionElements;
+use types::swiftness::air::trace::Commitment;
+use types::swiftness::commitment::table::config::Config as TableCommitmentConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::global_values::InteractionElements;
 
 pub fn get() -> Commitment<InteractionElements> {
     Commitment {

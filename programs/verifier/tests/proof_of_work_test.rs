@@ -1,6 +1,6 @@
 use felt::Felt;
 use stark::stark_proof::stark_commit::ProofOfWork;
-use stark::swiftness::stark::types::StarkProof;
+use types::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 

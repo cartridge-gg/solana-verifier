@@ -1,7 +1,7 @@
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::air::public_memory::PublicInput;
-use stark::swiftness::air::types::{AddrValue, Page, SegmentInfo};
+use types::funvec::FunVec;
+use types::swiftness::air::public_memory::PublicInput;
+use types::swiftness::air::types::{AddrValue, Page, SegmentInfo};
 
 pub fn get() -> PublicInput {
     PublicInput {

@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::funvec::FunVec;
+use types::funvec::FunVec;
 
 pub fn get() -> FunVec<Felt, 256> {
     FunVec::from_vec(

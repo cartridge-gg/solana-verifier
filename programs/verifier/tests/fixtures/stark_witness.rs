@@ -1,10 +1,10 @@
 use crate::fixtures::{fri_witness, trace_decommitment, witness};
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
-use stark::swiftness::commitment::table::types::Witness as TableWitness;
-use stark::swiftness::commitment::vector::types::Witness as VectorWitness;
-use stark::swiftness::stark::types::StarkWitness;
+use types::funvec::FunVec;
+use types::swiftness::commitment::table::types::Decommitment as TableDecommitment;
+use types::swiftness::commitment::table::types::Witness as TableWitness;
+use types::swiftness::commitment::vector::types::Witness as VectorWitness;
+use types::swiftness::stark::types::StarkWitness;
 
 pub fn get() -> StarkWitness {
     StarkWitness {

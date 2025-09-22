@@ -38,7 +38,7 @@ fn get_hash() {
 
 // This implements the original get_hash logic synchronously for comparison
 fn calculate_expected_get_hash(
-    public_input: &stark::swiftness::air::public_memory::PublicInput,
+    public_input: &types::swiftness::air::public_memory::PublicInput,
     n_verifier_friendly_commitment_layers: Felt,
 ) -> Felt {
     let mut main_page_hash = StarkFelt::ZERO;

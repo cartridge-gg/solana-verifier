@@ -1,6 +1,6 @@
 use felt::Felt;
-use stark::swiftness::commitment::{table, vector};
-use stark::{funvec::FunVec, swiftness::air::trace::Witness};
+use types::swiftness::commitment::{table, vector};
+use types::{funvec::FunVec, swiftness::air::trace::Witness};
 
 pub fn get() -> Witness {
     Witness {

@@ -1,13 +1,13 @@
 use felt::Felt;
-use stark::swiftness::commitment::table::config::Config as TableConfig;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::vector::config::Config as VectorConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::{
-    stark_proof::stark_verify::table_decommit::TableDecommit,
-    swiftness::commitment::vector::types::CommitmentTrait,
+use stark::stark_proof::stark_verify::table_decommit::TableDecommit;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::config::Config as VectorConfig;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::{
+    commitment::table::config::Config as TableConfig, stark::types::cast_struct_to_slice,
 };
-use utils::{BidirectionalStack, Scheduler};
+
+use utils::{BidirectionalStack, Scheduler, StarkVerifyTrait};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 
@@ -406,7 +406,7 @@ fn test_table_decommit() {
     let table_commitment = TableCommitment::new(table_config, vector_commitment);
 
     // Push vector commitment using trait method
-    table_commitment.push_to_stack(&mut stack);
+    push_to_stack(&table_commitment, &mut stack);
 
     // Push the VectorDecommit task
     stack.push_task(TableDecommit::new());
@@ -423,4 +423,12 @@ fn test_table_decommit() {
     assert!(stack.is_empty_front(), "Front stack should be empty");
     assert!(stack.is_empty_back(), "Back stack should be empty");
     println!("Test completed successfully");
+}
+
+fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    table_commitment: &TableCommitment,
+    stack: &mut T,
+) {
+    let commitment_bytes = cast_struct_to_slice(table_commitment);
+    stack.push_front(commitment_bytes).unwrap();
 }

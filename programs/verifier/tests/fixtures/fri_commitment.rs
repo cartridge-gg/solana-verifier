@@ -1,11 +1,11 @@
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::commitment::table::config::Config as TableCommitmentConfig;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::swiftness::fri::config::Config as FriConfig;
-use stark::swiftness::fri::types::Commitment as FriCommitment;
+use types::funvec::FunVec;
+use types::swiftness::commitment::table::config::Config as TableCommitmentConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::config::Config as VectorCommitmentConfig;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::fri::config::Config as FriConfig;
+use types::swiftness::fri::types::Commitment as FriCommitment;
 
 pub fn get() -> FriCommitment {
     FriCommitment {

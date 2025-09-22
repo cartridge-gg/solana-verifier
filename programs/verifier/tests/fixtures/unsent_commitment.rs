@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::swiftness::air::trace;
+use types::swiftness::air::trace;
 
 pub fn get() -> trace::UnsentCommitment {
     trace::UnsentCommitment {

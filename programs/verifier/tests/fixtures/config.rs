@@ -1,6 +1,6 @@
 use felt::Felt;
-use stark::swiftness::air::trace::config::Config;
-use stark::swiftness::commitment::{table, vector};
+use types::swiftness::air::trace::config::Config;
+use types::swiftness::commitment::{table, vector};
 
 pub fn get() -> Config {
     Config {

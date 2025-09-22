@@ -1,8 +1,9 @@
 use felt::Felt;
 use stark::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
-use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
 use swiftness_proof_parser::json_parser;
-use utils::global_values::EcPoint;
+use types::swiftness::global_values::EcPoint;
+#[cfg(test)]
+use types::swiftness::global_values::GlobalValues;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
@@ -162,7 +163,7 @@ fn test_eval_composition_polynomial_inner() {
 }
 
 use felt::felt_nonzero;
-use stark::swiftness::air::consts::*;
+use types::swiftness::air::consts::*;
 
 #[cfg(test)]
 pub fn eval_composition_polynomial_inner(

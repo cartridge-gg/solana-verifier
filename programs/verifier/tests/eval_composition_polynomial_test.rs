@@ -1,10 +1,7 @@
 use felt::Felt;
-use stark::{
-    stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial,
-    swiftness::stark::types::StarkCommitment,
-};
+use stark::stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial;
 use swiftness_proof_parser::json_parser;
-use utils::global_values::InteractionElements;
+use types::swiftness::{global_values::InteractionElements, stark::types::StarkCommitment};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;

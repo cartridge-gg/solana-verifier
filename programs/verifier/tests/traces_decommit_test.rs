@@ -1,21 +1,21 @@
 use felt::Felt;
-use stark::funvec::FunVec;
 use stark::stark_proof::stark_verify::traces_decommit::TracesDecommit;
-use stark::swiftness::air::trace::config::Config as TraceConfig;
-use stark::swiftness::air::trace::Commitment as TraceCommitment;
-use stark::swiftness::air::trace::Decommitment as TraceDecommitment;
-use stark::swiftness::commitment::table::config::Config as TableConfig;
-use stark::swiftness::commitment::table::types::Commitment as TableCommitment;
-use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
-use stark::swiftness::commitment::vector::config::Config as VectorConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::swiftness::stark::types::StarkCommitment;
 use swiftness_proof_parser::transform::MONTGOMERY_R;
-use utils::global_values::InteractionElements;
+use types::funvec::FunVec;
+use types::swiftness::air::trace::config::Config as TraceConfig;
+use types::swiftness::air::trace::Commitment as TraceCommitment;
+use types::swiftness::air::trace::Decommitment as TraceDecommitment;
+use types::swiftness::commitment::table::config::Config as TableConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::table::types::Decommitment as TableDecommitment;
+use types::swiftness::commitment::vector::config::Config as VectorConfig;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::StarkCommitment;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
-use stark::swiftness::stark::types::StarkProof;
+use types::swiftness::stark::types::StarkProof;
 
 #[test]
 fn test_traces_decommit() {

@@ -1,6 +1,6 @@
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::fri::types::UnsentCommitment;
+use types::funvec::FunVec;
+use types::swiftness::fri::types::UnsentCommitment;
 
 pub fn get() -> UnsentCommitment {
     UnsentCommitment {

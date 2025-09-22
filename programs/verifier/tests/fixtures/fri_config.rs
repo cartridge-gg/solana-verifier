@@ -1,7 +1,7 @@
 use felt::Felt;
-use stark::funvec::FunVec;
-use stark::swiftness::commitment::{table, vector};
-use stark::swiftness::fri::config::Config as FriConfig;
+use types::funvec::FunVec;
+use types::swiftness::commitment::{table, vector};
+use types::swiftness::fri::config::Config as FriConfig;
 
 pub fn get() -> FriConfig {
     FriConfig {

@@ -1,13 +1,13 @@
 use felt::Felt;
 use stark::stark_proof::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
-use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use stark::swiftness::stark::types::StarkProof;
-use utils::global_values::EcPoint;
+use types::swiftness::global_values::EcPoint;
+use types::swiftness::global_values::GlobalValues;
+use types::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler, OODS_VALUES_SIZE};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 use fixtures::{fri_config, fri_unsent_commitment, oods_values, stark_config};
-use stark::swiftness::air::recursive_with_poseidon::Layout;
+use types::swiftness::air::recursive_with_poseidon::Layout;
 
 use crate::fixtures::constraint_coefficients;
 
@@ -185,9 +185,9 @@ fn test_eval_oods_polynomial_inner() {
 }
 
 use felt::felt_nonzero;
-use stark::swiftness::air::recursive_with_poseidon::consts::*;
-use stark::swiftness::air::recursive_with_poseidon::LayoutTrait;
-use stark::swiftness::air::recursive_with_poseidon::StaticLayoutTrait;
+use types::swiftness::air::recursive_with_poseidon::consts::*;
+use types::swiftness::air::recursive_with_poseidon::LayoutTrait;
+use types::swiftness::air::recursive_with_poseidon::StaticLayoutTrait;
 
 #[cfg(test)]
 pub fn eval_oods_polynomial_inner(

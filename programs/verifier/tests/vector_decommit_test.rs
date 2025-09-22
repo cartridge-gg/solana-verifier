@@ -1,13 +1,12 @@
 use felt::Felt;
-use stark::swiftness::commitment::vector::config::Config as VectorConfig;
-use stark::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use stark::{
-    stark_proof::stark_verify::vector_decommit::VectorDecommit,
-    swiftness::commitment::vector::types::CommitmentTrait,
+use stark::stark_proof::stark_verify::vector_decommit::VectorDecommit;
+use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+use types::swiftness::{
+    commitment::vector::config::Config as VectorConfig, stark::types::cast_struct_to_slice,
 };
+use utils::StarkVerifyTrait;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
-
 #[test]
 fn test_vector_decommit() {
     let mut stack = BidirectionalStackAccount::default();
@@ -202,10 +201,10 @@ fn test_vector_decommit() {
         height,
         n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
     };
-    let mut vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
+    let vector_commitment = VectorCommitment::new(vector_config, commitment_hash);
 
     // Push vector commitment using trait method
-    vector_commitment.push_to_stack(&mut stack);
+    push_to_stack(&vector_commitment, &mut stack);
 
     // Push the VectorDecommit task
     stack.push_task(VectorDecommit::new());
@@ -223,4 +222,12 @@ fn test_vector_decommit() {
     assert!(stack.is_empty_front(), "Front stack should be empty");
     assert!(stack.is_empty_back(), "Back stack should be empty");
     println!("Test completed successfully");
+}
+
+fn push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    vector_commitment: &VectorCommitment,
+    stack: &mut T,
+) {
+    let commitment_bytes = cast_struct_to_slice(vector_commitment);
+    stack.push_front(commitment_bytes).unwrap();
 }
