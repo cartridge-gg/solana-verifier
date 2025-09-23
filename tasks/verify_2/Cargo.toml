@@ -1,0 +1,14 @@
+[package]
+name = "verify-2"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+utils.workspace = true
+felt.workspace = true
+
+types.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true
+verify-public-input.workspace = true
+stark-verify.workspace = true   

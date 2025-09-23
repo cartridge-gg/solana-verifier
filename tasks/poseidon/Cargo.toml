@@ -1,0 +1,9 @@
+[package]
+name = "poseidon"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+felt.workspace = true
+utils.workspace = true
+types.workspace = true

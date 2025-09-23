@@ -10,15 +10,16 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::swiftness::stark::types::cast_struct_to_slice;
-use stark::{stark_proof::stark_commit::StarkCommit, swiftness::stark::types::StarkCommitment};
+use stark_commit::stark_commit::StarkCommit;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use utils::{
+use types::swiftness::stark::types::StarkCommitment;
+use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
-    AccountCast, Executable, COLUMN_VALUES_SIZE,
+    stark::types::cast_struct_to_slice,
 };
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -36,7 +37,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 

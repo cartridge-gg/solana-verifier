@@ -1,0 +1,12 @@
+[package]
+name = "stark-commit"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+felt.workspace = true
+utils.workspace = true
+types.workspace = true
+poseidon.workspace = true
+pedersen.workspace = true
+sha3.workspace = true

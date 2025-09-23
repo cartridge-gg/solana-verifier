@@ -1,0 +1,10 @@
+[package]
+name = "verify-public-input"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+utils.workspace = true
+felt.workspace = true
+types.workspace = true
+poseidon.workspace = true

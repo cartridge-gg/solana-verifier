@@ -9,17 +9,18 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::stark_proof::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
-use stark::swiftness::stark::types::cast_struct_to_slice;
+use stark_verify::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::{
+    global_values::{EcPoint, GlobalValues},
+    stark::types::cast_struct_to_slice,
+};
 use utils::OODS_VALUES_SIZE;
 use utils::{AccountCast, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 // Add these imports for the new types
 use felt::Felt;
-use stark::swiftness::air::recursive_with_poseidon::GlobalValues;
-use utils::global_values::EcPoint;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -36,7 +37,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_2.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -479,7 +480,7 @@ async fn main() -> client::Result<()> {
     Ok(())
 }
 
-use stark::funvec::FunVec;
+use types::funvec::FunVec;
 
 pub fn get() -> FunVec<Felt, 194> {
     FunVec::from_vec(

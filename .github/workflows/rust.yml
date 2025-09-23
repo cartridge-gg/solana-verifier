@@ -29,10 +29,14 @@ jobs:
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - name: Build
         run: cargo build --all --release
-      - name: Compile Solana
+      - name: Compile Solana verifier 1
         run: |
-          cd programs/verifier &&
-          RUSTFLAGS="-Cllvm-args=--inline-threshold=150" cargo build-sbf      
+          cd programs/verifier1 &&
+          cargo build-sbf      
+      - name: Compile Solana verifier 2
+        run: |
+          cd programs/verifier2 && 
+          cargo build-sbf
   clippy:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
       - name: Run tests
-        run: cargo test --all --release
+        run: cargo test --all
   e2e_test:
     runs-on: ubuntu-latest
     steps:
@@ -66,8 +70,8 @@ jobs:
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - name: Compile Solana
         run: |
-          cd programs/verifier && 
-          RUSTFLAGS="-Cllvm-args=--inline-threshold=150" cargo build-sbf      
+          cd programs/verifier1 && 
+          cargo build-sbf      
       - name: Run solana-test-validator
         run: | 
           solana-test-validator --quiet &

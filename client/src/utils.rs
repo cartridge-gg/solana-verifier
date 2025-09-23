@@ -646,9 +646,9 @@ pub async fn send_and_confirm_with_limit(
     instructions: &[Instruction],
     payer: &Keypair,
     limit: u32,
+    batch_size: usize,
 ) -> Result<()> {
-    const BATCH_SIZE: usize = 90;
-    for (i, chunk) in instructions.chunks(BATCH_SIZE).enumerate() {
+    for (i, chunk) in instructions.chunks(batch_size).enumerate() {
         let futures = chunk.iter().map(|instruction| {
             let client = &client;
             async move {
@@ -677,7 +677,7 @@ pub async fn send_and_confirm_with_limit(
         });
 
         let results = join_all(futures).await;
-        info!(chunk_index:% = i+1, total_chunks:% = (instructions.len().div_ceil(BATCH_SIZE)); "Chunk confirmed");
+        info!(chunk_index:% = i+1, total_chunks:% = (instructions.len().div_ceil(batch_size)); "Chunk confirmed");
         for (_, result) in results {
             match result {
                 Ok(signature) => trace!(signature:% = signature; "Transaction confirmed"),

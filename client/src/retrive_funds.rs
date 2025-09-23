@@ -6,7 +6,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
-use verifier::instruction::VerifierInstruction;
+use verifier_2::instruction::VerifierInstruction;
 
 use crate::{initialize_client, setup_payer, Config, Result};
 use log::info;

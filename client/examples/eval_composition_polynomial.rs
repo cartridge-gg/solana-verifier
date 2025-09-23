@@ -9,10 +9,10 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::stark_proof::stark_commit::EvalCompositionPolynomial;
+use stark_commit::EvalCompositionPolynomial;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 // Add these imports for the new types
 use felt::Felt;
 use utils::BidirectionalStack;
@@ -33,7 +33,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -157,7 +157,7 @@ async fn main() -> client::Result<()> {
         .await
         .map_err(ClientError::from)?;
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate() as usize;
+    let simulation_steps: usize = stack.simulate() as usize;
     println!("Simulation steps: {simulation_steps}");
 
     let limit_instruction = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
@@ -209,15 +209,15 @@ async fn main() -> client::Result<()> {
 
 mod prepare_input {
     use felt::Felt;
-    use stark::swiftness::stark::types::cast_struct_to_slice_mut;
+    use types::swiftness::global_values::InteractionElements;
+    use types::swiftness::stark::types::cast_struct_to_slice_mut;
 
-    use stark::swiftness::stark::types::StarkCommitment;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use utils::global_values::InteractionElements;
+    use types::swiftness::stark::types::StarkCommitment;
     use utils::StarkCommitmentTrait;
-    use verifier::state::BidirectionalStackAccount;
+    use verifier_2::state::BidirectionalStackAccount;
 
     use crate::constraint_coefficients;
 
@@ -290,7 +290,7 @@ mod prepare_input {
 
 mod constraint_coefficients {
     use felt::Felt;
-    use stark::funvec::FunVec;
+    use types::funvec::FunVec;
 
     pub fn get() -> FunVec<Felt, 194> {
         FunVec::from_vec(

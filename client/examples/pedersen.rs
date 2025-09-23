@@ -3,6 +3,7 @@ use client::{
     setup_payer, setup_program, ClientError, Config,
 };
 use felt::Felt;
+use pedersen::pedersen::PedersenHash;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -10,11 +11,10 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::pedersen::PedersenHash;
-use stark::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 /// Main entry point for the Solana program client
 #[tokio::main]
@@ -30,7 +30,7 @@ async fn main() -> client::Result<()> {
     let payer = setup_payer(&client, &config).await?;
 
     // Define program path
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_2.so");
 
     // Deploy or use existing program
     let program_id = setup_program(&client, &payer, &config, program_path).await?;

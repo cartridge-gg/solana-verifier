@@ -5,7 +5,7 @@ use solana_sdk::{
     signer::Signer,
     transaction::Transaction,
 };
-use verifier::state::BidirectionalStackAccount;
+use verifier_2::state::BidirectionalStackAccount;
 
 use crate::{initialize_client, setup_payer, setup_program, Config, Result};
 use log::info;
