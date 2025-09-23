@@ -1,6 +1,6 @@
 use crate::write_keypair_file;
 use crate::{
-    initialize_client, interact_with_program_instructions, send_and_confirm_with_limit,
+    initialize_client, send_and_confirm_with_limit,
     setup_payer, ClientError,
 };
 use crate::{read_keypair_file, Config, Result};
@@ -11,13 +11,12 @@ use solana_sdk::{
     signature::Keypair,
     signer::Signer,
 };
-use stark::verify::Verify;
+// use stark::verify::Verify;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::AccountCast;
 use utils::BidirectionalStack;
-use utils::Executable;
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 900;
 
@@ -99,28 +98,31 @@ pub async fn verify(config: &Config) -> Result<()> {
         .collect();
     instructions.extend(proof_set_ixs);
 
-    send_and_confirm_with_limit(&client, &instructions, &payer, 5_000).await?;
+    send_and_confirm_with_limit(&client, &instructions, &payer, 5_000, 100).await?;
 
     info!(time_in_seconds:% = time.elapsed().as_secs(); "Time taken to set proof");
     let time2 = std::time::Instant::now();
-    let task = Verify::new();
+    // let get_hash_result = Felt::from_hex_unchecked(
+    //     "0x59496b8e649ff03c8e9f739e141bd82653fccb2fb1b1a51a71760ea3813ea35",
+    // );
+    // let task = Verify::new(get_hash_result);
 
-    let verify_ix = Instruction::new_with_borsh(
-        program_id,
-        &VerifierInstruction::PushTask(task.to_vec_with_type_tag()),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
-    );
+    // let verify_ix = Instruction::new_with_borsh(
+    //     program_id,
+    //     &VerifierInstruction::PushTask(task.to_vec_with_type_tag()),
+    //     vec![AccountMeta::new(stack_account.pubkey(), false)],
+    // );
 
-    let signature = interact_with_program_instructions(
-        &client,
-        &payer,
-        &program_id,
-        &stack_account,
-        &[verify_ix],
-    )
-    .await?;
+    // let signature = interact_with_program_instructions(
+    //     &client,
+    //     &payer,
+    //     &program_id,
+    //     &stack_account,
+    //     &[verify_ix],
+    // )
+    // .await?;
 
-    info!(signature:% = signature; "Verify proof");
+    // info!(signature:% = signature; "Verify proof");
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -142,7 +144,7 @@ pub async fn verify(config: &Config) -> Result<()> {
         instructions.push(execute_ix);
     }
 
-    send_and_confirm_with_limit(&client, &instructions, &payer, 1_400_000).await?;
+    send_and_confirm_with_limit(&client, &instructions, &payer, 1_400_000, 100).await?;
 
     info!(time_in_seconds:% = time2.elapsed().as_secs(); "Time taken to execute");
     // Read and display the result

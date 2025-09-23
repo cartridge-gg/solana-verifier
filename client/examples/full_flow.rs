@@ -2,14 +2,12 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     send_and_confirm_with_limit, setup_payer, setup_program, ClientError, Config,
 };
-use felt::Felt;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::verify::Verify;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::stark::types::cast_struct_to_slice;
@@ -17,9 +15,9 @@ use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
     stark::types::StarkCommitment,
 };
-use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verify_1::verify::Verify;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -36,7 +34,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -195,37 +193,15 @@ async fn main() -> client::Result<()> {
         );
         instructions.push(execute_ix);
     }
-    send_and_confirm_with_limit(&client, &instructions, &payer, 200_000_000).await?;
+    send_and_confirm_with_limit(&client, &instructions, &payer, 1_200_000, 1000).await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
         .map_err(ClientError::SolanaClientError)?;
+
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
-    let result_program_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let result_output_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-
-    println!("Result program hash: {result_program_hash:?}");
-    println!("Result output hash: {result_output_hash:?}");
-    assert_eq!(
-        result_program_hash,
-        Felt::from_hex("0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07").unwrap()
-    );
-    assert_eq!(
-        result_output_hash,
-        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400")
-            .unwrap()
-    );
-
-    assert!(
-        stack.is_empty_front(),
-        " Stack front should be empty after verification"
-    );
-    assert!(
-        stack.is_empty_back(),
-        "Stack back should be empty after verification"
-    );
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.back_index, 65536, "Stack should be empty");
     Ok(())
 }

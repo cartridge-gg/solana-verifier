@@ -1,0 +1,15 @@
+[package]
+name = "verify-1"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+utils.workspace = true
+felt.workspace = true
+
+types.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true
+validate-public-input.workspace = true
+get-hash.workspace = true
+stark-commit.workspace = true

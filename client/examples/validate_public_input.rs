@@ -12,7 +12,7 @@ use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::stark::types::cast_struct_to_slice;
-use utils_1::{AccountCast, Executable};
+use utils::{AccountCast, Executable};
 use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 use validate_public_input::validate::ValidatePublicInput;

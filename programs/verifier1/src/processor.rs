@@ -8,7 +8,7 @@ use solana_program::{
     rent::Rent,
     sysvar::Sysvar,
 };
-use utils_1::{AccountCast, BidirectionalStack};
+use utils::{AccountCast, BidirectionalStack};
 
 use crate::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 

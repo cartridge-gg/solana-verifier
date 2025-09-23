@@ -11,12 +11,12 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::hash_public_input::HashPublicInputs;
 use std::path::Path;
 use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verify_public_input::hash_public_input::HashPublicInputs;
 
 #[tokio::main]
 #[allow(clippy::result_large_err)]
@@ -26,7 +26,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_2.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 

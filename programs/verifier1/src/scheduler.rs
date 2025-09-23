@@ -1,5 +1,5 @@
 use crate::state::BidirectionalStackAccount;
-use utils_1::{BidirectionalStack, Executable, Scheduler};
+use utils::{BidirectionalStack, Executable, Scheduler};
 
 // Include the generated dispatch code
 include!(concat!(

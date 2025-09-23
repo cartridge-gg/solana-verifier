@@ -1,8 +1,8 @@
 use felt::{Felt, NonZeroFelt};
 use types::swiftness::air::recursive_with_poseidon::segments;
 use types::swiftness::stark::types::StarkProof;
-use utils_1::{impl_type_identifiable, Executable};
-use utils_1::{BidirectionalStack, ProofData, TypeIdentifiable};
+use utils::{impl_type_identifiable, Executable, StarkCommitmentTrait, StarkVerifyTrait};
+use utils::{BidirectionalStack, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValidatePublicInputStep {
@@ -33,7 +33,10 @@ pub const MAX_RANGE_CHECK: Felt = Felt::from_hex_unchecked("0xffff");
 pub const MAX_LOG_N_STEPS: Felt = Felt::from_hex_unchecked("0x50");
 
 impl Executable for ValidatePublicInput {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             ValidatePublicInputStep::Validate => {
                 let proof: &StarkProof = stack.get_proof_reference();

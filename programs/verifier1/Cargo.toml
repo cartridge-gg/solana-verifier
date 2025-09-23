@@ -14,11 +14,17 @@ borsh.workspace = true
 solana-program.workspace = true
 thiserror.workspace = true
 
-utils-1.workspace = true
+utils.workspace = true
 felt.workspace = true
-validate-public-input.workspace = true
 types.workspace = true
 
+validate-public-input.workspace = true
+get-hash.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true
+stark-commit.workspace = true
+verify-1.workspace = true
+   
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }
 serde_json = "1.0"

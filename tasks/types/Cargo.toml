@@ -5,5 +5,4 @@ edition.workspace = true
 
 [dependencies]
 felt.workspace = true
-utils-1.workspace = true
 solana-program.workspace = true

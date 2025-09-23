@@ -13,13 +13,13 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::hash_public_input::VerifyPublicInput;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::AccountCast;
 use utils::BidirectionalStack;
 use utils::Executable;
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verify_public_input::hash_public_input::VerifyPublicInput;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -36,7 +36,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_2.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 

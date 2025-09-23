@@ -156,6 +156,11 @@ fn get_workspace_members(workspace_root: &Path) -> Vec<PathBuf> {
                                                     .unwrap_or_else(|| path.clone());
                                             if rel_path
                                                 == PathBuf::from("tasks/validate_public_input")
+                                                || rel_path == PathBuf::from("tasks/get_hash")
+                                                || rel_path == PathBuf::from("tasks/poseidon")
+                                                || rel_path == PathBuf::from("tasks/pedersen")
+                                                || rel_path == PathBuf::from("tasks/verify_1")
+                                                || rel_path == PathBuf::from("tasks/stark_commit")
                                             {
                                                 members.push(rel_path);
                                             } else {

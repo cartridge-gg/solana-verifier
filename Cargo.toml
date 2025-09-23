@@ -15,20 +15,24 @@ typetag = "0.2.20"
 lambdaworks-math = "0.12.0"
 num-bigint = "0.4.6"
 size-of = "0.1.5"
+sha3 = { version = "0.10.8", default-features = false }
 
 client = { path = "./client" }
 
-verifier = { path = "./programs/verifier" }
+verifier-2 = { path = "./programs/verifier2" }
 verifier-1 = { path = "./programs/verifier1" }
 
 utils = { path = "./programs/utils" }
-utils-1 = { path = "./programs/utils1" }
 
 
 felt = { path = "./tasks/felt" }
-stark = { path = "./tasks/stark" }
+types = { path = "./tasks/types" }
 validate-public-input = { path = "./tasks/validate_public_input" }
 poseidon = { path = "./tasks/poseidon" }
 pedersen = { path = "./tasks/pedersen" }
-
-types = { path = "./tasks/types" }
+get-hash = { path = "./tasks/get_hash" }
+stark-verify = { path = "./tasks/stark_verify" }
+stark-commit = { path = "./tasks/stark_commit" }
+verify-public-input = { path = "./tasks/verify_public_input" }
+verify-1 = { path = "./tasks/verify_1" }
+verify-2 = { path = "./tasks/verify_2" }

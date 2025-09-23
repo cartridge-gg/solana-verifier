@@ -1,5 +1,5 @@
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use utils_1::{BidirectionalStack, Scheduler};
+use utils::{BidirectionalStack, Scheduler};
 use validate_public_input::validate::ValidatePublicInput;
 use verifier_1::state::BidirectionalStackAccount;
 

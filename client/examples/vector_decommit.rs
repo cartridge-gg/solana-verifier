@@ -10,7 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::stark_verify::VectorDecommit;
+use stark_verify::vector_decommit::VectorDecommit;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
@@ -21,7 +21,7 @@ use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
 };
 use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
-use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -39,7 +39,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_2.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
