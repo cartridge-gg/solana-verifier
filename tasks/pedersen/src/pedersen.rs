@@ -1,12 +1,10 @@
-use crate::pedersen::constants::{POINTS_P1, POINTS_P2, POINTS_P3, POINTS_P4, SHIFT_POINT};
+use crate::constants::{POINTS_P1, POINTS_P2, POINTS_P3, POINTS_P4, SHIFT_POINT};
 use felt::Felt;
 use lambdaworks_math::elliptic_curve::short_weierstrass::{
     curves::stark_curve::StarkCurve, point::ShortWeierstrassProjectivePoint,
 };
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-pub mod constants;
-pub mod points;
 #[repr(C)]
 pub struct PedersenHash {
     phase: PerdersenPhase,

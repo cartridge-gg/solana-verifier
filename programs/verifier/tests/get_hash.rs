@@ -1,6 +1,6 @@
 mod fixtures;
 use felt::Felt;
-use stark::stark_proof::get_hash::GetHash;
+use stark::get_hash::GetHash;
 use starknet_crypto::pedersen_hash;
 use starknet_crypto::{poseidon_hash_many, Felt as StarkFelt};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};

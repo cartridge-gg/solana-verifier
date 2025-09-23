@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::GenerateInteractionElements;
+use stark::stark_commit::GenerateInteractionElements;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 

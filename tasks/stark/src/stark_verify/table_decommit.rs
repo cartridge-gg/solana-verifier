@@ -6,8 +6,8 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::poseidon::PoseidonHashMany;
-use crate::stark_proof::stark_verify::vector_decommit::VectorDecommit;
+use crate::stark_verify::vector_decommit::VectorDecommit;
+use poseidon::poseidon::PoseidonHashMany;
 use types::swiftness::commitment::table::types::Commitment as TableCommitment;
 use types::swiftness::commitment::vector::types::{Commitment, Query};
 use types::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice, VerifyVariables};

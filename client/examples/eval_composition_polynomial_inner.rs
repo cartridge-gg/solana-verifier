@@ -9,7 +9,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
+use stark::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
 use std::{mem::size_of, path::Path};
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};

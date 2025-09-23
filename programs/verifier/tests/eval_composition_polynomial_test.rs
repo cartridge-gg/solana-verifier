@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial;
+use stark::stark_commit::eval_composition_polynomial::EvalCompositionPolynomial;
 use swiftness_proof_parser::json_parser;
 use types::swiftness::{global_values::InteractionElements, stark::types::StarkCommitment};
 use utils::{BidirectionalStack, Scheduler};

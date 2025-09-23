@@ -9,10 +9,10 @@ pub mod traces_commit;
 pub mod transcript_random_felt;
 pub mod verify_oods;
 
-use crate::poseidon::PoseidonHashMany;
-use crate::stark_proof::stark_commit::transcript_random_felt::TranscriptRandomFelt;
-use crate::stark_proof::stark_commit::transcript_random_felt::TranscriptReadFeltVector;
+use crate::stark_commit::transcript_random_felt::TranscriptRandomFelt;
+use crate::stark_commit::transcript_random_felt::TranscriptReadFeltVector;
 use felt::Felt;
+use poseidon::poseidon::PoseidonHashMany;
 use types::swiftness::air::recursive_with_poseidon::Layout;
 use types::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use types::swiftness::global_values::InteractionElements;

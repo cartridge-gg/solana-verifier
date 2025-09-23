@@ -1,13 +1,8 @@
+use poseidon::poseidon::PoseidonHashMany;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::poseidon::PoseidonHashMany;
 use felt::Felt;
 use types::swiftness::stark::types::StarkProof;
-
-pub mod get_hash;
-pub mod stark_commit;
-pub mod stark_verify;
-pub mod verify;
 
 // Constants for validation
 pub const MAX_LOG_N_STEPS: Felt = Felt::from_hex_unchecked("0x50");

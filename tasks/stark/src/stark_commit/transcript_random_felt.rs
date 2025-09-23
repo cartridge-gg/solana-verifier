@@ -1,8 +1,8 @@
 // #[allow(clippy::module_inception)]
 // pub mod transcript;
 
-use crate::poseidon::{PoseidonHash, PoseidonHashMany};
 use felt::Felt;
+use poseidon::poseidon::{PoseidonHash, PoseidonHashMany};
 
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 

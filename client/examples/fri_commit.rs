@@ -15,7 +15,7 @@ use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
-use stark::stark_proof::stark_commit::FriCommit;
+use stark::stark_commit::FriCommit;
 
 pub const CHUNK_SIZE: usize = 1000;
 

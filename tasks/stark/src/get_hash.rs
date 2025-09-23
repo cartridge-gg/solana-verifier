@@ -1,4 +1,5 @@
-use crate::{pedersen::PedersenHash, poseidon::PoseidonHashMany};
+use pedersen::pedersen::PedersenHash;
+use poseidon::poseidon::PoseidonHashMany;
 use types::swiftness::stark::types::StarkProof;
 
 use felt::Felt;

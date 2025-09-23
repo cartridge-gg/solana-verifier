@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::pedersen::PedersenHash;
+use pedersen::pedersen::PedersenHash;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;

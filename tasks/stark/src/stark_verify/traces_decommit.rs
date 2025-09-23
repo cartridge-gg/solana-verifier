@@ -4,7 +4,7 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::stark_proof::stark_verify::table_decommit::TableDecommit;
+use crate::stark_verify::table_decommit::TableDecommit;
 use types::swiftness::stark::types::{
     cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
 };

@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::helpers::PowersArray;
+use stark::stark_commit::helpers::PowersArray;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 

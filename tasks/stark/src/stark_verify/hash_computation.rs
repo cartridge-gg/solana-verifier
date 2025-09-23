@@ -6,7 +6,7 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::poseidon::PoseidonHash;
+use poseidon::poseidon::PoseidonHash;
 use types::swiftness::stark::types::VerifyVariables;
 
 // New tasks to replace method calls

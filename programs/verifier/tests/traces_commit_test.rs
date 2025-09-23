@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::TracesCommit;
+use stark::stark_commit::TracesCommit;
 use types::swiftness::air::trace::UnsentCommitment;
 use types::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler};

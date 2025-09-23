@@ -1,9 +1,6 @@
-pub mod constants;
-pub mod hades;
-
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
-use crate::poseidon::hades::HadesPermutation;
+use crate::hades::HadesPermutation;
 use felt::Felt;
 
 #[repr(C)]

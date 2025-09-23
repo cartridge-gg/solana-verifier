@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
+use stark::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
 use types::swiftness::global_values::EcPoint;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::stark::types::StarkProof;

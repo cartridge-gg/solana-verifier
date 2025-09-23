@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_verify::table_decommit::TableDecommit;
+use stark::stark_verify::table_decommit::TableDecommit;
 use types::swiftness::commitment::table::types::Commitment as TableCommitment;
 use types::swiftness::commitment::vector::config::Config as VectorConfig;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;

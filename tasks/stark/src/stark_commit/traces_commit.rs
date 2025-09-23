@@ -1,6 +1,6 @@
-use crate::poseidon::PoseidonHash;
-use crate::stark_proof::PoseidonHashMany;
 use felt::Felt;
+use poseidon::poseidon::PoseidonHash;
+use poseidon::poseidon::PoseidonHashMany;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;

@@ -5,7 +5,7 @@ use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 mod fixtures;
 use crate::fixtures::constraint_coefficients;
-use stark::stark_proof::stark_verify::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
+use stark::stark_verify::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use utils::StarkCommitmentTrait;
 

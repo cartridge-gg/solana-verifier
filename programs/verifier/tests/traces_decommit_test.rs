@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::stark_verify::traces_decommit::TracesDecommit;
+use stark::stark_verify::traces_decommit::TracesDecommit;
 use swiftness_proof_parser::transform::MONTGOMERY_R;
 use types::funvec::FunVec;
 use types::swiftness::air::trace::config::Config as TraceConfig;

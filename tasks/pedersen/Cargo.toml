@@ -1,0 +1,10 @@
+[package]
+name = "pedersen"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+felt.workspace = true
+utils.workspace = true
+types.workspace = true
+lambdaworks-math = { version = "0.12.0", default-features = false }

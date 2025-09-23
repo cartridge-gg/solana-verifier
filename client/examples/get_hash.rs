@@ -17,7 +17,7 @@ use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
-use stark::stark_proof::get_hash::GetHash;
+use stark::get_hash::GetHash;
 
 pub const CHUNK_SIZE: usize = 1000;
 

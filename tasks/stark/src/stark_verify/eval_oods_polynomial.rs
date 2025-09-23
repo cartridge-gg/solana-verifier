@@ -1,4 +1,4 @@
-use crate::stark_proof::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
+use crate::stark_commit::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,

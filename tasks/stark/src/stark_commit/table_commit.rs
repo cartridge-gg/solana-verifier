@@ -1,4 +1,4 @@
-use crate::stark_proof::stark_commit::traces_commit::VectorCommit;
+use crate::stark_commit::traces_commit::VectorCommit;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 #[derive(Debug, Clone)]
 #[repr(C)]

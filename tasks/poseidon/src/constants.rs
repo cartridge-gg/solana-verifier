@@ -1,6 +1,6 @@
 use felt::Felt;
 
-use crate::poseidon::hades::HadesPermutation;
+use crate::hades::HadesPermutation;
 
 impl HadesPermutation {
     pub const RATE: usize = 2;

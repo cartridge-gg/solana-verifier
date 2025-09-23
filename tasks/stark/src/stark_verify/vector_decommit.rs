@@ -5,7 +5,7 @@ use utils::{
     TypeIdentifiable,
 };
 
-use crate::stark_proof::stark_verify::compute_root_recursive::ComputeRootRecursive;
+use crate::stark_verify::compute_root_recursive::ComputeRootRecursive;
 use types::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_QUERIES};
 use types::swiftness::commitment::vector::types::Commitment;
 use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};

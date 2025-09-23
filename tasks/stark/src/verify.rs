@@ -1,9 +1,9 @@
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
-use crate::stark_proof::get_hash::GetHash;
-use crate::stark_proof::stark_commit::StarkCommit;
-use crate::stark_proof::stark_verify::StarkVerify;
-use crate::stark_proof::VerifyPublicInput;
+use crate::get_hash::GetHash;
+use crate::hash_public_input::VerifyPublicInput;
+use crate::stark_commit::StarkCommit;
+use crate::stark_verify::StarkVerify;
 use types::swiftness::air::domains::StarkDomains;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

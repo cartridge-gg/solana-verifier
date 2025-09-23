@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::stark_proof::verify::Verify;
+use stark::verify::Verify;
 use swiftness_proof_parser::json_parser;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use utils::BidirectionalStack;

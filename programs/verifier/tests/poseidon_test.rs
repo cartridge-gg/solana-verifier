@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark::poseidon::PoseidonHashMany;
+use poseidon::poseidon::PoseidonHashMany;
 use utils::{BidirectionalStack, Scheduler};
 use verifier::state::BidirectionalStackAccount;
 

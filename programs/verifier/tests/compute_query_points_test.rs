@@ -1,7 +1,7 @@
 mod fixtures;
 
 use felt::Felt;
-use stark::stark_proof::stark_verify::eval_oods_boundary_poly_at_points::ComputeQueryPoints;
+use stark::stark_verify::eval_oods_boundary_poly_at_points::ComputeQueryPoints;
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier::state::BidirectionalStackAccount;

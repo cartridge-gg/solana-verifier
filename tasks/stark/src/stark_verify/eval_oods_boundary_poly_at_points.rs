@@ -1,4 +1,4 @@
-use crate::stark_proof::stark_verify::eval_oods_polynomial::EvalOodsPolynomial;
+use crate::stark_verify::eval_oods_polynomial::EvalOodsPolynomial;
 use felt::{Felt, NonZeroFelt};
 use std::println;
 use types::funvec::FUNVEC_QUERY_INDICES;

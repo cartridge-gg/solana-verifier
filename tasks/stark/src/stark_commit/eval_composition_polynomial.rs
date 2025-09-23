@@ -1,12 +1,12 @@
-use crate::pedersen::points::point_x::PedersenPointsX as PointsX;
-use crate::pedersen::points::point_y::PedersenPointsY as PointsY;
-use crate::stark_proof::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
-use crate::stark_proof::stark_commit::helpers::{
+use crate::stark_commit::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
+use crate::stark_commit::helpers::{
     DILUTED_N_BITS, DILUTED_SPACING, FELT_2, PEDERSEN_BUILTIN_RATIO, PEDERSEN_BUILTIN_REPETITIONS,
     POSEIDON_RATIO,
 };
 use felt::Felt;
 use felt::NonZeroFelt;
+use pedersen::points::point_x::PedersenPointsX as PointsX;
+use pedersen::points::point_y::PedersenPointsY as PointsY;
 use types::swiftness::air::consts::*;
 use types::swiftness::air::periodic_columns::{
     eval_poseidon_poseidon_full_round_key0, eval_poseidon_poseidon_full_round_key1,

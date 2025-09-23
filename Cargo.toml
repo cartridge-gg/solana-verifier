@@ -28,5 +28,7 @@ utils-1 = { path = "./programs/utils1" }
 felt = { path = "./tasks/felt" }
 stark = { path = "./tasks/stark" }
 validate-public-input = { path = "./tasks/validate_public_input" }
+poseidon = { path = "./tasks/poseidon" }
+pedersen = { path = "./tasks/pedersen" }
 
 types = { path = "./tasks/types" }

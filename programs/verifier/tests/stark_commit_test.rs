@@ -1,6 +1,6 @@
 use crate::fixtures::stark_commitment;
 use felt::Felt;
-use stark::stark_proof::stark_commit::StarkCommit;
+use stark::stark_commit::StarkCommit;
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::air::domains::StarkDomains;
 use utils::{BidirectionalStack, Scheduler};

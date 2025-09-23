@@ -22,3 +22,5 @@ utils.workspace = true
 felt.workspace = true
 solana-program.workspace = true
 types.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true

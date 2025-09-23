@@ -30,3 +30,5 @@ types.workspace = true
 utils-1.workspace = true
 verifier-1.workspace = true
 validate-public-input.workspace = true
+poseidon.workspace = true
+pedersen.workspace = true
