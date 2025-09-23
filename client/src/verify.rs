@@ -1,8 +1,5 @@
 use crate::write_keypair_file;
-use crate::{
-    initialize_client, send_and_confirm_with_limit,
-    setup_payer, ClientError,
-};
+use crate::{initialize_client, send_and_confirm_with_limit, setup_payer, ClientError};
 use crate::{read_keypair_file, Config, Result};
 use felt::Felt;
 use log::info;
