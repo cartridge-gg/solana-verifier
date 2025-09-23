@@ -10,3 +10,5 @@ felt.workspace = true
 types.workspace = true
 pedersen.workspace = true
 poseidon.workspace = true
+verify-public-input.workspace = true
+stark-verify.workspace = true   
