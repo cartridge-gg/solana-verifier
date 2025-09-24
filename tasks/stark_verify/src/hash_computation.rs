@@ -1,6 +1,6 @@
 use felt::Felt;
 use sha3::{Digest, Keccak256};
-use types::funvec::FUNVEC_QUERIES;
+use types::funvec::{FunVec, FUNVEC_QUERIES};
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -50,10 +50,13 @@ impl Executable for HashComputation {
         match self.step {
             HashComputationStep::Init => {
                 if self.is_verifier_friendly {
-                    PoseidonHash::push_input(self.x, self.y, stack);
+                    println!("hash computation step Poseidon");
+                    stack.push_front(&self.y.to_bytes_be()).unwrap();
+                    stack.push_front(&self.x.to_bytes_be()).unwrap();
                     self.step = HashComputationStep::WaitForPoseidonHash;
                     vec![PoseidonHash::new().to_vec_with_type_tag()]
                 } else {
+                    println!("hash computation step Keccak");
                     let hash = keccak_hash(self.x, self.y);
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -62,6 +65,7 @@ impl Executable for HashComputation {
                 }
             }
             HashComputationStep::WaitForPoseidonHash => {
+                println!("hash computation step WaitForPoseidonHash");
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 stack.pop_front();
@@ -83,14 +87,14 @@ impl Executable for HashComputation {
     }
 }
 
-#[inline(always)]
+// #[inline(always)]
 fn keccak_hash(x: Felt, y: Felt) -> Felt {
-    let mut hash_data = Vec::with_capacity(64);
-    hash_data.extend(&x.to_bytes_be());
-    hash_data.extend(&y.to_bytes_be());
+    let mut hash_data = FunVec::<u8, 64>::default();
+    hash_data.extend(&x.to_bytes_be().as_slice());
+    hash_data.extend(&y.to_bytes_be().as_slice());
 
     let mut hasher = Keccak256::new();
-    hasher.update(&hash_data);
+    hasher.update(&hash_data.as_slice());
     Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
 }
 
@@ -148,33 +152,32 @@ impl Executable for HashComputationWithQueries {
         match self.step {
             HashComputationWithQueriesStep::Init => {
                 if self.is_verifier_friendly {
-                    PoseidonHash::push_input(self.x, self.y, stack);
+                    println!("hash computation with queries step Poseidon");
+                    stack.push_front(&self.y.to_bytes_be()).unwrap();
+                    stack.push_front(&self.x.to_bytes_be()).unwrap();
                     self.step = HashComputationWithQueriesStep::WaitForPoseidonHash;
                     vec![PoseidonHash::new().to_vec_with_type_tag()]
                 } else {
                     let hash = keccak_hash(self.x, self.y);
 
                     // Read queue using trait method
+                    let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                    stack.pop_front();
+                    stack.push_front(&queries_len.to_bytes_be()).unwrap();
                     read_queries_with_depth_from_stack(stack);
 
                     // Add new query to pre-allocated array
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
 
-                    // Find next available slot
-                    let mut next_slot = 0;
-                    while next_slot < queries_slice.len() / 3
-                        && queries_slice[next_slot * 3] != Felt::ZERO
-                    {
-                        next_slot += 1;
-                    }
+                    let next_slot: usize = (queries_len+Felt::ONE).try_into().unwrap();
 
                     // Check if we found a free slot
                     assert!(
-                        next_slot < queries_slice.len() / 3,
+                        next_slot < FUNVEC_QUERIES / 3,
                         "No free slot for query, next_slot: {}, max: {}",
                         next_slot,
-                        queries_slice.len() / 3
+                        FUNVEC_QUERIES / 3
                     );
 
                     // Add new query
@@ -182,20 +185,7 @@ impl Executable for HashComputationWithQueries {
                     queries_slice[next_slot * 3 + 1] = hash;
                     queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                    // Push queue using trait method - calculate actual count
-                    let actual_count = {
-                        let verify_variables: &mut VerifyVariables =
-                            stack.get_verify_variables_mut();
-                        let queries_slice = &mut verify_variables.queries;
-                        let mut count = 0;
-                        for i in 0..(queries_slice.len() / 3) {
-                            if queries_slice[i * 3] != Felt::ZERO {
-                                count = i + 1;
-                            }
-                        }
-                        count
-                    };
-                    push_queries_with_depth_to_stack(actual_count, stack);
+                    push_queries_with_depth_to_stack(next_slot+1, stack);
 
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -209,27 +199,23 @@ impl Executable for HashComputationWithQueries {
                 stack.pop_front();
                 stack.pop_front();
 
-                // Read queue using trait method
+                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.push_front(&queries_len.to_bytes_be()).unwrap();
                 read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                 let queries_slice = &mut verify_variables.queries;
 
-                // Find next available slot
-                let mut next_slot = 0;
-                while next_slot < queries_slice.len() / 3
-                    && queries_slice[next_slot * 3] != Felt::ZERO
-                {
-                    next_slot += 1;
-                }
+                let next_slot: usize = (queries_len).try_into().unwrap();
 
                 // Check if we found a free slot
                 assert!(
-                    next_slot < queries_slice.len() / 3,
+                    next_slot < FUNVEC_QUERIES / 3,
                     "No free slot for query, next_slot: {}, max: {}",
                     next_slot,
-                    queries_slice.len() / 3
+                    FUNVEC_QUERIES / 3
                 );
 
                 // Add new query
@@ -237,19 +223,7 @@ impl Executable for HashComputationWithQueries {
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                // Push queue using trait method - calculate actual count
-                let actual_count = {
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let queries_slice = &mut verify_variables.queries;
-                    let mut count = 0;
-                    for i in 0..(queries_slice.len() / 3) {
-                        if queries_slice[i * 3] != Felt::ZERO {
-                            count = i + 1;
-                        }
-                    }
-                    count
-                };
-                push_queries_with_depth_to_stack(actual_count, stack);
+                push_queries_with_depth_to_stack(next_slot+1, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -312,7 +286,9 @@ pub fn read_queries_with_depth_from_stack<T: BidirectionalStack + StarkVerifyTra
     {
         let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
         let queries_slice = &mut verify_variables.queries;
-        queries_slice.fill(Felt::ZERO);
+        for i in 0..queries_slice.len() {
+            queries_slice[i] = Felt::ZERO;
+        }
     }
 
     for i in 0..n_queries_usize {

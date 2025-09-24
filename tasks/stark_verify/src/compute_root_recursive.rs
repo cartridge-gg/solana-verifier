@@ -15,13 +15,23 @@ use types::swiftness::stark::types::VerifyVariables;
 #[repr(C)]
 pub struct ComputeRootRecursive {
     step: ComputeRootRecursiveStep,
-    pub parent: Felt,
-    pub current: QueryWithDepth,
+    n_auth_usize: usize,
+    parent: Felt,
+    current: QueryWithDepth,
+    start: usize,
+    auth_start: usize,
+    n_queries_usize: usize,
+    vector_config: VectorConfig,
+    next_value: Felt,
+    is_verifier_friendly: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComputeRootRecursiveStep {
     ProcessCurrent,
+    Continue,
+    HashComputation,
+    HashComputationWithQueries,
     ReadHash,
     Done,
 }
@@ -32,8 +42,15 @@ impl ComputeRootRecursive {
     pub fn new() -> Self {
         Self {
             step: ComputeRootRecursiveStep::ProcessCurrent,
+            n_auth_usize: 0,
             parent: Felt::ZERO,
             current: QueryWithDepth::default(),
+            start: 0,
+            auth_start: 0,
+            n_queries_usize: 0,
+            vector_config: VectorConfig::new(Felt::ZERO, Felt::ZERO),
+            next_value: Felt::ZERO,
+            is_verifier_friendly: false,
         }
     }
 }
@@ -55,11 +72,11 @@ impl Executable for ComputeRootRecursive {
                 stack.pop_front();
                 let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                let n_queries_usize: usize = n_queries.try_into().unwrap();
+                self.n_queries_usize = n_queries.try_into().unwrap();
                 assert!(
-                    n_queries_usize <= FUNVEC_QUERIES,
+                    self.n_queries_usize <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",
-                    n_queries_usize,
+                    self.n_queries_usize,
                     FUNVEC_QUERIES
                 );
                 // Clear the entire queries array first (new instance starts fresh)
@@ -72,7 +89,7 @@ impl Executable for ComputeRootRecursive {
                 }
 
                 // Read queries into pre-allocated array
-                for i in 0..n_queries_usize {
+                for i in 0..self.n_queries_usize {
                     let index = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
                     let value = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -87,12 +104,12 @@ impl Executable for ComputeRootRecursive {
                     queries_slice[i * 3 + 2] = depth;
                 }
 
-                let start: usize = Felt::from_bytes_be_slice(stack.borrow_front())
+                self.start = Felt::from_bytes_be_slice(stack.borrow_front())
                     .try_into()
                     .unwrap();
                 stack.pop_front();
 
-                let auth_start: usize = Felt::from_bytes_be_slice(stack.borrow_front())
+                self.auth_start = Felt::from_bytes_be_slice(stack.borrow_front())
                     .try_into()
                     .unwrap();
                 stack.pop_front();
@@ -100,34 +117,33 @@ impl Executable for ComputeRootRecursive {
                 let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let n_auth_usize: usize = n_authentications.try_into().unwrap();
+                self.n_auth_usize = n_authentications.try_into().unwrap();
                 assert!(
-                    n_auth_usize <= FUNVEC_AUTHENTICATIONS,
+                    self.n_auth_usize <= FUNVEC_AUTHENTICATIONS,
                     "Too many authentications: {} > {}",
-                    n_auth_usize,
+                    self.n_auth_usize,
                     FUNVEC_AUTHENTICATIONS
                 );
-                for i in 0..n_auth_usize {
+                for i in 0..self.n_auth_usize {
                     let auth = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let authentications = &mut verify_variables.authentications;
                     authentications[i] = auth;
                 }
-
+                
                 // Read vector config using trait method
-                let vector_config = from_stack(stack);
-                let n_verifier_friendly_layers =
-                    vector_config.n_verifier_friendly_commitment_layers;
+                self.vector_config = from_stack(stack);
+
 
                 // Get current query from array
                 let (current_index, current_value, current_depth) = {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
                     (
-                        queries_slice[start * 3],
-                        queries_slice[start * 3 + 1],
-                        queries_slice[start * 3 + 2],
+                        queries_slice[self.start * 3],
+                        queries_slice[self.start * 3 + 1],
+                        queries_slice[self.start * 3 + 2],
                     )
                 };
                 self.current = QueryWithDepth {
@@ -142,185 +158,184 @@ impl Executable for ComputeRootRecursive {
                     self.step = ComputeRootRecursiveStep::Done;
                     vec![]
                 } else {
-                    let (parent, bit) = self.current.index.div_rem(&NonZeroFelt::TWO);
-                    let is_verifier_friendly = n_verifier_friendly_layers >= self.current.depth;
-                    self.parent = parent;
-
-                    if bit == Felt::ZERO {
-                        if start + 1 < n_queries_usize {
-                            let (next_index, next_value, _next_depth) = {
-                                let verify_variables: &mut VerifyVariables =
-                                    stack.get_verify_variables_mut();
-                                let queries_slice = &mut verify_variables.queries;
-                                (
-                                    queries_slice[(start + 1) * 3],
-                                    queries_slice[(start + 1) * 3 + 1],
-                                    queries_slice[(start + 1) * 3 + 2],
-                                )
-                            };
-
-                            if self.current.index + Felt::ONE == next_index {
-                                // Push vector config using trait method
-                                push_to_stack(&vector_config, stack);
-
-                                for i in (0..n_auth_usize).rev() {
-                                    let auth = {
-                                        let verify_variables: &mut VerifyVariables =
-                                            stack.get_verify_variables_mut();
-                                        let authentications = &mut verify_variables.authentications;
-                                        authentications[i]
-                                    };
-                                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                                }
-                                stack
-                                    .push_front(&Felt::from(n_auth_usize).to_bytes_be())
-                                    .unwrap();
-
-                                stack
-                                    .push_front(&Felt::from(auth_start).to_bytes_be())
-                                    .unwrap();
-                                stack
-                                    .push_front(&Felt::from(start + 2).to_bytes_be())
-                                    .unwrap();
-
-                                // Push queries using trait method
-                                push_queries_with_depth_to_stack(n_queries_usize, stack);
-
-                                self.step = ComputeRootRecursiveStep::ProcessCurrent;
-
-                                return vec![HashComputationWithQueries::new(
-                                    self.current.value,
-                                    next_value,
-                                    is_verifier_friendly,
-                                    self.parent,
-                                    self.current.depth - Felt::ONE,
-                                )
-                                .to_vec_with_type_tag()];
-                            }
-                        }
-
-                        // Push vector config using trait method
-                        push_to_stack(&vector_config, stack);
-
-                        for i in (0..n_auth_usize).rev() {
-                            let auth = {
-                                let verify_variables: &mut VerifyVariables =
-                                    stack.get_verify_variables_mut();
-                                let authentications = &mut verify_variables.authentications;
-                                authentications[i]
-                            };
-                            stack.push_front(&auth.to_bytes_be()).unwrap();
-                        }
-                        stack
-                            .push_front(&Felt::from(n_auth_usize).to_bytes_be())
-                            .unwrap();
-
-                        stack
-                            .push_front(&Felt::from(auth_start + 1).to_bytes_be())
-                            .unwrap();
-                        stack
-                            .push_front(&Felt::from(start + 1).to_bytes_be())
-                            .unwrap();
-
-                        // Push queries using trait method
-                        push_queries_with_depth_to_stack(n_queries_usize, stack);
-
-                        self.step = ComputeRootRecursiveStep::ReadHash;
-                        vec![HashComputation::new(
-                            self.current.value,
-                            {
-                                let verify_variables: &mut VerifyVariables =
-                                    stack.get_verify_variables_mut();
-                                let authentications = &mut verify_variables.authentications;
-                                authentications[auth_start]
-                            },
-                            is_verifier_friendly,
-                        )
-                        .to_vec_with_type_tag()]
-                    } else {
-                        // Push vector config using trait method
-                        push_to_stack(&vector_config, stack);
-
-                        for i in (0..n_auth_usize).rev() {
-                            let auth = {
-                                let verify_variables: &mut VerifyVariables =
-                                    stack.get_verify_variables_mut();
-                                let authentications = &mut verify_variables.authentications;
-                                authentications[i]
-                            };
-                            stack.push_front(&auth.to_bytes_be()).unwrap();
-                        }
-                        stack
-                            .push_front(&Felt::from(n_auth_usize).to_bytes_be())
-                            .unwrap();
-                        stack
-                            .push_front(&Felt::from(auth_start + 1).to_bytes_be())
-                            .unwrap();
-                        stack
-                            .push_front(&Felt::from(start + 1).to_bytes_be())
-                            .unwrap();
-
-                        // Push queries using trait method
-                        push_queries_with_depth_to_stack(n_queries_usize, stack);
-
-                        self.step = ComputeRootRecursiveStep::ReadHash;
-                        // Create hash computation task
-                        vec![HashComputation::new(
-                            {
-                                let verify_variables: &mut VerifyVariables =
-                                    stack.get_verify_variables_mut();
-                                let authentications = &mut verify_variables.authentications;
-                                authentications[auth_start]
-                            },
-                            self.current.value,
-                            is_verifier_friendly,
-                        )
-                        .to_vec_with_type_tag()]
-                    }
+                    self.step = ComputeRootRecursiveStep::Continue;
+                    vec![]
                 }
+            }
+            ComputeRootRecursiveStep::Continue => {
+                let (parent, bit) = self.current.index.div_rem(&NonZeroFelt::TWO);
+                self.is_verifier_friendly = self.vector_config.n_verifier_friendly_commitment_layers >= self.current.depth;
+                self.parent = parent;
+
+                if bit == Felt::ZERO {
+                    if self.start + 1 < self.n_queries_usize {
+                        let (next_index, next_value, _next_depth) = {
+                            let verify_variables: &mut VerifyVariables =
+                                stack.get_verify_variables_mut();
+                            let queries_slice = &mut verify_variables.queries;
+                            (
+                                queries_slice[(self.start + 1) * 3],
+                                queries_slice[(self.start + 1) * 3 + 1],
+                                queries_slice[(self.start + 1) * 3 + 2],
+                            )
+                        };
+                        if self.current.index + Felt::ONE == next_index {
+                            self.next_value = next_value;
+                            self.step = ComputeRootRecursiveStep::HashComputationWithQueries;
+                            return vec![];
+                        }
+                    }
+
+                    // Push vector config using trait method
+                    push_to_stack(&self.vector_config, stack);
+
+                    for i in (0..self.n_auth_usize).rev() {
+                        let auth = {
+                            let verify_variables: &mut VerifyVariables =
+                                stack.get_verify_variables_mut();
+                            let authentications = &mut verify_variables.authentications;
+                            authentications[i]
+                        };
+                        stack.push_front(&auth.to_bytes_be()).unwrap();
+                    }
+                    stack
+                        .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
+                        .unwrap();
+
+                    stack
+                        .push_front(&Felt::from(self.auth_start + 1).to_bytes_be())
+                        .unwrap();
+                    stack
+                        .push_front(&Felt::from(self.start + 1).to_bytes_be())
+                        .unwrap();
+
+                    // Push queries using trait method
+                    push_queries_with_depth_to_stack(self.n_queries_usize, stack);
+
+                    self.step = ComputeRootRecursiveStep::ReadHash;
+                    vec![HashComputation::new(
+                        self.current.value,
+                        {
+                            let verify_variables: &mut VerifyVariables =
+                                stack.get_verify_variables_mut();
+                            let authentications = &mut verify_variables.authentications;
+                            authentications[self.auth_start]
+                        },
+                        self.is_verifier_friendly,
+                    )
+                    .to_vec_with_type_tag()]
+                } else {
+                    self.step = ComputeRootRecursiveStep::HashComputation;
+                    vec![]
+                }
+            }
+
+            ComputeRootRecursiveStep::HashComputation => {
+                push_to_stack(&self.vector_config, stack);
+
+                for i in (0..self.n_auth_usize).rev() {
+                    let auth = {
+                        let verify_variables: &mut VerifyVariables =
+                            stack.get_verify_variables_mut();
+                        let authentications = &mut verify_variables.authentications;
+                        authentications[i]
+                    };
+                    stack.push_front(&auth.to_bytes_be()).unwrap();
+                }
+                stack
+                    .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&Felt::from(self.auth_start + 1).to_bytes_be())
+                    .unwrap();
+                stack
+                    .push_front(&Felt::from(self.start + 1).to_bytes_be())
+                    .unwrap();
+
+                // Push queries using trait method
+                push_queries_with_depth_to_stack(self.n_queries_usize, stack);
+
+                self.step = ComputeRootRecursiveStep::ReadHash;
+                // Create hash computation task
+                vec![HashComputation::new(
+                    {
+                        let verify_variables: &mut VerifyVariables =
+                            stack.get_verify_variables_mut();
+                        let authentications = &mut verify_variables.authentications;
+                        authentications[self.auth_start]
+                    },
+                    self.current.value,
+                    self.is_verifier_friendly,
+                )
+                .to_vec_with_type_tag()]
+            }
+
+            ComputeRootRecursiveStep::HashComputationWithQueries => {
+                  // Push vector config using trait method
+                  println!("hash computation with queries step Poseidon");
+                  push_to_stack(&self.vector_config, stack);
+
+                  for i in (0..self.n_auth_usize).rev() {
+                      let auth = {
+                          let verify_variables: &mut VerifyVariables =
+                              stack.get_verify_variables_mut();
+                          let authentications = &mut verify_variables.authentications;
+                          authentications[i]
+                      };
+                      stack.push_front(&auth.to_bytes_be()).unwrap();
+                  }
+                  stack
+                      .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
+                      .unwrap();
+
+                  stack
+                      .push_front(&Felt::from(self.auth_start).to_bytes_be())
+                      .unwrap();
+                  stack
+                      .push_front(&Felt::from(self.start + 2).to_bytes_be())
+                      .unwrap();
+
+                  // Push queries using trait method
+                  push_queries_with_depth_to_stack(self.n_queries_usize, stack);
+
+                  self.step = ComputeRootRecursiveStep::ProcessCurrent;
+
+                  vec![HashComputationWithQueries::new(
+                      self.current.value,
+                      self.next_value,
+                      self.is_verifier_friendly,
+                      self.parent,
+                      self.current.depth - Felt::ONE,
+                  )
+                  .to_vec_with_type_tag()]
             }
             ComputeRootRecursiveStep::ReadHash => {
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Read queries into pre-allocated array
+                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                stack.push_front(&queries_len.to_bytes_be()).unwrap();
                 read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                 let queries_slice = &mut verify_variables.queries;
 
-                // Find next available slot
-                let mut next_slot = 0;
-                let max_slots = queries_slice.len() / 3;
-                while next_slot < max_slots && queries_slice[next_slot * 3] != Felt::ZERO {
-                    next_slot += 1;
-                }
+                let next_slot: usize = (queries_len).try_into().unwrap();
 
                 // Add new query with bounds checking
                 assert!(
-                    next_slot < max_slots,
+                    next_slot < FUNVEC_QUERIES / 3,
                     "Queries array full: next_slot={}, max_slots={}",
                     next_slot,
-                    max_slots
+                    FUNVEC_QUERIES / 3
                 );
                 queries_slice[next_slot * 3] = self.parent;
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.current.depth - Felt::ONE;
 
-                // Push queries using trait method - calculate actual count
-                let actual_count = {
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let queries_slice = &mut verify_variables.queries;
-                    let mut count = 0;
-                    for i in 0..(queries_slice.len() / 3) {
-                        if queries_slice[i * 3] != Felt::ZERO {
-                            count = i + 1;
-                        }
-                    }
-                    count
-                };
-                push_queries_with_depth_to_stack(actual_count, stack);
+                push_queries_with_depth_to_stack(next_slot+1, stack);
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 

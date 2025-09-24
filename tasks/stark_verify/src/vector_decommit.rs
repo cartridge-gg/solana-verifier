@@ -51,17 +51,14 @@ impl Executable for VectorDecommit {
             VectorDecommitStep::VectorCommitmentDecommit => {
                 // Read vector commitment using trait method
                 let vector_commitment = commitment_from_stack(stack);
-                println!("DEBUG: vector_commitment: {:?}", vector_commitment);
 
                 self.reference_commitment_hash = vector_commitment.commitment_hash;
                 let height = vector_commitment.config.height;
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("DEBUG: queries_len: {:?}", queries_len);
 
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
-                println!("DEBUG: queries_count: {:?}", queries_count);
                 assert!(
                     queries_count <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",
@@ -94,21 +91,12 @@ impl Executable for VectorDecommit {
                 }
 
                 // Push authentications using trait method
-                let auth_bytes = {
+                for i in (0..self.n_authentications).rev() {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let authentications_slice = &verify_variables.authentications;
-
-                    let mut auth_bytes = Vec::new();
-                    for i in (0..self.n_authentications).rev() {
-                        auth_bytes.push(authentications_slice[i].to_bytes_be());
-                    }
-
-                    auth_bytes
-                };
-
-                for auth_bytes in auth_bytes {
-                    stack.push_front(&auth_bytes).unwrap();
+                    let auth = verify_variables.authentications[i].to_bytes_be();
+                    stack.push_front(&auth).unwrap();
                 }
+                
                 stack
                     .push_front(&Felt::from(self.n_authentications).to_bytes_be())
                     .unwrap();

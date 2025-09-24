@@ -212,6 +212,7 @@ fn test_vector_decommit() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("Step: {}", steps);
         steps += 1;
     }
 
