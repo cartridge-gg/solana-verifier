@@ -20,7 +20,7 @@ pub async fn retrive_funds(config: &Config) -> Result<()> {
     };
     info!(public_key:% = payer.pubkey(); "Using payer");
 
-    let program_keypair = Keypair::read_from_file("keypairs/verifier-keypair.json").unwrap();
+    let program_keypair = Keypair::read_from_file("keypairs/verifier_1-keypair.json").unwrap();
     let program_id = program_keypair.pubkey();
 
     info!(program_id:% = program_id; "Using program");

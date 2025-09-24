@@ -19,7 +19,7 @@ pub async fn deploy(config: &Config) -> Result<()> {
     };
     info!(public_key:% = payer.pubkey(); "Using payer");
 
-    let program_path = Path::new("target/deploy/verifier.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
     let program_id = setup_program(&client, &payer, config, program_path).await?;
     info!(program_id:% = program_id; "Using program");
 

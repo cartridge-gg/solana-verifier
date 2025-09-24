@@ -63,10 +63,12 @@ This project demonstrates how to build, deploy, and interact with Solana program
   ./scripts/compile.sh
   ```
   
-3. Build and run the verification example:
+3. Build and run the verification:
 
   ```bash
-  cargo run --example full_flow
+  cargo run deploy
+  cargo run verify
+  cargo run retrive-funds
   ```
 
 ## Client Features
