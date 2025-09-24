@@ -21,13 +21,14 @@ pub struct ComputeRootRecursive {
     start: usize,
     auth_start: usize,
     n_queries_usize: usize,
-    vector_config: VectorConfig,
+    n_verifier_friendly_commitment_layers: Felt,
     next_value: Felt,
     is_verifier_friendly: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComputeRootRecursiveStep {
+    Init,
     ProcessCurrent,
     Continue,
     HashComputation,
@@ -41,14 +42,14 @@ impl_type_identifiable!(ComputeRootRecursive);
 impl ComputeRootRecursive {
     pub fn new() -> Self {
         Self {
-            step: ComputeRootRecursiveStep::ProcessCurrent,
+            step: ComputeRootRecursiveStep::Init,
             n_auth_usize: 0,
             parent: Felt::ZERO,
             current: QueryWithDepth::default(),
             start: 0,
             auth_start: 0,
             n_queries_usize: 0,
-            vector_config: VectorConfig::new(Felt::ZERO, Felt::ZERO),
+            n_verifier_friendly_commitment_layers: Felt::ZERO,
             next_value: Felt::ZERO,
             is_verifier_friendly: false,
         }
@@ -67,9 +68,13 @@ impl Executable for ComputeRootRecursive {
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
-            ComputeRootRecursiveStep::ProcessCurrent => {
+            ComputeRootRecursiveStep::Init => {
+                println!("compute root recursive step Init");
+                
+                // Read all read-only data once at the beginning
                 let _computed_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                
                 let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.n_queries_usize = n_queries.try_into().unwrap();
@@ -79,16 +84,6 @@ impl Executable for ComputeRootRecursive {
                     self.n_queries_usize,
                     FUNVEC_QUERIES
                 );
-                // Clear the entire queries array first (new instance starts fresh)
-                {
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let queries_slice = &mut verify_variables.queries;
-                    let temp_queries_slice = &mut verify_variables.temp_queries;
-                    queries_slice.fill(Felt::ZERO);
-                    temp_queries_slice.fill(Felt::ZERO);
-                }
-
-                // Read queries into pre-allocated array
                 for i in 0..self.n_queries_usize {
                     let index = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
@@ -114,6 +109,22 @@ impl Executable for ComputeRootRecursive {
                     .unwrap();
                 stack.pop_front();
 
+                // Get current query from array
+                let (current_index, current_value, current_depth) = {
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    let queries_slice = &mut verify_variables.queries;
+                    (
+                        queries_slice[self.start * 3],
+                        queries_slice[self.start * 3 + 1],
+                        queries_slice[self.start * 3 + 2],
+                    )
+                };
+                self.current = QueryWithDepth {
+                    index: current_index,
+                    value: current_value,
+                    depth: current_depth,
+                };
+
                 let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
@@ -124,6 +135,8 @@ impl Executable for ComputeRootRecursive {
                     self.n_auth_usize,
                     FUNVEC_AUTHENTICATIONS
                 );
+                
+                // Read authentications once
                 for i in 0..self.n_auth_usize {
                     let auth = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
@@ -132,9 +145,54 @@ impl Executable for ComputeRootRecursive {
                     authentications[i] = auth;
                 }
                 
-                // Read vector config using trait method
-                self.vector_config = from_stack(stack);
+                let _height = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.n_verifier_friendly_commitment_layers = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
+                self.step = ComputeRootRecursiveStep::Continue;
+                vec![]
+            }
+            ComputeRootRecursiveStep::ProcessCurrent => {
+                println!("compute root recursive step ProcessCurrent");
+                 // Read all read-only data once at the beginning
+                 let _computed_hash = Felt::from_bytes_be_slice(stack.borrow_front());
+                 stack.pop_front();
+                 
+                 let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
+                 stack.pop_front();
+                 self.n_queries_usize = n_queries.try_into().unwrap();
+                 assert!(
+                     self.n_queries_usize <= FUNVEC_QUERIES,
+                     "Too many queries: {} > {}",
+                     self.n_queries_usize,
+                     FUNVEC_QUERIES
+                 );
+ 
+                //  for i in 0..self.n_queries_usize {
+                //      let index = Felt::from_bytes_be_slice(stack.borrow_front());
+                //      stack.pop_front();
+                //      let value = Felt::from_bytes_be_slice(stack.borrow_front());
+                //      stack.pop_front();
+                //      let depth = Felt::from_bytes_be_slice(stack.borrow_front());
+                //      stack.pop_front();
+ 
+                //      let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                //      let queries_slice = &mut verify_variables.queries;
+                //      queries_slice[i * 3] = index;
+                //      queries_slice[i * 3 + 1] = value;
+                //      queries_slice[i * 3 + 2] = depth;
+                //  }
+ 
+                 self.start = Felt::from_bytes_be_slice(stack.borrow_front())
+                     .try_into()
+                     .unwrap();
+                 stack.pop_front();
+ 
+                 self.auth_start = Felt::from_bytes_be_slice(stack.borrow_front())
+                     .try_into()
+                     .unwrap();
+                 stack.pop_front();
 
                 // Get current query from array
                 let (current_index, current_value, current_depth) = {
@@ -151,9 +209,8 @@ impl Executable for ComputeRootRecursive {
                     value: current_value,
                     depth: current_depth,
                 };
-                // Check if we reached the root
+                
                 if self.current.index == Felt::ONE {
-                    // We found the root - push it to stack and finish
                     stack.push_front(&self.current.value.to_bytes_be()).unwrap();
                     self.step = ComputeRootRecursiveStep::Done;
                     vec![]
@@ -163,8 +220,9 @@ impl Executable for ComputeRootRecursive {
                 }
             }
             ComputeRootRecursiveStep::Continue => {
+                println!("compute root recursive step Continue");
                 let (parent, bit) = self.current.index.div_rem(&NonZeroFelt::TWO);
-                self.is_verifier_friendly = self.vector_config.n_verifier_friendly_commitment_layers >= self.current.depth;
+                self.is_verifier_friendly = self.n_verifier_friendly_commitment_layers >= self.current.depth;
                 self.parent = parent;
 
                 if bit == Felt::ZERO {
@@ -186,22 +244,6 @@ impl Executable for ComputeRootRecursive {
                         }
                     }
 
-                    // Push vector config using trait method
-                    push_to_stack(&self.vector_config, stack);
-
-                    for i in (0..self.n_auth_usize).rev() {
-                        let auth = {
-                            let verify_variables: &mut VerifyVariables =
-                                stack.get_verify_variables_mut();
-                            let authentications = &mut verify_variables.authentications;
-                            authentications[i]
-                        };
-                        stack.push_front(&auth.to_bytes_be()).unwrap();
-                    }
-                    stack
-                        .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
-                        .unwrap();
-
                     stack
                         .push_front(&Felt::from(self.auth_start + 1).to_bytes_be())
                         .unwrap();
@@ -209,9 +251,7 @@ impl Executable for ComputeRootRecursive {
                         .push_front(&Felt::from(self.start + 1).to_bytes_be())
                         .unwrap();
 
-                    // Push queries using trait method
-                    push_queries_with_depth_to_stack(self.n_queries_usize, stack);
-
+                    stack.push_front(&Felt::from(self.n_queries_usize).to_bytes_be()).unwrap();
                     self.step = ComputeRootRecursiveStep::ReadHash;
                     vec![HashComputation::new(
                         self.current.value,
@@ -231,20 +271,7 @@ impl Executable for ComputeRootRecursive {
             }
 
             ComputeRootRecursiveStep::HashComputation => {
-                push_to_stack(&self.vector_config, stack);
-
-                for i in (0..self.n_auth_usize).rev() {
-                    let auth = {
-                        let verify_variables: &mut VerifyVariables =
-                            stack.get_verify_variables_mut();
-                        let authentications = &mut verify_variables.authentications;
-                        authentications[i]
-                    };
-                    stack.push_front(&auth.to_bytes_be()).unwrap();
-                }
-                stack
-                    .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
-                    .unwrap();
+                println!("compute root recursive step HashComputation");
                 stack
                     .push_front(&Felt::from(self.auth_start + 1).to_bytes_be())
                     .unwrap();
@@ -252,8 +279,7 @@ impl Executable for ComputeRootRecursive {
                     .push_front(&Felt::from(self.start + 1).to_bytes_be())
                     .unwrap();
 
-                // Push queries using trait method
-                push_queries_with_depth_to_stack(self.n_queries_usize, stack);
+                stack.push_front(&Felt::from(self.n_queries_usize).to_bytes_be()).unwrap();
 
                 self.step = ComputeRootRecursiveStep::ReadHash;
                 // Create hash computation task
@@ -271,22 +297,9 @@ impl Executable for ComputeRootRecursive {
             }
 
             ComputeRootRecursiveStep::HashComputationWithQueries => {
+                println!("compute root recursive step HashComputationWithQueries");
                   // Push vector config using trait method
                   println!("hash computation with queries step Poseidon");
-                  push_to_stack(&self.vector_config, stack);
-
-                  for i in (0..self.n_auth_usize).rev() {
-                      let auth = {
-                          let verify_variables: &mut VerifyVariables =
-                              stack.get_verify_variables_mut();
-                          let authentications = &mut verify_variables.authentications;
-                          authentications[i]
-                      };
-                      stack.push_front(&auth.to_bytes_be()).unwrap();
-                  }
-                  stack
-                      .push_front(&Felt::from(self.n_auth_usize).to_bytes_be())
-                      .unwrap();
 
                   stack
                       .push_front(&Felt::from(self.auth_start).to_bytes_be())
@@ -294,12 +307,9 @@ impl Executable for ComputeRootRecursive {
                   stack
                       .push_front(&Felt::from(self.start + 2).to_bytes_be())
                       .unwrap();
-
-                  // Push queries using trait method
-                  push_queries_with_depth_to_stack(self.n_queries_usize, stack);
+                  stack.push_front(&Felt::from(self.n_queries_usize).to_bytes_be()).unwrap();
 
                   self.step = ComputeRootRecursiveStep::ProcessCurrent;
-
                   vec![HashComputationWithQueries::new(
                       self.current.value,
                       self.next_value,
@@ -310,33 +320,31 @@ impl Executable for ComputeRootRecursive {
                   .to_vec_with_type_tag()]
             }
             ComputeRootRecursiveStep::ReadHash => {
+                println!("compute root recursive step ReadHash");
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                let queries_len:usize = Felt::from_bytes_be_slice(stack.borrow_front()).try_into().unwrap();
                 stack.pop_front();
-                stack.push_front(&queries_len.to_bytes_be()).unwrap();
-                read_queries_with_depth_from_stack(stack);
+                // stack.push_front(&Felt::from(queries_len).to_bytes_be()).unwrap();
+                // read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                 let queries_slice = &mut verify_variables.queries;
 
-                let next_slot: usize = (queries_len).try_into().unwrap();
-
                 // Add new query with bounds checking
                 assert!(
-                    next_slot < FUNVEC_QUERIES / 3,
+                    queries_len < FUNVEC_QUERIES / 3,
                     "Queries array full: next_slot={}, max_slots={}",
-                    next_slot,
+                    queries_len,
                     FUNVEC_QUERIES / 3
                 );
-                queries_slice[next_slot * 3] = self.parent;
-                queries_slice[next_slot * 3 + 1] = hash;
-                queries_slice[next_slot * 3 + 2] = self.current.depth - Felt::ONE;
+                queries_slice[queries_len * 3] = self.parent;
+                queries_slice[queries_len * 3 + 1] = hash;
+                queries_slice[queries_len * 3 + 2] = self.current.depth - Felt::ONE;
 
-                push_queries_with_depth_to_stack(next_slot+1, stack);
-
+                stack.push_front(&Felt::from(queries_len+1).to_bytes_be()).unwrap();
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 
                 self.step = ComputeRootRecursiveStep::ProcessCurrent;
@@ -352,84 +360,4 @@ impl Executable for ComputeRootRecursive {
     fn is_finished(&mut self) -> bool {
         self.step == ComputeRootRecursiveStep::Done
     }
-}
-
-/// Push queries with depth from a slice to stack (no allocation)
-pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    count: usize,
-    stack: &mut T,
-) {
-    // Push queries in reverse order - no allocation
-    for i in (0..count).rev() {
-        let (depth_bytes, value_bytes, index_bytes) = {
-            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-            let queries_slice = &mut verify_variables.queries;
-            let depth = queries_slice[i * 3 + 2];
-            let value = queries_slice[i * 3 + 1];
-            let index = queries_slice[i * 3];
-            (
-                depth.to_bytes_be(),
-                value.to_bytes_be(),
-                index.to_bytes_be(),
-            )
-        };
-
-        stack.push_front(&depth_bytes).unwrap();
-        stack.push_front(&value_bytes).unwrap();
-        stack.push_front(&index_bytes).unwrap();
-    }
-    // Push length
-    stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
-}
-
-/// Read queries with depth from stack and store them in a mutable slice (no allocation)
-pub fn read_queries_with_depth_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
-    let n_queries = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-
-    let n_queries_usize: usize = n_queries.try_into().unwrap();
-    assert!(
-        n_queries_usize <= FUNVEC_QUERIES,
-        "Too many queries: {} > {}",
-        n_queries_usize,
-        FUNVEC_QUERIES
-    );
-
-    // Clear the entire queries array first
-    {
-        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-        let queries_slice = &mut verify_variables.queries;
-        queries_slice.fill(Felt::ZERO);
-    }
-
-    for i in 0..n_queries_usize {
-        let index = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-        let value = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-        let depth = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-
-        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-        let queries_slice = &mut verify_variables.queries;
-
-        queries_slice[i * 3] = index;
-        queries_slice[i * 3 + 1] = value;
-        queries_slice[i * 3 + 2] = depth;
-    }
-}
-
-fn from_stack<T: BidirectionalStack>(stack: &mut T) -> VectorConfig {
-    let height = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let n_verifier_friendly_commitment_layers = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    VectorConfig::new(height, n_verifier_friendly_commitment_layers)
-}
-
-fn push_to_stack<T: BidirectionalStack>(config: &VectorConfig, stack: &mut T) {
-    stack
-        .push_front(&config.n_verifier_friendly_commitment_layers.to_bytes_be())
-        .unwrap();
-    stack.push_front(&config.height.to_bytes_be()).unwrap();
 }

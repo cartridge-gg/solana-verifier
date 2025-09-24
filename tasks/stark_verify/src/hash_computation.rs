@@ -160,11 +160,10 @@ impl Executable for HashComputationWithQueries {
                 } else {
                     let hash = keccak_hash(self.x, self.y);
 
-                    // Read queue using trait method
                     let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
-                    stack.push_front(&queries_len.to_bytes_be()).unwrap();
-                    read_queries_with_depth_from_stack(stack);
+                    // stack.push_front(&queries_len.to_bytes_be()).unwrap();
+                    // read_queries_with_depth_from_stack(stack);
 
                     // Add new query to pre-allocated array
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -185,8 +184,7 @@ impl Executable for HashComputationWithQueries {
                     queries_slice[next_slot * 3 + 1] = hash;
                     queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                    push_queries_with_depth_to_stack(next_slot+1, stack);
-
+                    stack.push_front(&Felt::from(next_slot + 1).to_bytes_be()).unwrap();
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
                     self.step = HashComputationWithQueriesStep::Done;
@@ -201,8 +199,8 @@ impl Executable for HashComputationWithQueries {
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                stack.push_front(&queries_len.to_bytes_be()).unwrap();
-                read_queries_with_depth_from_stack(stack);
+                // stack.push_front(&queries_len.to_bytes_be()).unwrap();
+                // read_queries_with_depth_from_stack(stack);
 
                 // Add new query to pre-allocated array
                 let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
@@ -223,7 +221,7 @@ impl Executable for HashComputationWithQueries {
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                push_queries_with_depth_to_stack(next_slot+1, stack);
+                stack.push_front(&Felt::from(next_slot + 1).to_bytes_be()).unwrap();
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 

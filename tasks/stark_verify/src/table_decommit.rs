@@ -9,7 +9,7 @@ use utils::{
 use crate::vector_decommit::VectorDecommit;
 use poseidon::poseidon::PoseidonHashMany;
 use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-use types::swiftness::commitment::vector::types::{Commitment, Query};
+use types::swiftness::commitment::vector::types::{Commitment as VectorCommitment, Query};
 use types::swiftness::stark::types::{cast_slice_to_struct, cast_struct_to_slice, VerifyVariables};
 pub const MONTGOMERY_R: Felt =
     Felt::from_hex_unchecked("0x7FFFFFFFFFFFDF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1");
@@ -18,8 +18,8 @@ pub const MONTGOMERY_R: Felt =
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableDecommitStep {
     PrepareVectorQueries,
-    HashSingleQuery,   // Dla verifier-friendly multi-column
-    CollectHashResult, // Zbieranie wyniku z GenerateVectorQueries
+    HashSingleQuery,
+    CollectHashResult,
     PrepareVectorDecommit,
     ExecuteVectorDecommit,
     Done,
@@ -29,14 +29,12 @@ pub enum TableDecommitStep {
 #[repr(C)]
 pub struct TableDecommit {
     step: TableDecommitStep,
-    commitment: TableCommitment,
+    commitment: VectorCommitment,
     n_columns: u32,
     is_bottom_layer_verifier_friendly: bool,
     current_query_index: usize,
     total_queries: usize,
     n_authentications: usize,
-    // Tymczasowe przechowywanie vector queries
-    vector_queries: Vec<Query>,
 }
 
 impl_type_identifiable!(TableDecommit);
@@ -45,13 +43,12 @@ impl TableDecommit {
     pub fn new() -> Self {
         Self {
             step: TableDecommitStep::PrepareVectorQueries,
-            commitment: TableCommitment::default(),
+            commitment: VectorCommitment::default(),
             n_columns: 0,
             is_bottom_layer_verifier_friendly: false,
             current_query_index: 0,
             total_queries: 0,
             n_authentications: 0,
-            vector_queries: Vec::new(),
         }
     }
 }
@@ -72,7 +69,7 @@ impl Executable for TableDecommit {
                 // Read table commitment
                 let table_commitment = commitment_from_stack(stack);
                 println!("Table commitment: {:?}", table_commitment);
-                self.commitment = table_commitment;
+                self.commitment = table_commitment.vector_commitment;
 
                 // Store commitment config
                 self.n_columns = table_commitment
@@ -95,18 +92,6 @@ impl Executable for TableDecommit {
                 stack.pop_front();
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
 
-                // Store queries indices
-                let mut query_indices = Vec::new();
-                for i in 0..queries_count {
-                    // let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                    // stack.pop_front();
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let queries_slice = &mut verify_variables.temp_queries;
-                    let index = queries_slice[i * 2];
-                    println!("DEBUG: index: {:?}", index);
-                    query_indices.push(index);
-                }
-
                 self.total_queries = queries_count;
                 println!("Total queries: {}", self.total_queries);
 
@@ -126,17 +111,21 @@ impl Executable for TableDecommit {
                     montgomery_values_len
                 );
 
-                // Read witness
                 self.n_authentications = witness_from_stack(stack);
 
-                // Initialize vector queries with indices
-                self.vector_queries = query_indices
-                    .into_iter()
-                    .map(|index| Query {
-                        index,
-                        value: Felt::ZERO,
-                    })
-                    .collect();
+                {
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    let queries_slice = &verify_variables.temp_queries;
+                    
+                    for i in 0..queries_count {
+                        let index = queries_slice[i * 2];
+                        println!("DEBUG: index: {:?}", index);
+                        
+                        verify_variables.queries[i * 2] = index;
+                        verify_variables.queries[i * 2 + 1] = Felt::ZERO;
+                    }
+                }
+                println!("PrepareVectorQueries step");
 
                 self.current_query_index = 0;
                 // Decide next step based on configuration
@@ -178,8 +167,10 @@ impl Executable for TableDecommit {
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                // Store hash in corresponding vector query
-                self.vector_queries[self.current_query_index].value = hash;
+                {
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    verify_variables.queries[self.current_query_index * 2 + 1] = hash;
+                }
                 self.current_query_index += 1;
 
                 // Move to next query or finish
@@ -190,26 +181,29 @@ impl Executable for TableDecommit {
             TableDecommitStep::PrepareVectorDecommit => {
                 witness_push_to_stack_static(stack, self.n_authentications);
                 println!("DEBUG: n_authentications = {}", self.n_authentications);
-
-                // Push all vector queries to stack
-                for query in self.vector_queries.iter().rev() {
-                    stack.push_front(&query.value.to_bytes_be()).unwrap();
-                    stack.push_front(&query.index.to_bytes_be()).unwrap();
+                {
+                    for i in (0..self.total_queries).rev() {
+                        let (query_index, query_value) = {
+                            let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                            (verify_variables.queries[i * 2], verify_variables.queries[i * 2 + 1])
+                        };
+                        stack.push_front(&query_value.to_bytes_be()).unwrap();
+                        stack.push_front(&query_index.to_bytes_be()).unwrap();
+                    }
                 }
+                            
                 stack
                     .push_front(&Felt::from(self.total_queries).to_bytes_be())
                     .unwrap();
                 println!("DEBUG: total_queries = {}", self.total_queries);
 
                 // Push vector commitment
-                commitment_push_to_stack(&self.commitment.vector_commitment, stack);
-
+                commitment_push_to_stack(&self.commitment, stack);
                 self.step = TableDecommitStep::ExecuteVectorDecommit;
                 vec![VectorDecommit::new().to_vec_with_type_tag()]
             }
 
             TableDecommitStep::ExecuteVectorDecommit => {
-                // VectorDecommit completed successfully
                 self.step = TableDecommitStep::Done;
                 vec![]
             }
@@ -231,7 +225,7 @@ impl TableDecommit {
         &mut self,
         stack: &mut T,
     ) {
-        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
         let montgomery_values = &verify_variables.montgomery_values;
 
         for i in 0..self.total_queries {
@@ -250,7 +244,8 @@ impl TableDecommit {
                 Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
             };
 
-            self.vector_queries[i].value = hash;
+            // self.vector_queries[i].value = hash;
+            verify_variables.queries[i * 2 + 1] = hash; 
         }
     }
 }
@@ -366,7 +361,7 @@ impl Executable for GenerateVectorQueries {
         self.step == GenerateVectorQueriesStep::Done
     }
 }
-
+#[inline(always)]
 fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> usize {
     let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
@@ -392,7 +387,7 @@ fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -
     }
     n_auth_usize
 }
-
+#[inline(always)]
 pub fn witness_push_to_stack_static<T: BidirectionalStack + StarkVerifyTrait>(
     stack: &mut T,
     count: usize,
@@ -407,15 +402,15 @@ pub fn witness_push_to_stack_static<T: BidirectionalStack + StarkVerifyTrait>(
     }
     stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
 }
-
+#[inline(always)]
 fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    commitment: &Commitment,
+    commitment: &VectorCommitment,
     stack: &mut T,
 ) {
     let commitment_bytes = cast_struct_to_slice(commitment);
     stack.push_front(commitment_bytes).unwrap();
 }
-
+#[inline(always)]
 fn decommitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) {
     // Read values length first (back to original approach for transaction size)
     let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -432,7 +427,7 @@ fn decommitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut
         verify_variables.montgomery_values[i] = value * MONTGOMERY_R;
     }
 }
-
+#[inline(always)]
 fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(
     stack: &mut T,
 ) -> TableCommitment {

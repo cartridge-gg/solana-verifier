@@ -14,9 +14,6 @@ mod fixtures;
 #[test]
 fn test_table_decommit() {
     let mut stack = BidirectionalStackAccount::default();
-
-    // Correct test data from the working implementation
-    // Correct test data from the working implementation
     let commitment_hash =
         Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
             .unwrap();
@@ -414,6 +411,10 @@ fn test_table_decommit() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("Step: {}", steps);
+        // if steps == 817 {
+        //     break;
+        // }
         steps += 1;
     }
 

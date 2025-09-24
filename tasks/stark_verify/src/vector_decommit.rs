@@ -141,7 +141,7 @@ impl Executable for VectorDecommit {
     }
 }
 
-/// Read queries from stack and store them in a mutable slice (no allocation)
+#[inline(always)]
 pub fn read_queries_from_stack<T: BidirectionalStack + StarkVerifyTrait>(
     stack: &mut T,
     count: &mut usize,
@@ -160,7 +160,7 @@ pub fn read_queries_from_stack<T: BidirectionalStack + StarkVerifyTrait>(
     }
 }
 
-/// Push queries with depth from a slice to stack (no allocation)
+#[inline(always)]
 pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
     count: usize,
     stack: &mut T,
@@ -187,7 +187,7 @@ pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait
     // Push length
     stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
 }
-
+#[inline(always)]
 fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Commitment {
     let data = stack.borrow_front();
     let commitment_ref = cast_slice_to_struct::<Commitment>(data);
@@ -195,7 +195,7 @@ fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T
     stack.pop_front();
     commitment
 }
-
+#[inline(always)]
 fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> usize {
     let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
@@ -221,7 +221,7 @@ fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -
     }
     n_auth_usize
 }
-
+#[inline(always)]
 fn push_to_stack<T: BidirectionalStack>(config: &Config, stack: &mut T) {
     stack
         .push_front(&config.n_verifier_friendly_commitment_layers.to_bytes_be())

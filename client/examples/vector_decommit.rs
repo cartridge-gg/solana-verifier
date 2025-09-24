@@ -709,7 +709,7 @@ async fn main() -> client::Result<()> {
     println!("\nVerifying results against expected values...");
 
     // Check that stack is empty (task completed successfully)
-    // assert_eq!(stack.front_index, 0, "Stack should be empty");
+    assert_eq!(stack.front_index, 0, "Stack should be empty");
     assert_eq!(stack.back_index, 65536, "Stack should be empty");
 
     println!("✓ All verifications passed! Results match expected values from stark_commitment.rs");

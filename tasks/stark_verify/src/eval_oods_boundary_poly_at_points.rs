@@ -89,6 +89,9 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     self.points[i] = point;
                 }
 
+
+                // THESE ARE IMPORTANT 
+
                 // assert!(
                 //     decommitment.original.values.len() as u32 == points.len() as u32 * n_original_columns,
                 //     "Invalid value"
