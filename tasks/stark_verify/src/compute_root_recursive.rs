@@ -169,21 +169,6 @@ impl Executable for ComputeRootRecursive {
                      FUNVEC_QUERIES
                  );
  
-                //  for i in 0..self.n_queries_usize {
-                //      let index = Felt::from_bytes_be_slice(stack.borrow_front());
-                //      stack.pop_front();
-                //      let value = Felt::from_bytes_be_slice(stack.borrow_front());
-                //      stack.pop_front();
-                //      let depth = Felt::from_bytes_be_slice(stack.borrow_front());
-                //      stack.pop_front();
- 
-                //      let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                //      let queries_slice = &mut verify_variables.queries;
-                //      queries_slice[i * 3] = index;
-                //      queries_slice[i * 3 + 1] = value;
-                //      queries_slice[i * 3 + 2] = depth;
-                //  }
- 
                  self.start = Felt::from_bytes_be_slice(stack.borrow_front())
                      .try_into()
                      .unwrap();
@@ -227,14 +212,13 @@ impl Executable for ComputeRootRecursive {
 
                 if bit == Felt::ZERO {
                     if self.start + 1 < self.n_queries_usize {
-                        let (next_index, next_value, _next_depth) = {
+                        let (next_index, next_value) = {
                             let verify_variables: &mut VerifyVariables =
                                 stack.get_verify_variables_mut();
                             let queries_slice = &mut verify_variables.queries;
                             (
                                 queries_slice[(self.start + 1) * 3],
                                 queries_slice[(self.start + 1) * 3 + 1],
-                                queries_slice[(self.start + 1) * 3 + 2],
                             )
                         };
                         if self.current.index + Felt::ONE == next_index {
