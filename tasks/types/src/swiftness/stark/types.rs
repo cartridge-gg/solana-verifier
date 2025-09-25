@@ -1,6 +1,6 @@
 use super::config::StarkConfig;
 use crate::funvec::{
-    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_OODS, FUNVEC_QUERIES,
+    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_COSET_ELEMENTS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_LEAVES, FUNVEC_OODS, FUNVEC_QUERIES, FUNVEC_QUERY_INDICES
 };
 use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
@@ -23,6 +23,13 @@ where
 {
     assert_eq!(slice.len(), std::mem::size_of::<T>());
     unsafe { &*(slice.as_ptr() as *const T) }
+}
+pub fn cast_slice_to_struct_mut<T>(slice: &mut [u8]) -> &mut T
+where
+    T: Sized,
+{
+    assert_eq!(slice.len(), std::mem::size_of::<T>());
+    unsafe { &mut *(slice.as_ptr() as *mut T) }
 }
 pub fn cast_struct_to_slice<T>(s: &T) -> &[u8]
 where
@@ -99,6 +106,48 @@ impl Default for VerifyVariables {
             decommitment_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+#[repr(C)]
+pub struct FriVerifyData {
+    pub queries: FunVec<Felt, FUNVEC_QUERIES>,
+    pub fri_decommitment: swiftness::commitment::types::Decommitment,
+    pub current_layer: usize,
+    pub working_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>,
+    pub next_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>, // For storing next layer queries
+    pub working_elements: FunVec<Felt, FUNVEC_LEAVES>,
+    pub sibling_witness: FunVec<Felt, FUNVEC_LEAVES>, // Global sibling witness for all cosets
+    pub working_indices: FunVec<Felt, FUNVEC_QUERY_INDICES>,
+    pub working_y_values: FunVec<Felt, FUNVEC_LEAVES>,
+    pub coset_size: Felt,
+    pub eval_point: Felt,
+    pub next_x_inv_value: Felt, // For storing x_inv_value for next_queries
+    pub coset_x_inv: Felt,      // For storing coset_x_inv for fri_formula
+    pub coset_elements: FunVec<Felt, FUNVEC_COSET_ELEMENTS>,
+    pub current_coset_index: usize, // Track which coset is being processed
+}
+
+impl Default for FriVerifyData {
+    fn default() -> Self {
+        Self {
+            queries: FunVec::default(),
+            fri_decommitment: swiftness::commitment::types::Decommitment::default(),
+            current_layer: 0,
+            working_queries: FunVec::default(),
+            next_queries: FunVec::default(),
+            working_elements: FunVec::default(),
+            sibling_witness: FunVec::default(),
+            working_indices: FunVec::default(),
+            working_y_values: FunVec::default(),
+            coset_size: Felt::ZERO,
+            eval_point: Felt::ZERO,
+            next_x_inv_value: Felt::ZERO,
+            coset_x_inv: Felt::ZERO,
+            coset_elements: FunVec::default(),
+            current_coset_index: 0,
         }
     }
 }

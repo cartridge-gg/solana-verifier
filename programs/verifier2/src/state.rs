@@ -2,6 +2,8 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::cast_slice_to_struct;
+use types::swiftness::stark::types::cast_slice_to_struct_mut;
 use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::VerifyVariables;
@@ -9,6 +11,7 @@ use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
 use utils::ProofData;
 use utils::StarkCommitmentTrait;
 use utils::StarkVerifyTrait;
+use utils::CACHE_SIZE;
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
@@ -33,6 +36,7 @@ pub struct BidirectionalStackAccount {
     pub poseidon_bits: [Felt; POSEIDON_BITS_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
     pub verify_variables: VerifyVariables,
+    pub cached_data: [u8; CACHE_SIZE],
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -51,6 +55,7 @@ impl Default for BidirectionalStackAccount {
             verify_variables: VerifyVariables::default(),
             eval_composition_polynomial_bits: [Felt::ZERO; BITS_SIZE],
             poseidon_bits: [Felt::ZERO; POSEIDON_BITS_SIZE],
+            cached_data: [0; CACHE_SIZE],
         }
     }
 }
@@ -173,6 +178,21 @@ impl BidirectionalStack for BidirectionalStackAccount {
 
     fn is_empty_back(&self) -> bool {
         self.back_index == CAPACITY
+    }
+    fn store_in_cache<T>(&mut self, data: &T) {
+        let bytes = cast_struct_to_slice(data);
+        assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
+        self.cached_data[..bytes.len()].copy_from_slice(bytes);
+    }
+
+    fn borrow_from_cache<T>(&self) -> &T {
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct::<T>(&self.cached_data[..size])
+    }
+
+    fn borrow_from_cache_mut<T>(&mut self) -> &mut T {
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct_mut::<T>(&mut self.cached_data[..size])
     }
 }
 
@@ -338,6 +358,46 @@ impl ProofData for BidirectionalStackAccount {
 
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         &mut self.constraint_coefficients
+    }
+
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
+        let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice(&self.proof);
+
+        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache does
+        let cache_size = std::mem::size_of::<C>();
+        let cache_bytes = &self.cached_data[..cache_size];
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+
+        let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
+        let cache = unsafe { &*(cache_bytes.as_ptr() as *const C) };
+
+        (stark_commitment, proof, cache)
+    }
+
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut C) {
+        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+
+        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache_mut does
+        let cache_size = std::mem::size_of::<C>();
+        let cache_bytes = &mut self.cached_data[..cache_size];
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+
+        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+        let cache = unsafe { &mut *(cache_bytes.as_mut_ptr() as *mut C) };
+
+        (stark_commitment, proof, cache)
     }
 }
 

@@ -556,7 +556,7 @@ async fn main() -> client::Result<()> {
 
     println!("✓ All verifications passed! Results match expected values from stark_commitment.rs");
     println!("✓ Stack is empty - task completed successfully");
-    println!("✓ VectorDecommit test completed successfully on Solana!");
+    println!("✓ TableDecommit test completed successfully on Solana!");
 
     Ok(())
 }

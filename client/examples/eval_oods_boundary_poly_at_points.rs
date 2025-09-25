@@ -10,20 +10,10 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify::{traces_decommit::TracesDecommit, vector_decommit::VectorDecommit};
+use stark_verify::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::commitment::table::config::Config as TableConfig;
-use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
-use types::swiftness::{
-    commitment::vector::config::Config as VectorConfig,
-    global_values::{GlobalValues, InteractionElements},
-};
 use utils::BidirectionalStack;
-use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use utils::{AccountCast, Executable};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;
@@ -74,9 +64,10 @@ async fn main() -> client::Result<()> {
         .await?;
     println!("Account created successfully: {signature}");
 
-    println!("\nEvalCompositionPolynomialInner Task on Solana");
-    println!("==============================================");
+    println!("\nEvalOodsBoundaryPolyAtPoints Task on Solana");
+    println!("=============================================");
 
+    // Set up the account with minimal data like in unit test
     let stack_bytes = prepare_input::get_bytes();
     let mut instructions = Vec::new();
     for (chunk_index, chunk) in stack_bytes.chunks(CHUNK_SIZE).enumerate() {
@@ -99,36 +90,38 @@ async fn main() -> client::Result<()> {
         transactions.push(set_proof_tx.clone());
     }
     send_and_confirm_transactions(&client, &transactions).await?;
-    println!("All data set successfully");
+    println!("Account data set successfully");
 
-    let queries_hex = [
-        "0xd20990",
-        "0x1702a2dc",
-        "0x233bfb24",
-        "0x2fc8f32e",
-        "0x367bcdcb",
-        "0x44445cc6",
-        "0x4bf4ed93",
-        "0x8df252ca",
-        "0x97a48b5b",
-        "0xafea6443",
-        "0xc62f63b8",
-        "0xd76e5257",
-        "0xecca885b",
-        "0xedc42f8b",
-        "0xf6821efe",
-        "0xf7769c26",
+    // Use the same points as in the unit test (from fixtures::queries::result())
+    let points_hex = [
+        "0x19def6309c27c3fa7844c5dcf97482dfb990623fffa356c0b6aa93a84840728",
+        "0x492280f95460c8f9db2fecc27ee0a783fcf1deab4f327511844f9bb42425cf6",
+        "0x71563605a5b60d9422cadbcfec42ad8e9c0852480122970c88133a7cbd8f56b",
+        "0x3af83aef91f27a7940b894ae7ca082a482078c31a322a39b76b4f5b1c44b6e1",
+        "0x5e4dfa204eab845ffa6b00b011a3745fd71106364d948a4fb048752c7bf954d",
+        "0x5c0bdca0f6180c2b3cfca224a853cb9504c16b0a16f1025be8746e54335cf01",
+        "0x7c1fbdcf0da9f44c6ee49a7cc2da7bfb5aae7fe8405a3fd42105c0a9d864a36",
+        "0x587e32ddf511d3dd04193d0af898e18e80cae410ba411400e6185c162635419",
+        "0xe1314b65854a3e4a87ffd44299dfa1fd5ec35c83cedad436204e7a12c8bd13",
+        "0x22bd9975e69ab780c1bd874c99fb102d337e90d3a905eac19ce54c5d1b6bbd1",
+        "0x67c3e65dd1624c47dce264322e2e6b2797d096fa76248f11e2182fe9a99f5f2",
+        "0x38958ba48451e0157ffab3225716567beac30b44df4db2a251e743cbb93af49",
+        "0x3bc1a9f0df58b8c03d1535e3b02c4b4a646ef22b21ef6d47241e7f781e57ce0",
+        "0x77e2e9cca0a2415553be66e6ebd9393570c3ecf3426546e6944e74774010e03",
+        "0x3561aa6ed23bb17fac27de9a4e314d768f5ea05a033bbcb1de2cff9ae90ab6",
+        "0x7f90255cc310f54635400a0fc3ad5d4dcd9afb685485297d828f04cb9c29fcb",
     ];
 
-    let queries = queries_hex
+    let points = points_hex
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
         .collect::<Vec<_>>();
 
-    for index in queries.iter().rev() {
-        let push_query_ix = Instruction::new_with_borsh(
+    // Push points in reverse order (like in unit test)
+    for point in points.iter().rev() {
+        let push_point_ix = Instruction::new_with_borsh(
             program_id,
-            &VerifierInstruction::PushData(index.to_bytes_be().to_vec()),
+            &VerifierInstruction::PushData(point.to_bytes_be().to_vec()),
             vec![AccountMeta::new(stack_account.pubkey(), false)],
         );
 
@@ -137,15 +130,16 @@ async fn main() -> client::Result<()> {
             &payer,
             &program_id,
             &stack_account,
-            &[push_query_ix],
+            &[push_point_ix],
         )
         .await?;
     }
 
-    let queries_length = Felt::from(queries.len() as u64);
-    let push_queries_length_ix = Instruction::new_with_borsh(
+    // Push points length
+    let points_length = Felt::from(points.len() as u64);
+    let push_points_length_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushData(queries_length.to_bytes_be().to_vec()),
+        &VerifierInstruction::PushData(points_length.to_bytes_be().to_vec()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
@@ -154,21 +148,21 @@ async fn main() -> client::Result<()> {
         &payer,
         &program_id,
         &stack_account,
-        &[push_queries_length_ix],
+        &[push_points_length_ix],
     )
     .await?;
 
-    // Push the TracesDecommit task to the stack
-    let traces_decommit_task = TracesDecommit::new();
+    // Push the EvalOodsBoundaryPolyAtPoints task to the stack
+    let eval_oods_boundary_poly_at_points_task = EvalOodsBoundaryPolyAtPoints::new();
 
     println!(
-        "Using TracesDecommit with TYPE_TAG: {}",
-        TracesDecommit::TYPE_TAG
+        "Using EvalOodsBoundaryPolyAtPoints with TYPE_TAG: {}",
+        EvalOodsBoundaryPolyAtPoints::TYPE_TAG
     );
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushTask(traces_decommit_task.to_vec_with_type_tag()),
+        &VerifierInstruction::PushTask(eval_oods_boundary_poly_at_points_task.to_vec_with_type_tag()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
@@ -236,14 +230,53 @@ async fn main() -> client::Result<()> {
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
 
     println!("All execution steps completed");
-    // Read the result from the account and verify it matches expected values
-    println!("\nVerifying results against expected values...");
+    
+    // Read results like in unit test
+    let mut evaluations = Vec::new();
+    while !stack.is_empty_front() {
+        let result = Felt::from_bytes_be_slice(stack.borrow_front());
+        stack.pop_front();
+        if result != Felt::ZERO {
+            evaluations.push(result);
+        }
+    }
+
+    // Expected results from unit test
+    let expected_result = vec![
+        "0x56589147f36eee3f7976a1542599dd32be46d202f4ec49dccef821f43ade30f",
+        "0x6da23461f6dc6aac5624da021558eaea6f8039c59a3a1596694aaade6ae5aea",
+        "0x7c2cb3f9065f1c08480be0521698325689a3346e6fd358e65d98f43ef91848e",
+        "0x7272da9be8a83b5007e3b63487265431b894626aabe48070e87412a33f06e21",
+        "0x48b12d9655668770fbb57fa2aaa241df1aff1195a68c44ea912563e633c0311",
+        "0x5613f5cb362f21af6a28237858c8e25930ee6d1f03d615991862c966b696b07",
+        "0x1daf84477265f19fbcbb8fa7b62d85a14221de9add62996cb6a1eba477532c",
+        "0x255f150abc9f168bbf353a77445b26a0c4c3243be19985398cef35916b39349",
+        "0x3d99e7912b03d046b302ba451fd39d4a2f22173c5d3facd40eaf8e4ca160729",
+        "0x3931a734c9e17b5d11721226625ce4d8c2ce416cd05168442c636717b8f2b7c",
+        "0x501483805f53ae20ff3317425627bab5a8a31487ce9e62bf09f2ad591d4d636",
+        "0x55bf2ccb8e98ecd75c23c941d8201b3ff3cce32f4c2fedeea787307cd42f275",
+        "0x2872e8b5f38ac80c1db5cd85801c20696a1480e7a35d532a8d06d51428d7417",
+        "0x2217dfcf29dd655b6a85d1769e7cf444ecefa2cd276e1c6de73d5d039c6cf8e",
+        "0x1558aa1be37c22f07b2b0422b37a5f67ef6285c8a33a94f7d46347bfc64b9e2",
+        "0x43bbcf9a0483a1f8e74570452b870ef248e4d5aa227bf64910c0c92d0afa598",
+    ]
+    .iter()
+    .map(|f| Felt::from_hex(f).unwrap())
+    .collect::<Vec<Felt>>();
+
+    println!("Expected result: {:?}", expected_result);
+    println!("Actual result:   {:?}", evaluations);
+
+    assert_eq!(
+        evaluations, expected_result,
+        "Result should match expected value from unit test"
+    );
 
     // Check that stack is empty (task completed successfully)
-    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
-    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+    assert!(stack.is_empty_back(), "Stack should be empty");
+    assert!(stack.is_empty_front(), "Stack should be empty");
 
-    println!("✓ All verifications passed! Results match expected values from stark_commitment.rs");
+    println!("✓ All verifications passed! Results match expected values from unit test");
     println!("✓ Stack is empty - task completed successfully");
     println!("✓ EvalOodsBoundaryPolyAtPoints test completed successfully on Solana!");
 
@@ -255,15 +288,9 @@ mod prepare_input {
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use types::swiftness::air::trace::Commitment as TraceCommitment;
-    use types::swiftness::air::trace::Decommitment as TraceDecommitment;
-    use types::swiftness::commitment::table::config::Config as TableConfig;
-    use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-    use types::swiftness::commitment::vector::config::Config as VectorConfig;
-    use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
-    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
+    use types::swiftness::global_values::InteractionElements;
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
 
@@ -272,79 +299,14 @@ mod prepare_input {
     pub fn get_bytes() -> Vec<u8> {
         let mut stack = BidirectionalStackAccount::default();
 
+        // Load proof like in unit test
         let proof_str = include_str!("../../example_proof/saya.json");
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
         stack.proof = proof_verifier.clone();
 
-        let interaction_elements = InteractionElements {
-            memory_multi_column_perm_perm_interaction_elm: Felt::from_hex(
-                "0x63be95eef090c5ed842139ace99b3dc2e8222f4946d656d2b8ecf9f3a4eaa64",
-            )
-            .unwrap(),
-            memory_multi_column_perm_hash_interaction_elm0: Felt::from_hex(
-                "0x522df1ce46453857bc93d7b48c77fd4968ae6be4de52c9a9ebf3b053fe3f288",
-            )
-            .unwrap(),
-            range_check16_perm_interaction_elm: Felt::from_hex(
-                "0x47256c1d9e69a2c23e0a5b2666fd2e2037ef2987d19b53da2b089c7a79e217c",
-            )
-            .unwrap(),
-            diluted_check_permutation_interaction_elm: Felt::from_hex(
-                "0x1f44508505278264aabe386ad5df3bee4b8147b3d0e20518bfaec709cbc1322",
-            )
-            .unwrap(),
-            diluted_check_interaction_z: Felt::from_hex(
-                "0x7f01d79f2cdf6aa851c9b2e0fa2e92f64ecd655289f827b14d5e7b483f52b48",
-            )
-            .unwrap(),
-            diluted_check_interaction_alpha: Felt::from_hex(
-                "0x734820597aa2142c285a8ab4990f17ba4241a78de519e3661dafd9453a8e822",
-            )
-            .unwrap(),
-        };
-
-        let n_columns_original = Felt::from_hex_unchecked("0x6");
-        let n_columns_interaction = Felt::from_hex_unchecked("0x2");
-        let height = Felt::from_hex("0x20").unwrap(); // 20
-        let n_verifier_friendly_layers = Felt::from_hex("0x17").unwrap(); // 100
-        let original_commitment_hash =
-            Felt::from_hex("0x305f1ee7c0b38a403b2fa7ec86a3d11c8a174891194a2c656147268b59e876d")
-                .unwrap();
-        let interaction_commitment_hash =
-            Felt::from_hex("0x6d41514e4a6e39f5b4e5f18f234525df1d2d92393c11ce11bd885615c88406")
-                .unwrap();
-
-        let vector_config = VectorConfig {
-            height,
-            n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
-        };
-
-        let table_config_original = TableConfig {
-            n_columns: n_columns_original,
-            vector: vector_config,
-        };
-        let table_config_interaction = TableConfig {
-            n_columns: n_columns_interaction,
-            vector: vector_config,
-        };
-        let vector_commitment_original =
-            VectorCommitment::new(vector_config, original_commitment_hash);
-        let vector_commitment_interaction =
-            VectorCommitment::new(vector_config, interaction_commitment_hash);
-
-        // Set up stark commitment with data from the log
-        let table_commitment_original =
-            TableCommitment::new(table_config_original, vector_commitment_original);
-        let table_commitment_interaction =
-            TableCommitment::new(table_config_interaction, vector_commitment_interaction);
-        let trace_commitment = TraceCommitment::<InteractionElements>::new(
-            table_commitment_original,
-            interaction_elements,
-            table_commitment_interaction,
-        );
-
+        // Set constraint coefficients and oods values like in unit test
         stack.constraint_coefficients = constraint_coefficients::get()
             .as_slice()
             .try_into()
@@ -356,9 +318,16 @@ mod prepare_input {
             .try_into()
             .unwrap();
 
+        // Set up stark commitment with OODS point like in unit test
+        let oods_point = Felt::from_hex(
+            "0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc",
+        )
+        .unwrap();
+
         let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
-        stark_commitment.traces = trace_commitment;
+        stark_commitment.interaction_after_composition = oods_point;
         stack.stark_commitment = stark_commitment;
+
         let bytes = cast_struct_to_slice_mut(&mut stack).to_vec();
         bytes
     }

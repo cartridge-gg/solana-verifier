@@ -15,6 +15,8 @@ pub const FUNVEC_SEGMENTS: usize = 12;
 pub const FUNVEC_QUERIES: usize = 1500;
 pub const FUNVEC_COLUMN_VALUES: usize = 15;
 pub const FUNVEC_QUERY_INDICES: usize = 50;
+pub const FUNVEC_FRI_GROUP: usize = 16;
+pub const FUNVEC_COSET_ELEMENTS: usize = 256;
 
 pub fn print_address<T>(address: &T, label: u64) {
     sol_log_64(

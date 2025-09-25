@@ -18,6 +18,7 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
+pub const CACHE_SIZE: usize = 1048576;
 
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
@@ -47,6 +48,10 @@ pub trait BidirectionalStack {
     fn borrow_mut_back(&mut self) -> &mut [u8];
     fn is_empty_front(&self) -> bool;
     fn is_empty_back(&self) -> bool;
+
+    fn store_in_cache<T>(&mut self, data: &T);
+    fn borrow_from_cache<T>(&self) -> &T;
+    fn borrow_from_cache_mut<T>(&mut self) -> &mut T;
 }
 
 pub trait Scheduler: BidirectionalStack {
@@ -121,6 +126,11 @@ pub trait ProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
+
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C);
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut C);
 }
 /// Trait for providing automatic type identification with cryptographic hashing
 pub trait TypeIdentifiable {
