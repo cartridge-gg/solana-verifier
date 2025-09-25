@@ -1,7 +1,7 @@
 use crate::fixtures::decommitment;
-use types::funvec::FunVec;
-use types::swiftness::air::trace::Decommitment as TraceDecommitment;
-use types::swiftness::commitment::table::types::Decommitment as TableDecommitment;
+use stark::funvec::FunVec;
+use stark::swiftness::air::trace::Decommitment as TraceDecommitment;
+use stark::swiftness::commitment::table::types::Decommitment as TableDecommitment;
 use swiftness_proof_parser::transform::MONTGOMERY_R;
 
 pub fn get() -> TraceDecommitment {

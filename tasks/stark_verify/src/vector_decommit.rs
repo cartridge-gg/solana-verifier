@@ -9,19 +9,29 @@ use crate::compute_root_recursive::ComputeRootRecursive;
 use types::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_QUERIES};
 use types::swiftness::commitment::vector::types::Commitment;
 use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};
+
 // Main VectorDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VectorDecommitStep {
-    VectorCommitmentDecommit,
+    ReadCommitmentAndConfig,     // read commitment + queries count
+    ProcessQueriesBatch,         // read queries in batches
+    InitProcessWitness,          // read n_authentications  
+    ProcessWitnessBatch,         // read authentications in batches
+    PrepareComputeRoot,          // prepare data for ComputeRootRecursive
     VerifyCommitmentHash,
     Done,
 }
+
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct VectorDecommit {
     step: VectorDecommitStep,
     reference_commitment_hash: Felt,
     n_authentications: usize,
+    queries_count: usize,
+    current_query_index: usize,
+    current_auth_index: usize,
+    vector_commitment: Commitment,
 }
 
 impl_type_identifiable!(VectorDecommit);
@@ -29,9 +39,13 @@ impl_type_identifiable!(VectorDecommit);
 impl VectorDecommit {
     pub fn new() -> Self {
         Self {
-            step: VectorDecommitStep::VectorCommitmentDecommit,
+            step: VectorDecommitStep::ReadCommitmentAndConfig,
             reference_commitment_hash: Felt::ZERO,
             n_authentications: 0,
+            queries_count: 0,
+            current_query_index: 0,
+            current_auth_index: 0,
+            vector_commitment: Commitment::default(),
         }
     }
 }
@@ -48,31 +62,119 @@ impl Executable for VectorDecommit {
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
-            VectorDecommitStep::VectorCommitmentDecommit => {
-                // Read vector commitment using trait method
-                let vector_commitment = commitment_from_stack(stack);
-
-                self.reference_commitment_hash = vector_commitment.commitment_hash;
-                let height = vector_commitment.config.height;
+            VectorDecommitStep::ReadCommitmentAndConfig => {
+                // Read vector commitment
+                self.vector_commitment = commitment_from_stack(stack);
+                self.reference_commitment_hash = self.vector_commitment.commitment_hash;
 
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
+                self.queries_count = queries_len.to_biguint().try_into().unwrap();
                 assert!(
-                    queries_count <= FUNVEC_QUERIES,
+                    self.queries_count <= FUNVEC_QUERIES,
                     "Too many queries: {} > {}",
-                    queries_count,
+                    self.queries_count,
                     FUNVEC_QUERIES
                 );
 
-                // Read queries into pre-allocated array
-                let mut count = queries_count;
-                read_queries_from_stack(stack, &mut count);
-                self.n_authentications = witness_from_stack(stack);
+                self.current_query_index = 0;
+                self.step = VectorDecommitStep::ProcessQueriesBatch;
+                vec![]
+            }
 
-                // Push vector config using trait method
-                push_to_stack(&vector_commitment.config, stack);
+            VectorDecommitStep::ProcessQueriesBatch => {
+                const BATCH_SIZE: usize = 50; // Process max 50 queries per transaction
+                
+                let batch_end = std::cmp::min(
+                    self.current_query_index + BATCH_SIZE, 
+                    self.queries_count
+                );
+
+                // Process batch of queries
+                for i in self.current_query_index..batch_end {
+                    let index = Felt::from_bytes_be_slice(stack.borrow_front());
+                    stack.pop_front();
+                    let value = Felt::from_bytes_be_slice(stack.borrow_front());
+                    stack.pop_front();
+
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    let queries_slice = &mut verify_variables.temp_queries;
+                    queries_slice[i * 2] = index;
+                    queries_slice[i * 2 + 1] = value;
+                }
+
+                self.current_query_index = batch_end;
+
+                // Check if done with all queries
+                if self.current_query_index >= self.queries_count {
+                    self.step = VectorDecommitStep::InitProcessWitness;
+                } else {
+                    // Continue with next batch
+                    self.step = VectorDecommitStep::ProcessQueriesBatch;
+                }
+
+                vec![]
+            }
+
+            VectorDecommitStep::InitProcessWitness => {
+                // Read witness authentications count
+                let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
+                self.n_authentications = n_authentications.try_into().unwrap();
+                assert!(
+                    self.n_authentications <= FUNVEC_AUTHENTICATIONS,
+                    "Too many authentications: {} > {}",
+                    self.n_authentications,
+                    FUNVEC_AUTHENTICATIONS
+                );
+                
+                println!(
+                    "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
+                    self.n_authentications
+                );
+
+                self.current_auth_index = 0;
+                self.step = VectorDecommitStep::ProcessWitnessBatch;
+                vec![]
+            }
+
+            VectorDecommitStep::ProcessWitnessBatch => {
+                const BATCH_SIZE: usize = 50; // Process max 50 authentications per transaction
+                
+                let batch_end = std::cmp::min(
+                    self.current_auth_index + BATCH_SIZE, 
+                    self.n_authentications
+                );
+
+                // Process batch of authentications
+                for i in self.current_auth_index..batch_end {
+                    let auth = Felt::from_bytes_be_slice(stack.borrow_front());
+                    stack.pop_front();
+
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    verify_variables.authentications[i] = auth;
+                }
+
+                self.current_auth_index = batch_end;
+
+                // Check if done with all authentications
+                if self.current_auth_index >= self.n_authentications {
+                    self.step = VectorDecommitStep::PrepareComputeRoot;
+                } else {
+                    // Continue with next batch
+                    self.step = VectorDecommitStep::ProcessWitnessBatch;
+                }
+
+                vec![]
+            }
+
+            VectorDecommitStep::PrepareComputeRoot => {
+                let height = self.vector_commitment.config.height;
+
+                // Push vector config
+                push_to_stack(&self.vector_commitment.config, stack);
 
                 let shift = Felt::TWO.pow_felt(&height);
 
@@ -81,7 +183,7 @@ impl Executable for VectorDecommit {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
 
                     // Convert to QueryWithDepth format (index + shift, value, height)
-                    for i in 0..queries_count {
+                    for i in 0..self.queries_count {
                         let index = verify_variables.temp_queries[i * 2];
                         let value = verify_variables.temp_queries[i * 2 + 1];
                         verify_variables.queries[i * 3] = index + shift;
@@ -90,24 +192,16 @@ impl Executable for VectorDecommit {
                     }
                 }
 
-                // Push authentications using trait method
-                for i in (0..self.n_authentications).rev() {
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let auth = verify_variables.authentications[i].to_bytes_be();
-                    stack.push_front(&auth).unwrap();
-                }
-                
                 stack
                     .push_front(&Felt::from(self.n_authentications).to_bytes_be())
                     .unwrap();
 
                 let auth_start = Felt::ZERO;
                 let start = Felt::ZERO;
+                
                 stack.push_front(&auth_start.to_bytes_be()).unwrap();
                 stack.push_front(&start.to_bytes_be()).unwrap();
-
-                // Push queries with depth using trait method
-                push_queries_with_depth_to_stack(queries_count, stack);
+                stack.push_front(&Felt::from(self.queries_count).to_bytes_be()).unwrap();
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();
@@ -142,25 +236,6 @@ impl Executable for VectorDecommit {
 }
 
 #[inline(always)]
-pub fn read_queries_from_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    stack: &mut T,
-    count: &mut usize,
-) {
-    // Read queries directly into the slice
-    for i in 0..*count {
-        let index = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-        let value = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-
-        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-        let queries_slice = &mut verify_variables.temp_queries;
-        queries_slice[i * 2] = index;
-        queries_slice[i * 2 + 1] = value;
-    }
-}
-
-#[inline(always)]
 pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
     count: usize,
     stack: &mut T,
@@ -187,6 +262,7 @@ pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait
     // Push length
     stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
 }
+
 #[inline(always)]
 fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Commitment {
     let data = stack.borrow_front();
@@ -195,32 +271,7 @@ fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T
     stack.pop_front();
     commitment
 }
-#[inline(always)]
-fn witness_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> usize {
-    let n_authentications = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
 
-    let n_auth_usize: usize = n_authentications.try_into().unwrap();
-    assert!(
-        n_auth_usize <= FUNVEC_AUTHENTICATIONS,
-        "Too many authentications: {} > {}",
-        n_auth_usize,
-        FUNVEC_AUTHENTICATIONS
-    );
-    println!(
-        "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
-        n_auth_usize
-    );
-
-    for i in 0..n_auth_usize {
-        let auth = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-
-        let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-        verify_variables.authentications[i] = auth;
-    }
-    n_auth_usize
-}
 #[inline(always)]
 fn push_to_stack<T: BidirectionalStack>(config: &Config, stack: &mut T) {
     stack

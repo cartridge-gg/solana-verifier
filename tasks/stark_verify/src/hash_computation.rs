@@ -50,13 +50,11 @@ impl Executable for HashComputation {
         match self.step {
             HashComputationStep::Init => {
                 if self.is_verifier_friendly {
-                    println!("hash computation step Poseidon");
                     stack.push_front(&self.y.to_bytes_be()).unwrap();
                     stack.push_front(&self.x.to_bytes_be()).unwrap();
                     self.step = HashComputationStep::WaitForPoseidonHash;
                     vec![PoseidonHash::new().to_vec_with_type_tag()]
                 } else {
-                    println!("hash computation step Keccak");
                     let hash = keccak_hash(self.x, self.y);
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
@@ -65,7 +63,6 @@ impl Executable for HashComputation {
                 }
             }
             HashComputationStep::WaitForPoseidonHash => {
-                println!("hash computation step WaitForPoseidonHash");
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 stack.pop_front();
@@ -152,7 +149,6 @@ impl Executable for HashComputationWithQueries {
         match self.step {
             HashComputationWithQueriesStep::Init => {
                 if self.is_verifier_friendly {
-                    println!("hash computation with queries step Poseidon");
                     stack.push_front(&self.y.to_bytes_be()).unwrap();
                     stack.push_front(&self.x.to_bytes_be()).unwrap();
                     self.step = HashComputationWithQueriesStep::WaitForPoseidonHash;

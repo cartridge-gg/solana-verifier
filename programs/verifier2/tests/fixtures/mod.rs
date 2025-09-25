@@ -16,3 +16,6 @@ pub mod stark_witness;
 pub mod trace_decommitment;
 pub mod unsent_commitment;
 pub mod witness;
+pub mod trace_commitment;
+pub mod authentications;
+pub mod decommitment;

@@ -412,9 +412,6 @@ fn test_table_decommit() {
     while !stack.is_empty_back() {
         stack.execute();
         println!("Step: {}", steps);
-        // if steps == 817 {
-        //     break;
-        // }
         steps += 1;
     }
 

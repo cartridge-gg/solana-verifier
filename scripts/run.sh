@@ -4,4 +4,4 @@ rm -rf test-ledger/
 cd programs/verifier2
 cargo build-sbf
 cd ../..
-cargo run --example vector_decommit
+cargo run --example traces_decommit
