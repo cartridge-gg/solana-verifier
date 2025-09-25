@@ -478,7 +478,7 @@ async fn main() -> client::Result<()> {
         .get_account_data(&stack_account.pubkey())
         .await
         .map_err(ClientError::SolanaClientError)?;
-    
+
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
     let result = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();

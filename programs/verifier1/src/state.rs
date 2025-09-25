@@ -2,12 +2,12 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
 use types::swiftness::stark::types::{
-    cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables,
-    cast_slice_to_struct, cast_slice_to_struct_mut,
+    cast_slice_to_struct, cast_slice_to_struct_mut, cast_struct_to_slice, cast_struct_to_slice_mut,
+    StarkCommitment, StarkProof, VerifyVariables,
 };
 use utils::{AccountCast, BidirectionalStack, ProofData, StarkCommitmentTrait, StarkVerifyTrait};
 use utils::{
-    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS, CACHE_SIZE,
+    BITS_SIZE, CACHE_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
     OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
 };
 #[repr(C)]

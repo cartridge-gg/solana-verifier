@@ -162,7 +162,9 @@ async fn main() -> client::Result<()> {
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
-        &VerifierInstruction::PushTask(eval_oods_boundary_poly_at_points_task.to_vec_with_type_tag()),
+        &VerifierInstruction::PushTask(
+            eval_oods_boundary_poly_at_points_task.to_vec_with_type_tag(),
+        ),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
@@ -230,7 +232,7 @@ async fn main() -> client::Result<()> {
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
 
     println!("All execution steps completed");
-    
+
     // Read results like in unit test
     let mut evaluations = Vec::new();
     while !stack.is_empty_front() {
@@ -288,9 +290,9 @@ mod prepare_input {
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
+    use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
-    use types::swiftness::global_values::InteractionElements;
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
 
@@ -319,10 +321,9 @@ mod prepare_input {
             .unwrap();
 
         // Set up stark commitment with OODS point like in unit test
-        let oods_point = Felt::from_hex(
-            "0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc",
-        )
-        .unwrap();
+        let oods_point =
+            Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
+                .unwrap();
 
         let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
         stark_commitment.interaction_after_composition = oods_point;

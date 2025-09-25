@@ -402,7 +402,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
-
                 // Fetch columns
                 let column1 = column_values[1];
 
@@ -562,7 +561,6 @@ impl Executable for EvalOodsPolynomialInner {
                 // Fetch columns
                 let column1 = column_values[1];
 
-
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
 
@@ -642,7 +640,6 @@ impl Executable for EvalOodsPolynomialInner {
                 // Fetch columns
                 let column1 = column_values[1];
                 let column2 = column_values[2];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
@@ -724,7 +721,6 @@ impl Executable for EvalOodsPolynomialInner {
 
                 let column2 = column_values[2];
                 let column3 = column_values[3];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
@@ -886,7 +882,6 @@ impl Executable for EvalOodsPolynomialInner {
                 // Fetch columns
                 let column3 = column_values[3];
 
-
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
 
@@ -968,7 +963,6 @@ impl Executable for EvalOodsPolynomialInner {
                 let column3 = column_values[3];
                 let column4 = column_values[4];
 
-
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
 
@@ -1048,7 +1042,6 @@ impl Executable for EvalOodsPolynomialInner {
 
                 // Fetch columns
                 let column4 = column_values[4];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
@@ -1211,7 +1204,6 @@ impl Executable for EvalOodsPolynomialInner {
                 let column4 = column_values[4];
                 let column5 = column_values[5];
 
-
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
                 let value = (column4 - oods_values[121]).field_div(&felt_nonzero!(
@@ -1290,7 +1282,6 @@ impl Executable for EvalOodsPolynomialInner {
 
                 // Fetch columns
                 let column5 = column_values[5];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
@@ -1371,7 +1362,6 @@ impl Executable for EvalOodsPolynomialInner {
 
                 // Fetch columns
                 let column5 = column_values[5];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
@@ -1530,7 +1520,6 @@ impl Executable for EvalOodsPolynomialInner {
 
                 // Fetch columns
                 let column5 = column_values[5];
-
 
                 // Sum the OODS constraints on the trace polynomials
                 let mut total_sum = self.total_sum;
