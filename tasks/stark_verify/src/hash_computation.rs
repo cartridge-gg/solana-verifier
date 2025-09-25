@@ -165,7 +165,7 @@ impl Executable for HashComputationWithQueries {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &mut verify_variables.queries;
 
-                    let next_slot: usize = (queries_len+Felt::ONE).try_into().unwrap();
+                    let next_slot: usize = (queries_len + Felt::ONE).try_into().unwrap();
 
                     // Check if we found a free slot
                     assert!(
@@ -180,7 +180,9 @@ impl Executable for HashComputationWithQueries {
                     queries_slice[next_slot * 3 + 1] = hash;
                     queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                    stack.push_front(&Felt::from(next_slot + 1).to_bytes_be()).unwrap();
+                    stack
+                        .push_front(&Felt::from(next_slot + 1).to_bytes_be())
+                        .unwrap();
                     stack.push_front(&hash.to_bytes_be()).unwrap();
 
                     self.step = HashComputationWithQueriesStep::Done;
@@ -217,7 +219,9 @@ impl Executable for HashComputationWithQueries {
                 queries_slice[next_slot * 3 + 1] = hash;
                 queries_slice[next_slot * 3 + 2] = self.parent_depth;
 
-                stack.push_front(&Felt::from(next_slot + 1).to_bytes_be()).unwrap();
+                stack
+                    .push_front(&Felt::from(next_slot + 1).to_bytes_be())
+                    .unwrap();
 
                 stack.push_front(&hash.to_bytes_be()).unwrap();
 

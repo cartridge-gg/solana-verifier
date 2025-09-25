@@ -7,7 +7,7 @@ use verifier_2::state::BidirectionalStackAccount;
 mod fixtures;
 use types::swiftness::stark::types::StarkProof;
 
-use crate::fixtures::{authentications, queries, trace_decommitment, trace_commitment};
+use crate::fixtures::{authentications, queries, trace_commitment, trace_decommitment};
 
 #[test]
 fn test_traces_decommit() {

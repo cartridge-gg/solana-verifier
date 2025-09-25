@@ -13,11 +13,11 @@ use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};
 // Main VectorDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VectorDecommitStep {
-    ReadCommitmentAndConfig,     // read commitment + queries count
-    ProcessQueriesBatch,         // read queries in batches
-    InitProcessWitness,          // read n_authentications  
-    ProcessWitnessBatch,         // read authentications in batches
-    PrepareComputeRoot,          // prepare data for ComputeRootRecursive
+    ReadCommitmentAndConfig, // read commitment + queries count
+    ProcessQueriesBatch,     // read queries in batches
+    InitProcessWitness,      // read n_authentications
+    ProcessWitnessBatch,     // read authentications in batches
+    PrepareComputeRoot,      // prepare data for ComputeRootRecursive
     VerifyCommitmentHash,
     Done,
 }
@@ -85,11 +85,9 @@ impl Executable for VectorDecommit {
 
             VectorDecommitStep::ProcessQueriesBatch => {
                 const BATCH_SIZE: usize = 50; // Process max 50 queries per transaction
-                
-                let batch_end = std::cmp::min(
-                    self.current_query_index + BATCH_SIZE, 
-                    self.queries_count
-                );
+
+                let batch_end =
+                    std::cmp::min(self.current_query_index + BATCH_SIZE, self.queries_count);
 
                 // Process batch of queries
                 for i in self.current_query_index..batch_end {
@@ -129,7 +127,7 @@ impl Executable for VectorDecommit {
                     self.n_authentications,
                     FUNVEC_AUTHENTICATIONS
                 );
-                
+
                 println!(
                     "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
                     self.n_authentications
@@ -142,11 +140,9 @@ impl Executable for VectorDecommit {
 
             VectorDecommitStep::ProcessWitnessBatch => {
                 const BATCH_SIZE: usize = 50; // Process max 50 authentications per transaction
-                
-                let batch_end = std::cmp::min(
-                    self.current_auth_index + BATCH_SIZE, 
-                    self.n_authentications
-                );
+
+                let batch_end =
+                    std::cmp::min(self.current_auth_index + BATCH_SIZE, self.n_authentications);
 
                 // Process batch of authentications
                 for i in self.current_auth_index..batch_end {
@@ -198,10 +194,12 @@ impl Executable for VectorDecommit {
 
                 let auth_start = Felt::ZERO;
                 let start = Felt::ZERO;
-                
+
                 stack.push_front(&auth_start.to_bytes_be()).unwrap();
                 stack.push_front(&start.to_bytes_be()).unwrap();
-                stack.push_front(&Felt::from(self.queries_count).to_bytes_be()).unwrap();
+                stack
+                    .push_front(&Felt::from(self.queries_count).to_bytes_be())
+                    .unwrap();
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();

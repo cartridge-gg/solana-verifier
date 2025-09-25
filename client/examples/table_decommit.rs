@@ -13,6 +13,8 @@ use solana_system_interface::instruction::create_account;
 use stark_verify::{table_decommit::TableDecommit, vector_decommit::VectorDecommit};
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::commitment::table::config::Config as TableConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
@@ -20,8 +22,6 @@ use types::swiftness::{
     commitment::vector::config::Config as VectorConfig,
     global_values::{GlobalValues, InteractionElements},
 };
-use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-use types::swiftness::commitment::table::config::Config as TableConfig;
 use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
@@ -267,7 +267,7 @@ async fn main() -> client::Result<()> {
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
         .collect::<Vec<_>>();
-    
+
     let decommitment_values_hex = [
         "0x5a81cfa7b8ba1dd722ce2bcaf78476fd0e0b7fda53287ed2632c2c32ab4f42c",
         "0x437f6248b14ae3bc546eafe54a32cdc961c0821ab13a8ef15b28aae6762c6e9",
@@ -563,8 +563,8 @@ async fn main() -> client::Result<()> {
 
 mod prepare_input {
     use felt::Felt;
-    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
+    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
 
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
@@ -588,12 +588,11 @@ mod prepare_input {
             "0x3982a", "0x52d42", "0x585a8", "0x7c3cc", "0x8af7f", "0x8e6f3", "0x97846", "0x9e330",
             "0xa9b57", "0xfa009",
         ];
-    
+
         let queries = queries_hex
             .iter()
             .map(|f| Felt::from_hex_unchecked(f))
             .collect::<Vec<_>>();
-    
 
         let mut verify_variables = VerifyVariables::default();
         for i in (0..queries.len()).rev() {
@@ -601,7 +600,6 @@ mod prepare_input {
             verify_variables.temp_queries[i * 2] = index;
         }
         stack.verify_variables = verify_variables;
-
 
         stack.constraint_coefficients = constraint_coefficients::get()
             .as_slice()

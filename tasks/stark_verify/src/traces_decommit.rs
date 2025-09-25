@@ -5,10 +5,10 @@ use utils::{
 };
 
 use crate::table_decommit::TableDecommit;
+use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{
     cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
 };
-use types::swiftness::global_values::InteractionElements;
 
 // TracesDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +64,7 @@ impl Executable for TracesDecommit {
                     .try_into()
                     .unwrap();
                 stack.pop_front();
-                
+
                 for i in 0..self.queries_count {
                     let index = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
@@ -84,8 +84,11 @@ impl Executable for TracesDecommit {
                     .vector
                     .authentications
                     .len();
-                    
-                println!("DEBUG: decommitment_values_len: {:?}", self.decommitment_values_len);
+
+                println!(
+                    "DEBUG: decommitment_values_len: {:?}",
+                    self.decommitment_values_len
+                );
                 println!("DEBUG: witness_count: {:?}", self.witness_count);
 
                 self.step = TracesDecommitStep::PrepareOriginalWitnessAuth;
@@ -135,7 +138,7 @@ impl Executable for TracesDecommit {
                 stack
                     .push_front(&self.decommitment_values_len.to_bytes_be())
                     .unwrap();
-                    
+
                 stack
                     .push_front(&Felt::from(self.queries_count).to_bytes_be())
                     .unwrap();
@@ -217,7 +220,7 @@ impl Executable for TracesDecommit {
                 stack
                     .push_front(&self.decommitment_values_len.to_bytes_be())
                     .unwrap();
-                    
+
                 stack
                     .push_front(&Felt::from(self.queries_count).to_bytes_be())
                     .unwrap();

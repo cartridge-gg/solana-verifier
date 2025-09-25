@@ -13,6 +13,8 @@ use solana_system_interface::instruction::create_account;
 use stark_verify::{traces_decommit::TracesDecommit, vector_decommit::VectorDecommit};
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::commitment::table::config::Config as TableConfig;
+use types::swiftness::commitment::table::types::Commitment as TableCommitment;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
@@ -20,11 +22,9 @@ use types::swiftness::{
     commitment::vector::config::Config as VectorConfig,
     global_values::{GlobalValues, InteractionElements},
 };
-use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-use types::swiftness::commitment::table::config::Config as TableConfig;
+use utils::BidirectionalStack;
 use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-use utils::BidirectionalStack;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -119,7 +119,7 @@ async fn main() -> client::Result<()> {
         "0xf6821efe",
         "0xf7769c26",
     ];
-    
+
     let queries = queries_hex
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
@@ -252,18 +252,18 @@ async fn main() -> client::Result<()> {
 
 mod prepare_input {
     use felt::Felt;
-    use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
-    use types::swiftness::air::trace::Decommitment as TraceDecommitment;
-    use types::swiftness::commitment::table::config::Config as TableConfig;
-    use types::swiftness::commitment::vector::config::Config as VectorConfig;
-    use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-    use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use types::swiftness::air::trace::Commitment as TraceCommitment;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
+    use types::swiftness::air::trace::Commitment as TraceCommitment;
+    use types::swiftness::air::trace::Decommitment as TraceDecommitment;
+    use types::swiftness::commitment::table::config::Config as TableConfig;
+    use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+    use types::swiftness::commitment::vector::config::Config as VectorConfig;
+    use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+    use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
+    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
 
@@ -310,17 +310,17 @@ mod prepare_input {
         let height = Felt::from_hex("0x20").unwrap(); // 20
         let n_verifier_friendly_layers = Felt::from_hex("0x17").unwrap(); // 100
         let original_commitment_hash =
-        Felt::from_hex("0x305f1ee7c0b38a403b2fa7ec86a3d11c8a174891194a2c656147268b59e876d")
-            .unwrap();
+            Felt::from_hex("0x305f1ee7c0b38a403b2fa7ec86a3d11c8a174891194a2c656147268b59e876d")
+                .unwrap();
         let interaction_commitment_hash =
             Felt::from_hex("0x6d41514e4a6e39f5b4e5f18f234525df1d2d92393c11ce11bd885615c88406")
-            .unwrap();
+                .unwrap();
 
         let vector_config = VectorConfig {
             height,
             n_verifier_friendly_commitment_layers: n_verifier_friendly_layers,
         };
-    
+
         let table_config_original = TableConfig {
             n_columns: n_columns_original,
             vector: vector_config,
@@ -329,20 +329,21 @@ mod prepare_input {
             n_columns: n_columns_interaction,
             vector: vector_config,
         };
-        let vector_commitment_original = VectorCommitment::new(vector_config, original_commitment_hash);
+        let vector_commitment_original =
+            VectorCommitment::new(vector_config, original_commitment_hash);
         let vector_commitment_interaction =
             VectorCommitment::new(vector_config, interaction_commitment_hash);
-    
+
         // Set up stark commitment with data from the log
         let table_commitment_original =
-          TableCommitment::new(table_config_original, vector_commitment_original);
+            TableCommitment::new(table_config_original, vector_commitment_original);
         let table_commitment_interaction =
-          TableCommitment::new(table_config_interaction, vector_commitment_interaction);
+            TableCommitment::new(table_config_interaction, vector_commitment_interaction);
         let trace_commitment = TraceCommitment::<InteractionElements>::new(
-                table_commitment_original,
-                interaction_elements,
-                table_commitment_interaction,
-            );
+            table_commitment_original,
+            interaction_elements,
+            table_commitment_interaction,
+        );
 
         stack.constraint_coefficients = constraint_coefficients::get()
             .as_slice()

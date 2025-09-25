@@ -20,12 +20,12 @@ const BATCH_SIZE: usize = 50;
 // TableDecommit task phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableDecommitStep {
-    ReadCommitmentAndQueries,    // commitment + queries count
-    ProcessDecommitment,         // decommitment_from_stack()  
-    InitProcessWitness,         // read n_authentications and prepare batching
-    ProcessWitnessBatch,        // process authentications in batches
-    CopyQueriesToVerifyVars,    // pętla kopiowania queries
-    ComputeHashes,              // compute_all_hashes() lub przygotowanie do HashSingleQuery
+    ReadCommitmentAndQueries, // commitment + queries count
+    ProcessDecommitment,      // decommitment_from_stack()
+    InitProcessWitness,       // read n_authentications and prepare batching
+    ProcessWitnessBatch,      // process authentications in batches
+    CopyQueriesToVerifyVars,  // pętla kopiowania queries
+    ComputeHashes,            // compute_all_hashes() lub przygotowanie do HashSingleQuery
     HashSingleQuery,
     CollectHashResult,
     PrepareVectorDecommit,
@@ -44,7 +44,7 @@ pub struct TableDecommit {
     total_queries: usize,
     n_authentications: usize,
     decommitment_values_count: usize,
-    current_auth_index: usize,  // Track current authentication being processed
+    current_auth_index: usize, // Track current authentication being processed
 }
 
 impl_type_identifiable!(TableDecommit);
@@ -189,11 +189,11 @@ impl Executable for TableDecommit {
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     let queries_slice = &verify_variables.temp_queries;
-                    
+
                     for i in 0..self.total_queries {
                         let index = queries_slice[i * 2];
                         println!("DEBUG: index: {:?}", index);
-                        
+
                         verify_variables.queries[i * 2] = index;
                         verify_variables.queries[i * 2 + 1] = Felt::ZERO;
                     }
@@ -206,7 +206,7 @@ impl Executable for TableDecommit {
             TableDecommitStep::ComputeHashes => {
                 self.current_query_index = 0;
                 println!("TableDecommitStep::ComputeHashes step");
-                
+
                 // Decide next step based on configuration
                 if self.n_columns > 1 && self.is_bottom_layer_verifier_friendly {
                     // Need to hash each query with Poseidon (one by one)
@@ -266,13 +266,16 @@ impl Executable for TableDecommit {
                     for i in (0..self.total_queries).rev() {
                         let (query_index, query_value) = {
                             let verify_variables: &VerifyVariables = stack.get_verify_variables();
-                            (verify_variables.queries[i * 2], verify_variables.queries[i * 2 + 1])
+                            (
+                                verify_variables.queries[i * 2],
+                                verify_variables.queries[i * 2 + 1],
+                            )
                         };
                         stack.push_front(&query_value.to_bytes_be()).unwrap();
                         stack.push_front(&query_index.to_bytes_be()).unwrap();
                     }
                 }
-                            
+
                 stack
                     .push_front(&Felt::from(self.total_queries).to_bytes_be())
                     .unwrap();
@@ -327,7 +330,7 @@ impl TableDecommit {
             };
 
             // self.vector_queries[i].value = hash;
-            verify_variables.queries[i * 2 + 1] = hash; 
+            verify_variables.queries[i * 2 + 1] = hash;
         }
     }
 }
