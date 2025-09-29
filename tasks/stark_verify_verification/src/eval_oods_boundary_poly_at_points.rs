@@ -129,7 +129,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     + self.n_interaction_columns as usize
                     + CONSTRAINT_DEGREE;
 
-                assert!(max_columns <= COLUMN_VALUES_SIZE as usize);
+                assert!(max_columns <= COLUMN_VALUES_SIZE);
 
                 let mut column_values = [Felt::ZERO; COLUMN_VALUES_SIZE]; // Fixed size, adjust as needed
 
@@ -266,11 +266,11 @@ impl Executable for ComputeQueryPoints {
         let mut points = [Felt::ZERO; FUNVEC_QUERY_INDICES];
 
         let queries_count = queries_len.to_biguint().try_into().unwrap();
-        for i in 0..queries_count {
+
+        for point_slot in points.iter_mut().take(queries_count) {
             let query = Felt::from_bytes_be_slice(stack.borrow_front());
             let index: u64 = (query * shift).to_biguint().try_into().unwrap();
-            let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
-            points[i] = point;
+            *point_slot = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
             stack.pop_front();
         }
 

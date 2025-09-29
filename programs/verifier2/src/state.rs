@@ -178,7 +178,7 @@ impl BidirectionalStack for BidirectionalStackAccount {
 }
 
 impl CacheStorage for BidirectionalStackAccount {
-    fn store_in_cache<T>(&mut self, data: &T) {
+    fn store_in_cache<T>(&mut self, _data: &T) {
         // let bytes = cast_struct_to_slice(data);
         // assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
         // self.cached_data[..bytes.len()].copy_from_slice(bytes);
@@ -392,7 +392,7 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         panic!("get_constraint_coefficients_mut not supported in verifier2")
     }
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+    fn set_constraint_coefficients(&self, _coefficients: &[Felt]) {
         panic!("set_constraint_coefficients not supported in verifier2")
     }
 }

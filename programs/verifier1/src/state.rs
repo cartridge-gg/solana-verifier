@@ -2,7 +2,7 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
 use types::swiftness::stark::types::{
-    cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables,
+    cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };
 use utils::{
     AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2,
@@ -363,7 +363,7 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         panic!("get_constraint_coefficients_mut not supported in verifier1")
     }
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+    fn set_constraint_coefficients(&self, _coefficients: &[Felt]) {
         panic!("set_constraint_coefficients not supported in verifier1")
     }
 }

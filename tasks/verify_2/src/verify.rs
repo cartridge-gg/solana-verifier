@@ -1,10 +1,7 @@
 use felt::{Felt, NonZeroFelt};
 use stark_verify_decommitments::stark_verify::StarkVerify;
 use transcript::transcript::TranscriptRandomFelt;
-use types::{
-    funvec::FunVec,
-    swiftness::stark::types::{FriVerifyData, StarkProof},
-};
+use types::{funvec::FunVec, swiftness::stark::types::StarkProof};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
     TypeIdentifiable,

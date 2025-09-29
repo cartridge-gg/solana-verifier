@@ -234,34 +234,6 @@ impl Executable for VectorDecommit {
 }
 
 #[inline(always)]
-pub fn push_queries_with_depth_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    count: usize,
-    stack: &mut T,
-) {
-    // Push queries in reverse order - no allocation
-    for i in (0..count).rev() {
-        let (depth_bytes, value_bytes, index_bytes) = {
-            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-            let queries_slice = &mut verify_variables.queries;
-            let depth = queries_slice[i * 3 + 2];
-            let value = queries_slice[i * 3 + 1];
-            let index = queries_slice[i * 3];
-            (
-                depth.to_bytes_be(),
-                value.to_bytes_be(),
-                index.to_bytes_be(),
-            )
-        };
-
-        stack.push_front(&depth_bytes).unwrap();
-        stack.push_front(&value_bytes).unwrap();
-        stack.push_front(&index_bytes).unwrap();
-    }
-    // Push length
-    stack.push_front(&Felt::from(count).to_bytes_be()).unwrap();
-}
-
-#[inline(always)]
 fn commitment_from_stack<T: BidirectionalStack + StarkVerifyTrait>(stack: &mut T) -> Commitment {
     let data = stack.borrow_front();
     let commitment_ref = cast_slice_to_struct::<Commitment>(data);

@@ -3,9 +3,8 @@ use std::vec;
 use felt::{Felt, NonZeroFelt};
 use types::swiftness::{
     air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-    commitment::table::types::Commitment as TableCommitment,
     global_values::InteractionElements,
-    stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof},
+    stark::types::{FriVerifyData, StarkCommitment, StarkProof},
 };
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
@@ -133,11 +132,11 @@ impl Executable for StarkVerify {
     }
 }
 
-#[inline(always)]
-fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    commitment: &TableCommitment,
-    stack: &mut T,
-) {
-    let commitment_bytes = cast_struct_to_slice(commitment);
-    stack.push_front(commitment_bytes).unwrap();
-}
+// #[inline(always)]
+// fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+//     commitment: &TableCommitment,
+//     stack: &mut T,
+// ) {
+//     let commitment_bytes = cast_struct_to_slice(commitment);
+//     stack.push_front(commitment_bytes).unwrap();
+// }
