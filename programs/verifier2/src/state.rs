@@ -2,23 +2,19 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::global_values::InteractionElements;
-use types::swiftness::stark::types::cast_slice_to_struct;
-use types::swiftness::stark::types::cast_slice_to_struct_mut;
 use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::VerifyVariables;
-use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof};
-use utils::ProofData;
-use utils::StarkCommitmentTrait;
-use utils::StarkVerifyTrait;
-use utils::CACHE_SIZE;
+use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof, VerifyVariables};
+use utils::FullProofDataVerifier3;
+use utils::{CacheStorage, CachedProofData, ExtendedProofData, FullProofDataVerifier2, ProofData};
+use utils::{StarkCommitmentTrait, StarkVerifyTrait};
 use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
     POSEIDON_BITS_SIZE, POWS_SIZE,
 };
 
-/// Define the type of state stored in accounts
+/// State for verifier2 - includes cache and full computational arrays
 #[repr(C)]
 #[derive(Debug)]
 pub struct BidirectionalStackAccount {
@@ -36,7 +32,7 @@ pub struct BidirectionalStackAccount {
     pub poseidon_bits: [Felt; POSEIDON_BITS_SIZE],
     pub stark_commitment: StarkCommitment<InteractionElements>,
     pub verify_variables: VerifyVariables,
-    pub cached_data: [u8; CACHE_SIZE],
+    // pub cached_data: [u8; CACHE_SIZE],
 }
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
@@ -51,11 +47,11 @@ impl Default for BidirectionalStackAccount {
             global_values: GlobalValues::default(),
             constraint_coefficients: [Felt::ZERO; N_CONSTRAINTS],
             column_values: [Felt::ZERO; COLUMN_VALUES_SIZE],
-            stark_commitment: StarkCommitment::default(),
-            verify_variables: VerifyVariables::default(),
             eval_composition_polynomial_bits: [Felt::ZERO; BITS_SIZE],
             poseidon_bits: [Felt::ZERO; POSEIDON_BITS_SIZE],
-            cached_data: [0; CACHE_SIZE],
+            stark_commitment: StarkCommitment::default(),
+            verify_variables: VerifyVariables::default(),
+            // cached_data: [0; CACHE_SIZE],
         }
     }
 }
@@ -179,20 +175,26 @@ impl BidirectionalStack for BidirectionalStackAccount {
     fn is_empty_back(&self) -> bool {
         self.back_index == CAPACITY
     }
+}
+
+impl CacheStorage for BidirectionalStackAccount {
     fn store_in_cache<T>(&mut self, data: &T) {
-        let bytes = cast_struct_to_slice(data);
-        assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
-        self.cached_data[..bytes.len()].copy_from_slice(bytes);
+        // let bytes = cast_struct_to_slice(data);
+        // assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
+        // self.cached_data[..bytes.len()].copy_from_slice(bytes);
+        panic!("store_in_cache not supported in verifier2")
     }
 
     fn borrow_from_cache<T>(&self) -> &T {
-        let size = std::mem::size_of::<T>();
-        cast_slice_to_struct::<T>(&self.cached_data[..size])
+        // let size = std::mem::size_of::<T>();
+        // cast_slice_to_struct::<T>(&self.cached_data[..size])
+        panic!("borrow_from_cache not supported in verifier2")
     }
 
     fn borrow_from_cache_mut<T>(&mut self) -> &mut T {
-        let size = std::mem::size_of::<T>();
-        cast_slice_to_struct_mut::<T>(&mut self.cached_data[..size])
+        // let size = std::mem::size_of::<T>();
+        // cast_slice_to_struct_mut::<T>(&mut self.cached_data[..size])
+        panic!("borrow_from_cache_mut not supported in verifier2")
     }
 }
 
@@ -226,30 +228,6 @@ impl StarkCommitmentTrait for BidirectionalStackAccount {
     }
 }
 
-impl StarkVerifyTrait for BidirectionalStackAccount {
-    fn get_verify_variables<T: Sized>(&self) -> &T {
-        let bytes = cast_struct_to_slice(&self.verify_variables);
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &*(bytes.as_ptr() as *const T) }
-    }
-
-    fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T {
-        let bytes = cast_struct_to_slice_mut(&mut self.verify_variables);
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
-    }
-
-    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T) {
-        let bytes = unsafe {
-            std::slice::from_raw_parts(
-                (verify_variables as *const T) as *const u8,
-                std::mem::size_of::<T>(),
-            )
-        };
-        assert_eq!(bytes.len(), std::mem::size_of::<VerifyVariables>());
-        self.verify_variables = unsafe { std::ptr::read(bytes.as_ptr() as *const VerifyVariables) };
-    }
-}
 
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
@@ -259,7 +237,9 @@ impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes_mut(&mut self) -> &mut [u8] {
         cast_struct_to_slice_mut(&mut self.proof)
     }
+}
 
+impl ExtendedProofData for BidirectionalStackAccount {
     fn get_autogenerated_pows(&self) -> &[Felt; POWS_SIZE] {
         &self.autogenerated_pows
     }
@@ -269,12 +249,21 @@ impl ProofData for BidirectionalStackAccount {
     }
 
     fn get_pows_and_domains_mut(&mut self) -> (&[Felt; POWS_SIZE], &mut [Felt; DOMAINS_SIZE]) {
-        // Create a slice that spans both arrays
         let pows_slice = &self.autogenerated_pows;
         let domains_slice = &mut self.domains;
-
         (pows_slice, domains_slice)
     }
+
+    fn get_global_values(&self) -> &GlobalValues {
+        &self.global_values
+    }
+
+    fn set_global_values(&mut self, global_values: GlobalValues) {
+        self.global_values = global_values;
+    }
+}
+
+impl FullProofDataVerifier2 for BidirectionalStackAccount {
     fn get_proof_data_references<T: Sized>(
         &mut self,
     ) -> (
@@ -296,16 +285,15 @@ impl ProofData for BidirectionalStackAccount {
         // Use raw pointers to avoid borrowing conflicts
         let domains_slice = &self.domains;
         let oods_values_slice =
-            unsafe { &mut *(&mut self.oods_values as *mut [Felt; OODS_VALUES_SIZE]) };
-        let global_values_ref = unsafe { &mut *(&mut self.global_values as *mut GlobalValues) };
+            &mut self.oods_values;
+        let global_values_ref = &mut self.global_values;
         let constraint_coefficients_slice =
-            unsafe { &mut *(&mut self.constraint_coefficients as *mut [Felt; N_CONSTRAINTS]) };
+            &mut self.constraint_coefficients;
         let column_values_slice =
-            unsafe { &mut *(&mut self.column_values as *mut [Felt; COLUMN_VALUES_SIZE]) };
+            &mut self.column_values;
         let bits_slice =
-            unsafe { &mut *(&mut self.eval_composition_polynomial_bits as *mut [Felt; BITS_SIZE]) };
-        let poseidon_bits_slice =
-            unsafe { &mut *(&mut self.poseidon_bits as *mut [Felt; POSEIDON_BITS_SIZE]) };
+            &mut self.eval_composition_polynomial_bits;
+        let poseidon_bits_slice = &mut self.poseidon_bits;
         (
             proof_ref,
             pows_slice,
@@ -319,13 +307,6 @@ impl ProofData for BidirectionalStackAccount {
         )
     }
 
-    fn get_global_values(&self) -> &GlobalValues {
-        &self.global_values
-    }
-
-    fn set_global_values(&mut self, global_values: GlobalValues) {
-        self.global_values = global_values;
-    }
     fn get_stark_commitment_and_proof<T: Sized, P: Sized>(&self) -> (&T, &P) {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         let proof_bytes = cast_struct_to_slice(&self.proof);
@@ -360,44 +341,135 @@ impl ProofData for BidirectionalStackAccount {
         &mut self.constraint_coefficients
     }
 
-    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
+    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+        assert_eq!(coefficients.len(), N_CONSTRAINTS);
+        unsafe {
+            let constraint_coefficients_ptr = &self.constraint_coefficients
+                as *const [Felt; N_CONSTRAINTS]
+                as *mut [Felt; N_CONSTRAINTS];
+            (*constraint_coefficients_ptr).copy_from_slice(coefficients);
+        }
+    }
+}
+
+impl FullProofDataVerifier3 for BidirectionalStackAccount {
+    fn get_proof_data_references<T: Sized>(
+        &mut self,
+    ) -> (
+        &T,
+        &[Felt; POWS_SIZE],
+        &[Felt; DOMAINS_SIZE],
+        &mut [Felt; OODS_VALUES_SIZE],
+        &mut GlobalValues,
+        &mut [Felt; N_CONSTRAINTS],
+        &mut [Felt; COLUMN_VALUES_SIZE],
+    ) {
+        panic!("get_proof_data_references not supported in verifier2")
+    }
+    fn get_stark_commitment_and_proof<T: Sized, P: Sized>(&self) -> (&T, &P) {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         let proof_bytes = cast_struct_to_slice(&self.proof);
 
-        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache does
-        let cache_size = std::mem::size_of::<C>();
-        let cache_bytes = &self.cached_data[..cache_size];
-
         assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
         assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
-        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
 
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
         let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
-        let cache = unsafe { &*(cache_bytes.as_ptr() as *const C) };
 
-        (stark_commitment, proof, cache)
+        (stark_commitment, proof)
+    }
+
+    fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
+        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+
+        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+
+        (stark_commitment, proof)
+    }
+    fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS] {
+        panic!("get_constraint_coefficients not supported in verifier2")
+    }
+    fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
+        panic!("get_constraint_coefficients_mut not supported in verifier2")
+    }
+    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+        panic!("set_constraint_coefficients not supported in verifier2")
+    }
+}
+
+impl CachedProofData for BidirectionalStackAccount {
+
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
+        // let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        // let proof_bytes = cast_struct_to_slice(&self.proof);
+
+        // // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache does
+        // let cache_size = std::mem::size_of::<C>();
+        // let cache_bytes = &self.cached_data[..cache_size];
+
+        // assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        // assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        // assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+
+        // let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        // let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
+        // let cache = unsafe { &*(cache_bytes.as_ptr() as *const C) };
+        
+        // (stark_commitment, proof, cache)
+        panic!("get_stark_commitment_proof_and_cache not supported in verifier2")
     }
 
     fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
         &mut self,
     ) -> (&mut T, &mut P, &mut C) {
-        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
-        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+        // let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        // let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
 
-        // Only use the first size_of::<C>() bytes from cached_data, like borrow_from_cache_mut does
-        let cache_size = std::mem::size_of::<C>();
-        let cache_bytes = &mut self.cached_data[..cache_size];
+        // let cache_size = std::mem::size_of::<C>();
+        // let cache_bytes = &mut self.cached_data[..cache_size];
 
-        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
-        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
-        assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
+        // assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        // assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+        // assert_eq!(cache_bytes.len(), std::mem::size_of::<C>());
 
-        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
-        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
-        let cache = unsafe { &mut *(cache_bytes.as_mut_ptr() as *mut C) };
+        // let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        // let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+        // let cache = unsafe { &mut *(cache_bytes.as_mut_ptr() as *mut C) };
 
-        (stark_commitment, proof, cache)
+        // (stark_commitment, proof, cache)
+
+        panic!("get_stark_commitment_proof_and_cache_mut not supported in verifier2")
+    }
+}
+
+// Dummy implementation of StarkVerifyTrait for verifier2 (not actually used)
+impl StarkVerifyTrait for BidirectionalStackAccount {
+    fn get_verify_variables<T: Sized>(&self) -> &T {
+        let bytes = cast_struct_to_slice(&self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &*(bytes.as_ptr() as *const T) }
+    }
+
+    fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T {
+        let bytes = cast_struct_to_slice_mut(&mut self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
+    }
+
+    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T) {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                (verify_variables as *const T) as *const u8,
+                std::mem::size_of::<T>(),
+            )
+        };
+        assert_eq!(bytes.len(), std::mem::size_of::<VerifyVariables>());
+        self.verify_variables = unsafe { std::ptr::read(bytes.as_ptr() as *const VerifyVariables) };
     }
 }
 
@@ -744,3 +816,4 @@ mod tests {
         );
     }
 }
+

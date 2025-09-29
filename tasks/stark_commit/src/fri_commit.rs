@@ -4,6 +4,7 @@ use transcript::transcript::TranscriptRandomFelt;
 use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{StarkCommitment, StarkProof};
+use utils::FullProofDataVerifier2;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
     TypeIdentifiable,
@@ -46,7 +47,7 @@ impl Default for FriCommit {
 }
 
 impl Executable for FriCommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

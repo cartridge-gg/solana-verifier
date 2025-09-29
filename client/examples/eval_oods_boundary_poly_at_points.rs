@@ -16,6 +16,7 @@ use types::swiftness::stark::types::FriVerifyData;
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use utils::CacheStorage;
 
 pub const CHUNK_SIZE: usize = 1000;
 

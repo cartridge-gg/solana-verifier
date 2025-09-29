@@ -4,7 +4,7 @@ use types::swiftness::air::consts::*;
 use types::swiftness::air::recursive_with_poseidon::consts::FELT_1;
 use types::swiftness::stark::types::StarkProof;
 use utils::CONSTRAINT_DEGREE;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3, ProofData, TypeIdentifiable};
 
 #[repr(C)]
 pub struct EvalOodsPolynomialInner {
@@ -64,7 +64,7 @@ impl Default for EvalOodsPolynomialInner {
 }
 
 impl Executable for EvalOodsPolynomialInner {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + FullProofDataVerifier3 + CacheStorage>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             EvalOodsPolynomialInnerPhase::ComputePowers => {
                 self.point = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -231,8 +231,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -318,8 +316,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -398,8 +394,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // Fetch columns
@@ -473,8 +467,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // Fetch columns
@@ -549,8 +541,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -628,8 +618,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -708,8 +696,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -790,8 +776,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -870,8 +854,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -950,8 +932,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1031,8 +1011,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1111,8 +1089,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1191,8 +1167,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1271,8 +1245,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1351,8 +1323,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1429,8 +1399,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1509,8 +1477,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // println!("column_values: {:?}", column_values);
@@ -1589,8 +1555,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // Fetch columns
@@ -1664,8 +1628,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // Fetch columns
@@ -1739,8 +1701,6 @@ impl Executable for EvalOodsPolynomialInner {
                     _,
                     constraint_coefficients,
                     column_values,
-                    _,
-                    _,
                 ) = stack.get_proof_data_references::<StarkProof>();
 
                 // Fetch columns

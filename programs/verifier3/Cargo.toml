@@ -25,6 +25,7 @@ stark-verify-verification.workspace = true
 verify-public-input.workspace = true
 verify-3.workspace = true
 transcript.workspace = true
+verifier-2.workspace = true
 
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }

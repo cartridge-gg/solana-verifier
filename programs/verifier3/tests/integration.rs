@@ -22,7 +22,7 @@ pub fn test_proof_verification() {
         .try_into()
         .unwrap();
 
-    let task = verify_2::verify::Verify::new();
+    let task = verify_3::verify::Verify::new();
     stack.push_task(task);
 
     while !stack.is_empty_back() {

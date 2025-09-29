@@ -6,8 +6,7 @@ use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
-    TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE
 };
 
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
@@ -53,7 +52,7 @@ impl Default for EvalOodsBoundaryPolyAtPoints {
 }
 
 impl Executable for EvalOodsBoundaryPolyAtPoints {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

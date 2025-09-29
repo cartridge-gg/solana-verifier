@@ -1,9 +1,12 @@
 use std::vec;
 
+use felt::{Felt, NonZeroFelt};
+use types::swiftness::{air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE}, commitment::{table::types::Commitment as TableCommitment}, global_values::InteractionElements, stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof}};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
-    TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable
 };
+
+use crate::{eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
@@ -16,57 +19,98 @@ pub enum StarkVerifyStep {
 #[repr(C)]
 pub struct StarkVerify {
     step: StarkVerifyStep,
-    n_original_columns: u32,
-    n_interaction_columns: u32,
-    queries_len: u128,
 }
 
 impl_type_identifiable!(StarkVerify);
 
 impl StarkVerify {
-    pub fn new(n_original_columns: u32, n_interaction_columns: u32) -> Self {
+    pub fn new() -> Self {
         Self {
             step: StarkVerifyStep::ComputeQueryPoints,
-            n_original_columns,
-            n_interaction_columns,
-            queries_len: 0,
         }
     }
 }
 
 impl Default for StarkVerify {
     fn default() -> Self {
-        Self::new(0, 0)
+        Self::new()
     }
 }
 
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage>(
         &mut self,
-        _stack: &mut T,
+        stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
-                // Query points computed, evaluate OODS boundary poly
+                let queries_len = {
+                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    fri_verify_data.queries.len()
+                };
+
+                for i in (0..queries_len).rev() {
+                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    stack
+                        .push_front(&fri_verify_data.queries.at(i).to_bytes_be())
+                        .unwrap();
+                }
+                stack
+                    .push_front(&Felt::from(queries_len).to_bytes_be())
+                    .unwrap();
+
+                let (log_trace_domain_size, log_n_cosets) = {
+                    let proof: &StarkProof = stack.get_proof_reference();
+                    (
+                        proof.config.log_trace_domain_size,
+                        proof.config.log_n_cosets,
+                    )
+                };
+                let log_eval_domain_size = log_trace_domain_size + log_n_cosets;
+                let eval_domain_size = Felt::TWO.pow_felt(&log_eval_domain_size);
+                let eval_generator = FIELD_GENERATOR.pow_felt(
+                    &STARK_PRIME_MINUS_ONE
+                        .field_div(&NonZeroFelt::try_from(eval_domain_size).unwrap()),
+                );
+
+                stack.push_front(&eval_generator.to_bytes_be()).unwrap();
+                stack
+                    .push_front(&log_eval_domain_size.to_bytes_be())
+                    .unwrap();
+
                 self.step = StarkVerifyStep::EvalOodsBoundaryPoly;
-                // vec![EvalOodsBoundaryPolyAtPoints::new(
-                //     self.n_original_columns,
-                //     self.n_interaction_columns,
-                // )
-                // .to_vec_with_type_tag()]
-                vec![]
+                println!("Pushing ComputeQueryPoints task");
+                vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
             }
 
             StarkVerifyStep::EvalOodsBoundaryPoly => {
-                // OODS evaluation finished, start FRI verification
+                let points_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                // for _ in 0..points_len.to_biguint().try_into().unwrap() {
+                //     let point = Felt::from_bytes_be_slice(stack.borrow_front());
+                //     stack.pop_front();
+                //     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                //     fri_verify_data.fri_decommitment.points.push(point);
+                // }
+                stack.push_front(&points_len.to_bytes_be()).unwrap();
+
+                {
+                    let (stark_commitment, _) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                    //unsafe
+                    stack.set_constraint_coefficients(
+                        stark_commitment.interaction_after_oods.as_slice(),
+                    );
+                }
+
                 self.step = StarkVerifyStep::FriVerify;
-                // vec![FriVerify::new().to_vec_with_type_tag()]
-                vec![]
+                println!("Pushing EvalOodsBoundaryPoly task");
+                vec![EvalOodsBoundaryPolyAtPoints::new().to_vec_with_type_tag()]
             }
 
             StarkVerifyStep::FriVerify => {
-                // FRI verification finished, read result
                 self.step = StarkVerifyStep::Done;
+                println!("Pushing FriVerify task");
+                // vec![FriVerify::new().to_vec_with_type_tag()]
                 vec![]
             }
 
@@ -79,4 +123,13 @@ impl Executable for StarkVerify {
     fn is_finished(&mut self) -> bool {
         self.step == StarkVerifyStep::Done
     }
+}
+
+#[inline(always)]
+fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    commitment: &TableCommitment,
+    stack: &mut T,
+) {
+    let commitment_bytes = cast_struct_to_slice(commitment);
+    stack.push_front(commitment_bytes).unwrap();
 }

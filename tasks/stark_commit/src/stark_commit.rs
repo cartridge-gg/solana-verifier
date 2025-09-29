@@ -13,6 +13,7 @@ use types::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
+use utils::FullProofDataVerifier2;
 use utils::ProofData;
 use utils::StarkCommitmentTrait;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
@@ -83,7 +84,7 @@ impl Default for StarkCommit {
 }
 
 impl Executable for StarkCommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

@@ -1,7 +1,7 @@
 cargo clean 
 rm -rf keypairs/
 rm -rf test-ledger/
-cd programs/verifier3
+cd programs/verifier2
 cargo build-sbf
 cd ../..
-cargo run --example eval_oods_polynomial_inner
+cargo run --example traces_decommit

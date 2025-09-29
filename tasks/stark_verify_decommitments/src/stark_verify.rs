@@ -1,128 +1,140 @@
 use std::vec;
 
+use felt::Felt;
+use types::swiftness::{commitment::table::types::Commitment as TableCommitment, global_values::InteractionElements, stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables}};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
-    TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2, ProofData, StarkVerifyTrait, TypeIdentifiable
 };
 
+use crate::{table_decommit::TableDecommit, traces_decommit::TracesDecommit};
 pub use crate::vector_decommit::VectorDecommit;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
-    Init,
     TracesDecommit,
     TableDecommit,
-    ComputeQueryPoints,
-    EvalOodsBoundaryPoly,
-    FriVerify,
     Done,
 }
 
 #[repr(C)]
 pub struct StarkVerify {
     step: StarkVerifyStep,
-    n_original_columns: u32,
-    n_interaction_columns: u32,
-    queries_len: u128,
 }
 
 impl_type_identifiable!(StarkVerify);
 
 impl StarkVerify {
-    pub fn new(n_original_columns: u32, n_interaction_columns: u32) -> Self {
+    pub fn new() -> Self {
         Self {
-            step: StarkVerifyStep::Init,
-            n_original_columns,
-            n_interaction_columns,
-            queries_len: 0,
+            step: StarkVerifyStep::TracesDecommit,
         }
     }
 }
 
 impl Default for StarkVerify {
     fn default() -> Self {
-        Self::new(0, 0)
+        Self::new()
     }
 }
 
+
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier2 + CacheStorage>(
         &mut self,
-        _stack: &mut T,
+        stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
-            StarkVerifyStep::Init => {
-                // Read queries from stack (should be pushed by caller)
-                // Expected stack format: [query_n, query_n-1, ..., query_1, query_0, queries_len]
-                // Each query is a Query struct: [index, value] (64 bytes total)
-                // let proof: &StarkProof = stack.get_proof_reference();
-
-                // self.queries_len = match proof.config.n_queries.to_biguint().try_into() {
-                //     Ok(len) => len,
-                //     Err(_) => {
-                //         // Push error and finish
-                //         println!("Error: Queries len could not be converted to u128");
-                //         self.step = StarkVerifyStep::Done;
-                //         return vec![];
-                //     }
-                // };
-                // // Is this sanity check? why do we take n_queries from proof and then read from stack?
-                // // Should we just read from stack? or assert they are equal?
-
-                // let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
-                // println!("READ: Queries length: {:?}", queries_len);
-                // stack.pop_front();
-
-                // let mut queries = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
-                // for _ in 0..queries_len.to_biguint().try_into().unwrap() {
-                //     queries.push(Query::from_stack(stack));
-                // }
-                // // Push queries back onto stack using helper method
-                // Query::push_queries_to_stack(queries.len(), stack);
-
-                self.step = StarkVerifyStep::TracesDecommit;
-                // vec![TracesDecommit::new().to_vec_with_type_tag()]
-                vec![]
-            }
             StarkVerifyStep::TracesDecommit => {
-                // TracesDecommit finished, continue with table decommit
-                // Pass through queries for table_decommit
-                // Queries should already be on stack in correct format from previous task
+                let queries_len = {
+                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    fri_verify_data.queries.len()
+                };
 
+                for i in (0..queries_len).rev() {
+                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    let query = fri_verify_data.queries.at(i);
+                    stack.push_front(&query.to_bytes_be()).unwrap();
+                }
+
+                stack
+                    .push_front(&Felt::from(queries_len).to_bytes_be())
+                    .unwrap();
+
+                println!("Pushing TracesDecommit task");
                 self.step = StarkVerifyStep::TableDecommit;
-                // vec![TableDecommit::new().to_vec_with_type_tag()]
-                vec![]
+                vec![TracesDecommit::new().to_vec_with_type_tag()]
             }
-            //
             StarkVerifyStep::TableDecommit => {
-                // TableDecommit finished, compute query points
-                self.step = StarkVerifyStep::ComputeQueryPoints;
-                // vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
-                vec![]
-            }
+                let (authentications_len, decommitment_values_len) = {
+                    let (_, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                    let authentications = &proof.witness.composition_witness.vector.authentications;
+                    let decommitment_values = &proof.witness.composition_decommitment.values;
+                    (authentications.len(), decommitment_values.len())
+                };
 
-            StarkVerifyStep::ComputeQueryPoints => {
-                // Query points computed, evaluate OODS boundary poly
-                self.step = StarkVerifyStep::EvalOodsBoundaryPoly;
-                // vec![EvalOodsBoundaryPolyAtPoints::new(
-                //     self.n_original_columns,
-                //     self.n_interaction_columns,
-                // )
-                // .to_vec_with_type_tag()]
-                vec![]
-            }
+                {
+                    for i in (0..authentications_len).rev() {
+                        let (_, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                        let authentications =
+                            &proof.witness.composition_witness.vector.authentications;
+                        stack
+                            .push_front(&authentications.at(i).to_bytes_be())
+                            .unwrap();
+                    }
 
-            StarkVerifyStep::EvalOodsBoundaryPoly => {
-                // OODS evaluation finished, start FRI verification
-                self.step = StarkVerifyStep::FriVerify;
-                // vec![FriVerify::new().to_vec_with_type_tag()]
-                vec![]
-            }
+                    stack
+                        .push_front(&Felt::from(authentications_len as u64).to_bytes_be())
+                        .unwrap();
+                }
 
-            StarkVerifyStep::FriVerify => {
-                // FRI verification finished, read result
+                {
+                    for i in (0..decommitment_values_len).rev() {
+                        let (_, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                        let decommitment_values = &proof.witness.composition_decommitment.values;
+                        stack
+                            .push_front(&decommitment_values.at(i).to_bytes_be())
+                            .unwrap();
+                    }
+
+                    let decommitment_length = Felt::from(decommitment_values_len as u64);
+                    stack
+                        .push_front(&decommitment_length.to_bytes_be())
+                        .unwrap();
+                }
+
+                let queries_len = {
+                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    fri_verify_data.queries.len()
+                };
+
+                for i in (0..queries_len).rev() {
+                    let index = {
+                        let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                        *fri_verify_data.queries.at(i)
+                    };
+
+                    {
+                        let verify_variables: &mut VerifyVariables =
+                            stack.get_verify_variables_mut();
+                        let queries_slice = &mut verify_variables.temp_queries;
+                        queries_slice[i * 2] = index;
+                    }
+                }
+
+                stack
+                    .push_front(&Felt::from(queries_len).to_bytes_be())
+                    .unwrap();
+
+                {
+                    let (stark_commitment, _) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                    let table_commitment = stark_commitment.composition;
+                    //here we clone the table_commitment to avoid borrowing issues
+                    commitment_push_to_stack(&table_commitment, stack);
+                }
+
                 self.step = StarkVerifyStep::Done;
-                vec![]
+                println!("Pushing TableDecommit task");
+                vec![TableDecommit::new().to_vec_with_type_tag()]
             }
 
             StarkVerifyStep::Done => {
@@ -134,4 +146,14 @@ impl Executable for StarkVerify {
     fn is_finished(&mut self) -> bool {
         self.step == StarkVerifyStep::Done
     }
+}
+
+
+#[inline(always)]
+fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
+    commitment: &TableCommitment,
+    stack: &mut T,
+) {
+    let commitment_bytes = cast_struct_to_slice(commitment);
+    stack.push_front(commitment_bytes).unwrap();
 }
