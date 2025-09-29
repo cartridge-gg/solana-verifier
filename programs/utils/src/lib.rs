@@ -220,6 +220,7 @@ pub trait Executable: Sized + TypeIdentifiable {
             + ExtendedProofData
             + FullProofDataVerifier2
             + CacheStorage
+            + CachedProofData
             + FullProofDataVerifier3;
     fn is_finished(&mut self) -> bool {
         false

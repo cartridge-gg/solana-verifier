@@ -1,7 +1,8 @@
-use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
-
-// FriVerify task
+use felt::{Felt, NonZeroFelt};
+use types::swiftness::{fri::types::FriLayerQuery, stark::types::{FriVerifyData, StarkCommitment, StarkProof}};
+use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable, ProofData, TypeIdentifiable};
+use types::swiftness::global_values::InteractionElements;
+// use crate::fri_verify_layers::FriVerifyLayers;
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct FriVerify {
@@ -16,10 +17,8 @@ const FIELD_GENERATOR_INVERSE: Felt =
 #[repr(C)]
 pub enum FriVerifyStep {
     Init,
-    ComputeFirstLayer,
-    ComputeFriGroup,
-    VerifyInnerLayers,
     VerifyLastLayer,
+    Done,
 }
 impl_type_identifiable!(FriVerify);
 
@@ -38,55 +37,88 @@ impl Default for FriVerify {
 }
 
 impl Executable for FriVerify {
-    /// data we need atp: queries: &[Felt], commitment: FriCommitment,    decommitment: FriDecommitment, witness: Witness.
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, _stack: &mut T) -> Vec<Vec<u8>> {
-        // FRI verify logic based on original:
-        // fri_verify(
-        //     queries,
-        //     commitment.fri,
-        //     fri_decommitment,
-        //     witness.fri_witness.to_owned()
-        // )?
-
-        //         // TODO: Implement actual FRI verification logic:
-        //         // 1. Read queries from stack
-        //         // 2. Get FRI commitment from StarkCommitment
-        //         // 3. Get FRI decommitment data (values, points)
-        //         // 4. Get FRI witness from witness
-        //         // 5. Perform FRI verification protocol
-        //         // 6. This will likely involve multiple sub-tasks for:
-        //         //    - Inner layer verification
-        //         //    - Last layer verification
-        //         //    - Vector commitment decommitments
-
-        // For now, just return success
-
-        // stack.push_front(&Felt::ONE.to_bytes_be()).unwrap(); // Success indicator
-
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage + CachedProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.stage {
             FriVerifyStep::Init => {
-                self.stage = FriVerifyStep::ComputeFirstLayer;
-                vec![]
-            }
-            FriVerifyStep::ComputeFirstLayer => {
-                self.stage = FriVerifyStep::ComputeFriGroup;
-                vec![]
-            }
-            FriVerifyStep::ComputeFriGroup => {
-                self.stage = FriVerifyStep::VerifyInnerLayers;
-                vec![]
-            }
-            FriVerifyStep::VerifyInnerLayers => {
+                let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                let queries_len = fri_verify_data.queries.len();
+                let fri_len = fri_verify_data.fri_decommitment.values.len();
+
+                assert_eq!(
+                    fri_len, queries_len,
+                    "FRI decommitment length does not match queries length"
+                );
+
+                for (index, query) in fri_verify_data.queries.iter().enumerate() {
+                    if index < fri_verify_data.fri_decommitment.values.len()
+                        && index < fri_verify_data.fri_decommitment.points.len()
+                    {
+                        // Translate the coset to the homogenous group to have simple FRI equations.
+                        let shifted_x_value = fri_verify_data.fri_decommitment.points.at(index)
+                            * FIELD_GENERATOR_INVERSE;
+
+                        fri_verify_data.working_queries.push(FriLayerQuery {
+                            index: *query,
+                            y_value: *fri_verify_data.fri_decommitment.values.at(index),
+                            x_inv_value: Felt::ONE
+                                .field_div(&NonZeroFelt::from_felt_unchecked(shifted_x_value)),
+                        });
+                    }
+                }
                 self.stage = FriVerifyStep::VerifyLastLayer;
+                println!("Pushing FriVerifyLayers task");
+                // vec![FriVerifyLayers::new().to_vec_with_type_tag()]
                 vec![]
             }
+
             FriVerifyStep::VerifyLastLayer => {
+                // Use the new extended API to get all data in one call, avoiding borrowing conflicts
+                let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                    StarkCommitment<InteractionElements>,
+                    StarkProof,
+                    FriVerifyData
+                >();
+
+                let fri_commitment = &stark_commitment.fri;
+                let working_queries_len = fri_verify_data.working_queries.len();
+
+                for i in 0..working_queries_len {
+                    let query = fri_verify_data.working_queries.get(i).unwrap();
+
+                    let horner_result = self.horner_eval(
+                        fri_commitment.last_layer_coefficients.as_slice(),
+                        Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
+                    );
+
+                    if horner_result != query.y_value {
+                        panic!(
+                            "Last layer verification failed: expected {}, got {}",
+                            query.y_value, horner_result
+                        );
+                    }
+                }
+
+                self.stage = FriVerifyStep::Done;
+                vec![]
+            }
+            FriVerifyStep::Done => {
                 vec![]
             }
         }
     }
 
     fn is_finished(&mut self) -> bool {
-        self.stage == FriVerifyStep::VerifyLastLayer
+        self.stage == FriVerifyStep::Done
+    }
+}
+
+impl FriVerify {
+    #[inline(always)]
+    fn horner_eval(&self, coefficients: &[Felt], point: Felt) -> Felt {
+        let mut result = Felt::ZERO;
+        for coef in coefficients.iter().rev() {
+            result = result * point + coef;
+        }
+        result
     }
 }

@@ -36,7 +36,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier_2.so");
+    let program_path = Path::new("target/deploy/verifier_1.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -193,6 +193,10 @@ async fn main() -> client::Result<()> {
 
     let space = size_of::<BidirectionalStackAccount>();
     println!("Account space: {space} bytes");
+
+    let program_path = Path::new("target/deploy/verifier_2.so");
+
+    let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
     let create_account_ix = create_account(
         &payer.pubkey(),
