@@ -161,6 +161,7 @@ fn get_workspace_members(workspace_root: &Path) -> Vec<PathBuf> {
                                                 || rel_path == PathBuf::from("tasks/pedersen")
                                                 || rel_path == PathBuf::from("tasks/verify_1")
                                                 || rel_path == PathBuf::from("tasks/stark_commit")
+                                                || rel_path == PathBuf::from("tasks/transcript")
                                             {
                                                 members.push(rel_path);
                                             } else {

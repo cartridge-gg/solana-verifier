@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark_verify::table_decommit::TableDecommit;
+use stark_verify_decommitments::table_decommit::TableDecommit;
 use types::swiftness::commitment::table::types::Commitment as TableCommitment;
 use types::swiftness::commitment::vector::config::Config as VectorConfig;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
@@ -14,9 +14,6 @@ mod fixtures;
 #[test]
 fn test_table_decommit() {
     let mut stack = BidirectionalStackAccount::default();
-
-    // Correct test data from the working implementation
-    // Correct test data from the working implementation
     let commitment_hash =
         Felt::from_hex("0x2a588e8517b956684162e05e373dc6891146c1853c82d3984fbc707ae937972")
             .unwrap();
@@ -414,6 +411,7 @@ fn test_table_decommit() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("Step: {}", steps);
         steps += 1;
     }
 

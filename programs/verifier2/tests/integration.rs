@@ -4,7 +4,8 @@ use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofPar
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier_2::state::BidirectionalStackAccount;
-
+mod fixtures;
+use crate::fixtures::stark_commitment;
 #[test]
 pub fn test_proof_verification() {
     let mut stack = BidirectionalStackAccount::default();
@@ -21,30 +22,19 @@ pub fn test_proof_verification() {
         .as_slice()
         .try_into()
         .unwrap();
+    stack.stark_commitment = stark_commitment::get();
 
-    let task = verify_2::verify::Verify::new();
+    let task = verify_2::verify::Verify::new(
+        Felt::from_hex_unchecked(
+            "0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e",
+        ),
+        Felt::from_hex_unchecked("0x0"),
+    );
     stack.push_task(task);
 
     while !stack.is_empty_back() {
         stack.execute();
     }
-
-    let result_program_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let result_output_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-
-    println!("Result program hash: {result_program_hash:?}");
-    println!("Result output hash: {result_output_hash:?}");
-    assert_eq!(
-        result_program_hash,
-        Felt::from_hex("0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07").unwrap()
-    );
-    assert_eq!(
-        result_output_hash,
-        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400")
-            .unwrap()
-    );
     assert!(
         stack.is_empty_front(),
         " Stack front should be empty after verification"

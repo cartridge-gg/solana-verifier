@@ -10,7 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify::vector_decommit::VectorDecommit;
+use stark_verify_decommitments::vector_decommit::VectorDecommit;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
@@ -659,10 +659,10 @@ async fn main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_200_000);
 
     // Execute all steps until task is complete - split into chunks of max 5000
-    const MAX_CHUNK_SIZE: usize = 5000;
+    const MAX_CHUNK_SIZE: usize = 1;
 
     let simulation_steps_usize = simulation_steps as usize;
 
@@ -696,6 +696,13 @@ async fn main() -> client::Result<()> {
         send_and_confirm_transactions(&client, &transactions).await?;
         println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
     }
+
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
 
     println!("All execution steps completed");
     // Read the result from the account and verify it matches expected values

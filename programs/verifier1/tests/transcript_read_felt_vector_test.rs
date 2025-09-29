@@ -1,6 +1,6 @@
 use felt::Felt;
-use stark_commit::transcript_random_felt::TranscriptReadFeltVector;
 use starknet_crypto::{poseidon_hash_many, Felt as StarknetFelt};
+use transcript::transcript::TranscriptReadFeltVector;
 use utils::{BidirectionalStack, Scheduler};
 use verifier_1::state::BidirectionalStackAccount;
 

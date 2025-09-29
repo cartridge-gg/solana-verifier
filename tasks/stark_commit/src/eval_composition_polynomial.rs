@@ -20,8 +20,8 @@ use types::swiftness::global_values::{GlobalValues, InteractionElements};
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
-    TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, Executable, ExtendedProofData, ProofData,
+    StarkCommitmentTrait, TypeIdentifiable,
 };
 
 #[derive(Debug, Clone)]
@@ -87,7 +87,7 @@ impl Default for EvalCompositionPolynomial {
 }
 
 impl Executable for EvalCompositionPolynomial {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + ExtendedProofData>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

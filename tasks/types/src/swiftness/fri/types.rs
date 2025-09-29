@@ -41,3 +41,11 @@ pub struct Commitment {
     // polynomial.
     pub last_layer_coefficients: Vec<Felt>,
 }
+
+#[repr(C)]
+#[derive(PartialEq, Eq, Debug, Clone, Default, Copy)]
+pub struct FriLayerQuery {
+    pub index: Felt,
+    pub y_value: Felt,
+    pub x_inv_value: Felt,
+}

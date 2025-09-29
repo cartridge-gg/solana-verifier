@@ -1,7 +1,7 @@
 use felt::Felt;
-use stark_commit::transcript_random_felt::TranscriptRandomFelt;
 use starknet_crypto::poseidon_hash;
 use starknet_crypto::Felt as StarknetFelt;
+use transcript::transcript::TranscriptRandomFelt;
 use utils::{BidirectionalStack, Scheduler};
 use verifier_1::state::BidirectionalStackAccount;
 

@@ -3,6 +3,7 @@ use felt::Felt;
 use types::swiftness::air::consts::*;
 use types::swiftness::air::recursive_with_poseidon::consts::FELT_1;
 use types::swiftness::stark::types::StarkProof;
+use utils::FullProofDataVerifier2;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 // Macro to maintain readability: column_row[col][row] -> mask_values[index]
@@ -262,7 +263,10 @@ impl Default for EvalCompositionPolynomialInner {
 }
 
 impl Executable for EvalCompositionPolynomialInner {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + FullProofDataVerifier2>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.phase {
             EvalCompositionPolynomialInnerPhase::ComputePowers => {
                 self.point = Felt::from_bytes_be_slice(stack.borrow_front());

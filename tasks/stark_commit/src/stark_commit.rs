@@ -1,5 +1,3 @@
-use crate::transcript_random_felt::TranscriptRandomFelt;
-use crate::transcript_random_felt::TranscriptReadFeltVector;
 use crate::FriCommit;
 use crate::PowersArray;
 use crate::ProofOfWork;
@@ -8,11 +6,14 @@ use crate::TracesCommit;
 use crate::VerifyOods;
 use felt::Felt;
 use poseidon::poseidon::PoseidonHashMany;
+use transcript::transcript::TranscriptRandomFelt;
+use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::air::recursive_with_poseidon::Layout;
 use types::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
+use utils::FullProofDataVerifier2;
 use utils::ProofData;
 use utils::StarkCommitmentTrait;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
@@ -83,7 +84,9 @@ impl Default for StarkCommit {
 }
 
 impl Executable for StarkCommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

@@ -9,7 +9,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
+use stark_verify_verification::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::{
@@ -18,10 +18,10 @@ use types::swiftness::{
 };
 use utils::OODS_VALUES_SIZE;
 use utils::{AccountCast, Executable};
-use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 // Add these imports for the new types
 use felt::Felt;
-
+use utils::BidirectionalStack;
 pub const CHUNK_SIZE: usize = 1000;
 
 #[tokio::main]
@@ -37,7 +37,7 @@ async fn main() -> client::Result<()> {
 
     let payer = setup_payer(&client, &config).await?;
 
-    let program_path = Path::new("target/deploy/verifier_2.so");
+    let program_path = Path::new("target/deploy/verifier_3.so");
 
     let program_id = setup_program(&client, &payer, &config, program_path).await?;
 
@@ -439,7 +439,7 @@ async fn main() -> client::Result<()> {
     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
 
     // Execute all steps until task is complete - split into chunks of max 5000
-    const MAX_CHUNK_SIZE: usize = 5000;
+    const MAX_CHUNK_SIZE: usize = 1;
 
     let simulation_steps_usize = simulation_steps as usize;
 
@@ -473,6 +473,19 @@ async fn main() -> client::Result<()> {
         send_and_confirm_transactions(&client, &transactions).await?;
         println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
     }
+
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    let result = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    println!("Result: {:?}", result);
+    // Check that stack is empty (task completed successfully)
+    assert!(stack.is_empty_front(), "Stack should be empty");
+    assert!(stack.is_empty_back(), "Stack should be empty");
 
     println!("All execution steps completed");
     println!("\nEvalOodsPolynomialInner successfully executed on Solana!");

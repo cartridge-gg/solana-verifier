@@ -24,6 +24,7 @@ pedersen.workspace = true
 poseidon.workspace = true
 stark-commit.workspace = true
 verify-1.workspace = true
+transcript.workspace = true
    
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }
