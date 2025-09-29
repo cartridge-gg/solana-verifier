@@ -28,12 +28,14 @@ fn test_eval_ods_boundary_poly_at_points() {
             .as_slice()
             .try_into()
             .unwrap();
+    println!("constraint_coefficients_len: {:?}", stack.constraint_coefficients.len());
     stack.oods_values = proof_verifier
         .unsent_commitment
         .oods_values
         .as_slice()
         .try_into()
         .unwrap();
+    println!("oods_values_len: {:?}", stack.oods_values.len());
 
     // Test parameters
     let oods_point =
@@ -53,6 +55,7 @@ fn test_eval_ods_boundary_poly_at_points() {
     }
 
     stack.push_front(&points_len.to_bytes_be()).unwrap();
+    println!("points_len: {:?}", points_len);
     // Create and push the task
     stack.push_task(EvalOodsBoundaryPolyAtPoints::new());
 

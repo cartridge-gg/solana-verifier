@@ -101,18 +101,23 @@ impl Executable for Verify {
                     let mut sorted_samples = self.samples.to_vec();
                     sorted_samples.sort();
 
-                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-                    fri_verify_data.queries = FunVec::from_vec(sorted_samples);
+                    // let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                    // fri_verify_data.queries = FunVec::from_vec(sorted_samples);
+                    for sample in sorted_samples.iter().rev() {
+                        stack.push_front(&sample.to_bytes_be()).unwrap();
+                    }
+
+                    stack.push_front(&Felt::from(sorted_samples.len()).to_bytes_be()).unwrap();
 
                     self.step = VerifyStep::StarkVerify;
                     vec![]
                 }
             }
             VerifyStep::StarkVerify => {
-                assert!(
-                    stack.is_empty_front(),
-                    "Stack should be empty before StarkVerify"
-                );
+                // assert!(
+                //     stack.is_empty_front(),
+                //     "Stack should be empty before StarkVerify"
+                // );
 
                 self.step = VerifyStep::Done;
                 vec![StarkVerify::new().to_vec_with_type_tag()]

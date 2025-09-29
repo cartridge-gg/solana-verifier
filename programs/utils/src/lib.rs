@@ -4,8 +4,6 @@ use types::swiftness::global_values::GlobalValues;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
-// pub const MASK_VALUES_ROWS_SIZE: usize = 4107;
-// pub const MASK_VALUES_COLUMNS_SIZE: usize = 8;
 pub const MASK_VALUES_SIZE: usize = 192;
 pub const OODS_VALUES_SIZE: usize = 194;
 pub const COLUMN_VALUES_SIZE: usize = 10;

@@ -10,24 +10,15 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify_verification::stark_verify::StarkVerify;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
-use types::{
-    funvec::FunVec,
-    swiftness::{
-        global_values::{GlobalValues, InteractionElements},
-        stark::types::cast_struct_to_slice_mut,
-    },
-};
+use types::swiftness::stark::types::cast_struct_to_slice_mut;
+use utils::StarkCommitmentTrait;
 use utils::BidirectionalStack;
-use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use utils::{AccountCast, Executable};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 use verify_1::verify::Verify as Verify_Stage_One;
 use verify_2::verify::Verify as Verify_Stage_Two;
-use verify_3::verify::Verify as Verify_Stage_Three;
 
 pub const CHUNK_SIZE: usize = 1000;
 
@@ -191,7 +182,9 @@ async fn main() -> client::Result<()> {
     let proof = StarkProofParser::try_from(proof_json).unwrap();
     let proof_verifier = proof.transform_to();
     stack.proof = proof_verifier.clone();
-    stack.stark_commitment = *stark_commitment;
+    // stack.stark_commitment = *stark_commitment;
+    // set_stark_commitment(&mut stack, stark_commitment);
+    stack.set_stark_commitment(stark_commitment);
 
     let stack_bytes_after_commitment = cast_struct_to_slice_mut(&mut stack).to_vec();
 

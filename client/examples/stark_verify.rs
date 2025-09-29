@@ -12,14 +12,7 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use stark_verify_verification::stark_verify::StarkVerify;
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
-use types::{
-    funvec::FunVec,
-    swiftness::global_values::{GlobalValues, InteractionElements},
-};
-use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use utils::{AccountCast, Executable};
 
 use utils::BidirectionalStack;
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
@@ -100,7 +93,7 @@ async fn main() -> client::Result<()> {
     println!("All data set successfully");
 
     // Push the StarkVerify task to the stack
-    let stark_verify_task = StarkVerify::new(0, 0);
+    let stark_verify_task = StarkVerify::new();
 
     println!("Using StarkVerify with TYPE_TAG: {}", StarkVerify::TYPE_TAG);
 
@@ -264,6 +257,7 @@ mod prepare_input {
     use utils::BidirectionalStack;
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
+    use utils::CacheStorage;
 
     use crate::constraint_coefficients;
 

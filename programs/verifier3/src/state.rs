@@ -353,8 +353,14 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         panic!("get_constraint_coefficients_mut not supported in verifier3")
     }
 
-    fn set_constraint_coefficients(&self, _coefficients: &[Felt]) {
-        panic!("set_constraint_coefficients not supported in verifier3")
+    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+        assert_eq!(coefficients.len(), N_CONSTRAINTS);
+        unsafe {
+            let constraint_coefficients_ptr = &self.constraint_coefficients
+                as *const [Felt; N_CONSTRAINTS]
+                as *mut [Felt; N_CONSTRAINTS];
+            (*constraint_coefficients_ptr).copy_from_slice(coefficients);
+        }
     }
 }
 

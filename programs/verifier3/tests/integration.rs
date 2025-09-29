@@ -4,7 +4,8 @@ use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofPar
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier_3::state::BidirectionalStackAccount;
-
+mod fixtures;
+use crate::fixtures::stark_commitment;
 #[test]
 pub fn test_proof_verification() {
     let mut stack = BidirectionalStackAccount::default();
@@ -21,6 +22,7 @@ pub fn test_proof_verification() {
         .as_slice()
         .try_into()
         .unwrap();
+    stack.stark_commitment = stark_commitment::get();
 
     let task = verify_3::verify::Verify::new();
     stack.push_task(task);

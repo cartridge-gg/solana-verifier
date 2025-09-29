@@ -1,13 +1,13 @@
 use std::vec;
 
 use felt::Felt;
-use types::swiftness::{
+use types::{funvec::FunVec, swiftness::{
     commitment::table::types::Commitment as TableCommitment,
     global_values::InteractionElements,
     stark::types::{
         cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
     },
-};
+}};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2,
     ProofData, StarkVerifyTrait, TypeIdentifiable,
@@ -26,6 +26,7 @@ pub enum StarkVerifyStep {
 #[repr(C)]
 pub struct StarkVerify {
     step: StarkVerifyStep,
+    queries: FunVec<Felt, 20>,
 }
 
 impl_type_identifiable!(StarkVerify);
@@ -34,6 +35,7 @@ impl StarkVerify {
     pub fn new() -> Self {
         Self {
             step: StarkVerifyStep::TracesDecommit,
+            queries: FunVec::default(),
         }
     }
 }
@@ -53,19 +55,24 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::TracesDecommit => {
-                let queries_len = {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    fri_verify_data.queries.len()
-                };
+                // let queries_len = {
+                //     let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                //     fri_verify_data.queries.len()
+                // };
+                let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                for i in (0..queries_len).rev() {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    let query = fri_verify_data.queries.at(i);
-                    stack.push_front(&query.to_bytes_be()).unwrap();
+                for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+                    self.queries.push(Felt::from_bytes_be_slice(stack.borrow_front()));
+                    stack.pop_front();
                 }
 
+                for query in self.queries.as_slice().iter().rev() {
+                    stack.push_front(&query.to_bytes_be()).unwrap();
+                }
+                
                 stack
-                    .push_front(&Felt::from(queries_len).to_bytes_be())
+                    .push_front(&Felt::from(self.queries.len()).to_bytes_be())
                     .unwrap();
 
                 println!("Pushing TracesDecommit task");
@@ -110,22 +117,20 @@ impl Executable for StarkVerify {
                         .unwrap();
                 }
 
-                let queries_len = {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    fri_verify_data.queries.len()
-                };
+                let queries_len = self.queries.len();
 
                 for i in (0..queries_len).rev() {
-                    let index = {
-                        let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                        *fri_verify_data.queries.at(i)
-                    };
+                    // let index = {
+                    //     let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    //     *fri_verify_data.queries.at(i)
+                    // };
+                    let index = self.queries.at(i);
 
                     {
                         let verify_variables: &mut VerifyVariables =
                             stack.get_verify_variables_mut();
                         let queries_slice = &mut verify_variables.temp_queries;
-                        queries_slice[i * 2] = index;
+                        queries_slice[i * 2] = *index;
                     }
                 }
 
