@@ -160,7 +160,9 @@ fn get_workspace_members(workspace_root: &Path) -> Vec<PathBuf> {
                                                 || rel_path == PathBuf::from("tasks/pedersen")
                                                 || rel_path == PathBuf::from("tasks/verify_3")
                                                 || rel_path
-                                                    == PathBuf::from("tasks/stark_verify_verification")
+                                                    == PathBuf::from(
+                                                        "tasks/stark_verify_verification",
+                                                    )
                                                 || rel_path
                                                     == PathBuf::from("tasks/verify_public_input")
                                             {

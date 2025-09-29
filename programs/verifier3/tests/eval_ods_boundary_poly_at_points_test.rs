@@ -1,6 +1,9 @@
 use felt::Felt;
 use swiftness_proof_parser::json_parser;
-use types::swiftness::{global_values::InteractionElements, stark::types::{FriVerifyData, StarkCommitment}};
+use types::swiftness::{
+    global_values::InteractionElements,
+    stark::types::{FriVerifyData, StarkCommitment},
+};
 use utils::{BidirectionalStack, Scheduler};
 use verifier_3::state::BidirectionalStackAccount;
 mod fixtures;
@@ -61,7 +64,7 @@ fn test_eval_ods_boundary_poly_at_points() {
     println!("Executed {} steps", steps);
 
     let mut evaluations = Vec::new();
-    
+
     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
     for value in fri_verify_data.fri_decommitment.values.iter() {
         evaluations.push(*value);

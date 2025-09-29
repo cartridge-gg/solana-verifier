@@ -10,15 +10,16 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use types::{funvec::FunVec, swiftness::global_values::{GlobalValues, InteractionElements}};
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
 use stark_verify_verification::stark_verify::StarkVerify;
-use types::swiftness::stark::types::StarkCommitment;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use utils::{
-    AccountCast, Executable, COLUMN_VALUES_SIZE,
+use types::swiftness::stark::types::StarkCommitment;
+use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
+use types::{
+    funvec::FunVec,
+    swiftness::global_values::{GlobalValues, InteractionElements},
 };
+use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
 
 use utils::BidirectionalStack;
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
@@ -97,7 +98,6 @@ async fn main() -> client::Result<()> {
     }
     send_and_confirm_transactions(&client, &transactions).await?;
     println!("All data set successfully");
-
 
     // Push the StarkVerify task to the stack
     let stark_verify_task = StarkVerify::new(0, 0);
@@ -261,9 +261,9 @@ mod prepare_input {
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
     use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
+    use utils::BidirectionalStack;
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
-    use utils::BidirectionalStack;
 
     use crate::constraint_coefficients;
 

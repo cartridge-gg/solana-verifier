@@ -11,8 +11,8 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
-use types::swiftness::stark::types::FriVerifyData;
 use std::{mem::size_of, path::Path};
+use types::swiftness::stark::types::FriVerifyData;
 use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
@@ -292,7 +292,6 @@ mod prepare_input {
     use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
-    use utils::StarkCommitmentTrait;
     use verifier_3::state::BidirectionalStackAccount;
 
     use crate::constraint_coefficients;
@@ -308,10 +307,11 @@ mod prepare_input {
         stack.proof = proof_verifier.clone();
 
         // Set constraint coefficients and oods values like in unit test
-        stack.constraint_coefficients = constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods()
-            .as_slice()
-            .try_into()
-            .unwrap();
+        stack.constraint_coefficients =
+            constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods()
+                .as_slice()
+                .try_into()
+                .unwrap();
         stack.oods_values = proof_verifier
             .unsent_commitment
             .oods_values
@@ -743,5 +743,4 @@ mod constraint_coefficients {
             .collect(),
         )
     }
-    
 }

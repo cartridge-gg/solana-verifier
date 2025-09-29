@@ -6,7 +6,6 @@ use utils::{
 
 use crate::hash_computation::{HashComputation, HashComputationWithQueries};
 use types::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_QUERIES};
-use types::swiftness::commitment::vector::config::Config as VectorConfig;
 use types::swiftness::commitment::vector::types::QueryWithDepth;
 use types::swiftness::stark::types::VerifyVariables;
 

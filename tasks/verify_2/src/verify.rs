@@ -1,6 +1,5 @@
 use stark_verify_decommitments::stark_verify::StarkVerify;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
-use verify_public_input::hash_public_input::VerifyPublicInput;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {

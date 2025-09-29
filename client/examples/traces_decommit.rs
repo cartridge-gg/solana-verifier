@@ -10,20 +10,10 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify_decommitments::{traces_decommit::TracesDecommit, vector_decommit::VectorDecommit};
+use stark_verify_decommitments::traces_decommit::TracesDecommit;
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::commitment::table::config::Config as TableConfig;
-use types::swiftness::commitment::table::types::Commitment as TableCommitment;
-use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
-use types::swiftness::{
-    commitment::vector::config::Config as VectorConfig,
-    global_values::{GlobalValues, InteractionElements},
-};
 use utils::BidirectionalStack;
-use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use utils::{AccountCast, Executable};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;
@@ -256,15 +246,13 @@ mod prepare_input {
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
     use types::swiftness::air::trace::Commitment as TraceCommitment;
-    use types::swiftness::air::trace::Decommitment as TraceDecommitment;
     use types::swiftness::commitment::table::config::Config as TableConfig;
     use types::swiftness::commitment::table::types::Commitment as TableCommitment;
     use types::swiftness::commitment::vector::config::Config as VectorConfig;
     use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+    use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
-    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
-    use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
 
     use crate::constraint_coefficients;

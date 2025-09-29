@@ -1,5 +1,3 @@
-use transcript::transcript::TranscriptRandomFelt;
-use transcript::transcript::TranscriptReadFeltVector;
 use crate::FriCommit;
 use crate::PowersArray;
 use crate::ProofOfWork;
@@ -8,6 +6,8 @@ use crate::TracesCommit;
 use crate::VerifyOods;
 use felt::Felt;
 use poseidon::poseidon::PoseidonHashMany;
+use transcript::transcript::TranscriptRandomFelt;
+use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::air::recursive_with_poseidon::Layout;
 use types::swiftness::air::recursive_with_poseidon::LayoutTrait;
 use types::swiftness::global_values::InteractionElements;

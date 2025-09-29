@@ -6,7 +6,8 @@ use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
+    TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE,
 };
 
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
@@ -123,10 +124,10 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 // Collect column values for this point (following the original algorithm)
                 // Use fixed-size array instead of Vec for Solana BPF
                 let max_columns = self.n_original_columns as usize
-                + self.n_interaction_columns as usize
-                + CONSTRAINT_DEGREE;
+                    + self.n_interaction_columns as usize
+                    + CONSTRAINT_DEGREE;
 
-                assert!(max_columns<= COLUMN_VALUES_SIZE as usize);
+                assert!(max_columns <= COLUMN_VALUES_SIZE as usize);
 
                 let mut column_values = [Felt::ZERO; COLUMN_VALUES_SIZE]; // Fixed size, adjust as needed
 
@@ -135,7 +136,8 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 // Add original trace columns
                 let original_start = i * self.n_original_columns as usize;
                 let original_end = (i + 1) * self.n_original_columns as usize;
-                let original_slice = &traces_decommitment.original.values.as_slice()[original_start..original_end];
+                let original_slice =
+                    &traces_decommitment.original.values.as_slice()[original_start..original_end];
                 let mut col_idx = 0;
                 for &value in original_slice.iter() {
                     if col_idx < column_values.len() {
@@ -160,7 +162,8 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 // Add composition columns
                 let composition_start = i * CONSTRAINT_DEGREE;
                 let composition_end = (i + 1) * CONSTRAINT_DEGREE;
-                let composition_slice = &composition_decommitment.values.as_slice()[composition_start..composition_end];
+                let composition_slice =
+                    &composition_decommitment.values.as_slice()[composition_start..composition_end];
                 let mut col_idx = (self.n_original_columns + self.n_interaction_columns) as usize;
                 for &value in composition_slice.iter() {
                     if col_idx < column_values.len() {

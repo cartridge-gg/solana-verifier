@@ -1,6 +1,6 @@
 use felt::Felt;
-use transcript::transcript::TranscriptReadFelt;
 use starknet_crypto::{poseidon_hash_many, Felt as StarknetFelt};
+use transcript::transcript::TranscriptReadFelt;
 use utils::{BidirectionalStack, Scheduler};
 use verifier_1::state::BidirectionalStackAccount;
 
