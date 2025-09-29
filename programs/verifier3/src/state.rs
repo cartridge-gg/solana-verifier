@@ -3,9 +3,17 @@ use felt::Felt;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
 use types::swiftness::stark::types::cast_slice_to_struct;
 use types::swiftness::stark::types::cast_slice_to_struct_mut;
-use types::swiftness::stark::types::{cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables};
-use utils::{AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2, FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait, CACHE_SIZE};
-use utils::{BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE};
+use types::swiftness::stark::types::{
+    cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables,
+};
+use utils::{
+    AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2,
+    FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait, CACHE_SIZE,
+};
+use utils::{
+    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
+    OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
+};
 
 /// Minimal state for verifier3 - basic proof verification only
 #[repr(C)]
@@ -164,7 +172,6 @@ impl BidirectionalStack for BidirectionalStackAccount {
     }
 }
 
-
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
         cast_struct_to_slice(&self.proof)
@@ -300,7 +307,7 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         let global_values_ref = &mut self.global_values;
         let constraint_coefficients_slice = &mut self.constraint_coefficients;
         let column_values_slice = &mut self.column_values;
-        
+
         (
             proof_ref,
             pows_slice,

@@ -6,9 +6,9 @@ use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof, VerifyVariables};
 use utils::FullProofDataVerifier3;
+use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{CacheStorage, CachedProofData, ExtendedProofData, FullProofDataVerifier2, ProofData};
 use utils::{StarkCommitmentTrait, StarkVerifyTrait};
-use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS};
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
     POSEIDON_BITS_SIZE, POWS_SIZE,
@@ -228,7 +228,6 @@ impl StarkCommitmentTrait for BidirectionalStackAccount {
     }
 }
 
-
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
         cast_struct_to_slice(&self.proof)
@@ -284,15 +283,11 @@ impl FullProofDataVerifier2 for BidirectionalStackAccount {
 
         // Use raw pointers to avoid borrowing conflicts
         let domains_slice = &self.domains;
-        let oods_values_slice =
-            &mut self.oods_values;
+        let oods_values_slice = &mut self.oods_values;
         let global_values_ref = &mut self.global_values;
-        let constraint_coefficients_slice =
-            &mut self.constraint_coefficients;
-        let column_values_slice =
-            &mut self.column_values;
-        let bits_slice =
-            &mut self.eval_composition_polynomial_bits;
+        let constraint_coefficients_slice = &mut self.constraint_coefficients;
+        let column_values_slice = &mut self.column_values;
+        let bits_slice = &mut self.eval_composition_polynomial_bits;
         let poseidon_bits_slice = &mut self.poseidon_bits;
         (
             proof_ref,
@@ -403,7 +398,6 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
 }
 
 impl CachedProofData for BidirectionalStackAccount {
-
     fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
         // let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         // let proof_bytes = cast_struct_to_slice(&self.proof);
@@ -419,7 +413,7 @@ impl CachedProofData for BidirectionalStackAccount {
         // let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
         // let proof = unsafe { &*(proof_bytes.as_ptr() as *const P) };
         // let cache = unsafe { &*(cache_bytes.as_ptr() as *const C) };
-        
+
         // (stark_commitment, proof, cache)
         panic!("get_stark_commitment_proof_and_cache not supported in verifier2")
     }
@@ -816,4 +810,3 @@ mod tests {
         );
     }
 }
-

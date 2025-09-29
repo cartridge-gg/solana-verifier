@@ -14,9 +14,9 @@ use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBounda
 use std::{mem::size_of, path::Path};
 use types::swiftness::stark::types::FriVerifyData;
 use utils::BidirectionalStack;
+use utils::CacheStorage;
 use utils::{AccountCast, Executable};
 use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-use utils::CacheStorage;
 
 pub const CHUNK_SIZE: usize = 1000;
 

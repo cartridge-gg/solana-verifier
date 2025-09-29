@@ -1,12 +1,18 @@
 use std::vec;
 
 use felt::{Felt, NonZeroFelt};
-use types::swiftness::{air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE}, commitment::{table::types::Commitment as TableCommitment}, global_values::InteractionElements, stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof}};
+use types::swiftness::{
+    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+    commitment::table::types::Commitment as TableCommitment,
+    global_values::InteractionElements,
+    stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof},
+};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
+    ProofData, StarkVerifyTrait, TypeIdentifiable,
 };
 
-use crate::{eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints}};
+use crate::eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
@@ -38,7 +44,9 @@ impl Default for StarkVerify {
 }
 
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

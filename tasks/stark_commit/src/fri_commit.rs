@@ -47,7 +47,9 @@ impl Default for FriCommit {
 }
 
 impl Executable for FriCommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

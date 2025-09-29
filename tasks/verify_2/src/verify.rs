@@ -1,8 +1,14 @@
 use felt::{Felt, NonZeroFelt};
 use stark_verify_decommitments::stark_verify::StarkVerify;
 use transcript::transcript::TranscriptRandomFelt;
-use types::{funvec::FunVec, swiftness::stark::types::{FriVerifyData, StarkProof}};
-use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData, TypeIdentifiable};
+use types::{
+    funvec::FunVec,
+    swiftness::stark::types::{FriVerifyData, StarkProof},
+};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    TypeIdentifiable,
+};
 
 const DIVISOR: Felt = Felt::from_hex_unchecked("0x100000000000000000000000000000000");
 
@@ -49,7 +55,10 @@ impl Default for Verify {
 }
 
 impl Executable for Verify {
-    fn execute<T: BidirectionalStack + ProofData + CacheStorage>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.step {
             VerifyStep::GenerateQueries => {
                 let proof = stack.get_proof_reference::<StarkProof>();

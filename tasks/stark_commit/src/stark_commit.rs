@@ -84,7 +84,9 @@ impl Default for StarkCommit {
 }
 
 impl Executable for StarkCommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

@@ -1,7 +1,7 @@
 use felt::Felt;
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3, ProofData, StarkVerifyTrait,
-    TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
+    ProofData, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::table_decommit::TableDecommit;
@@ -53,7 +53,9 @@ impl Default for TracesDecommit {
 }
 
 impl Executable for TracesDecommit {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

@@ -2,12 +2,15 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
 use types::swiftness::stark::types::{
-    cast_struct_to_slice, cast_struct_to_slice_mut,
-    StarkCommitment, StarkProof, VerifyVariables,
+    cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof, VerifyVariables,
 };
-use utils::{AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2, FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait};
 use utils::{
-    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
+    AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2,
+    FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait,
+};
+use utils::{
+    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
+    OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
 };
 
 /// Minimal state for verifier1 - only what's actually needed
@@ -44,7 +47,6 @@ impl Default for BidirectionalStackAccount {
             stark_commitment: StarkCommitment::default(),
             eval_composition_polynomial_bits: [Felt::ZERO; BITS_SIZE],
             poseidon_bits: [Felt::ZERO; POSEIDON_BITS_SIZE],
-
         }
     }
 }
@@ -200,7 +202,6 @@ impl StarkCommitmentTrait for BidirectionalStackAccount {
     }
 }
 
-
 impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
         cast_struct_to_slice(&self.proof)
@@ -272,15 +273,11 @@ impl FullProofDataVerifier2 for BidirectionalStackAccount {
 
         // Use raw pointers to avoid borrowing conflicts
         let domains_slice = &self.domains;
-        let oods_values_slice =
-            &mut self.oods_values;
+        let oods_values_slice = &mut self.oods_values;
         let global_values_ref = &mut self.global_values;
-        let constraint_coefficients_slice =
-            &mut self.constraint_coefficients;
-        let column_values_slice =
-            &mut self.column_values;
-        let bits_slice =
-            &mut self.eval_composition_polynomial_bits;
+        let constraint_coefficients_slice = &mut self.constraint_coefficients;
+        let column_values_slice = &mut self.column_values;
+        let bits_slice = &mut self.eval_composition_polynomial_bits;
         let poseidon_bits_slice = &mut self.poseidon_bits;
         (
             proof_ref,
@@ -370,7 +367,6 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         panic!("set_constraint_coefficients not supported in verifier1")
     }
 }
-
 
 // Dummy implementation of CacheStorage for verifier1 (not actually used)
 impl CacheStorage for BidirectionalStackAccount {

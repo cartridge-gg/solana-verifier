@@ -1,13 +1,20 @@
 use std::vec;
 
 use felt::Felt;
-use types::swiftness::{commitment::table::types::Commitment as TableCommitment, global_values::InteractionElements, stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables}};
+use types::swiftness::{
+    commitment::table::types::Commitment as TableCommitment,
+    global_values::InteractionElements,
+    stark::types::{
+        cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+    },
+};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2, ProofData, StarkVerifyTrait, TypeIdentifiable
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2,
+    ProofData, StarkVerifyTrait, TypeIdentifiable,
 };
 
-use crate::{table_decommit::TableDecommit, traces_decommit::TracesDecommit};
 pub use crate::vector_decommit::VectorDecommit;
+use crate::{table_decommit::TableDecommit, traces_decommit::TracesDecommit};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StarkVerifyStep {
@@ -37,9 +44,10 @@ impl Default for StarkVerify {
     }
 }
 
-
 impl Executable for StarkVerify {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier2 + CacheStorage>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier2 + CacheStorage,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
@@ -147,7 +155,6 @@ impl Executable for StarkVerify {
         self.step == StarkVerifyStep::Done
     }
 }
-
 
 #[inline(always)]
 fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
