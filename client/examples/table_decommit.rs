@@ -10,7 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_verify::{table_decommit::TableDecommit, vector_decommit::VectorDecommit};
+use stark_verify_decommitments::{table_decommit::TableDecommit, vector_decommit::VectorDecommit};
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::commitment::table::config::Config as TableConfig;

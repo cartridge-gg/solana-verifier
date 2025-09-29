@@ -1,0 +1,16 @@
+[package]
+name = "verify-3"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+utils.workspace = true
+felt.workspace = true
+
+types.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true
+verify-public-input.workspace = true
+stark-verify-decommitments.workspace = true
+stark-verify-verification.workspace = true
+transcript.workspace = true

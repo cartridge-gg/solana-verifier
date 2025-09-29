@@ -1,0 +1,10 @@
+[package]
+name = "transcript"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+felt.workspace = true
+utils.workspace = true
+types.workspace = true
+poseidon.workspace = true

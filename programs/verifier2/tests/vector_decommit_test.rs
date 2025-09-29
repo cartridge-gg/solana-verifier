@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark_verify::vector_decommit::VectorDecommit;
+use stark_verify_decommitments::vector_decommit::VectorDecommit;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
 use types::swiftness::{
     commitment::vector::config::Config as VectorConfig, stark::types::cast_struct_to_slice,

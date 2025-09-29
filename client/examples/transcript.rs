@@ -9,7 +9,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
-use stark_commit::transcript_random_felt::TranscriptRandomFelt;
+use transcript::transcript::TranscriptRandomFelt;
 use std::{mem::size_of, path::Path};
 use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};

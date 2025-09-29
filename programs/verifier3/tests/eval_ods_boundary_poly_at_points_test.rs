@@ -1,11 +1,11 @@
 use felt::Felt;
 use swiftness_proof_parser::json_parser;
-use types::swiftness::{global_values::InteractionElements, stark::types::StarkCommitment};
+use types::swiftness::{global_values::InteractionElements, stark::types::{FriVerifyData, StarkCommitment}};
 use utils::{BidirectionalStack, Scheduler};
-use verifier_2::state::BidirectionalStackAccount;
+use verifier_3::state::BidirectionalStackAccount;
 mod fixtures;
 use crate::fixtures::constraint_coefficients;
-use stark_verify::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
+use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use utils::StarkCommitmentTrait;
 
@@ -61,12 +61,10 @@ fn test_eval_ods_boundary_poly_at_points() {
     println!("Executed {} steps", steps);
 
     let mut evaluations = Vec::new();
-    while !stack.is_empty_front() {
-        let result = Felt::from_bytes_be_slice(stack.borrow_front());
-        stack.pop_front();
-        if result != Felt::ZERO {
-            evaluations.push(result);
-        }
+    
+    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+    for value in fri_verify_data.fri_decommitment.values.iter() {
+        evaluations.push(*value);
     }
 
     let expected_result = vec![

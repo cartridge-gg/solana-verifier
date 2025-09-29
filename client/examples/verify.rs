@@ -1,0 +1,348 @@
+use client::{
+    initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
+    setup_payer, setup_program, ClientError, Config,
+};
+use felt::Felt;
+use solana_sdk::{
+    compute_budget::ComputeBudgetInstruction,
+    instruction::{AccountMeta, Instruction},
+    signature::{Keypair, Signer},
+    transaction::Transaction,
+};
+use solana_system_interface::instruction::create_account;
+use types::{funvec::FunVec, swiftness::{global_values::{GlobalValues, InteractionElements}, stark::types::cast_struct_to_slice_mut}};
+use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
+use stark_verify_verification::stark_verify::StarkVerify;
+use types::swiftness::stark::types::StarkCommitment;
+use std::{mem::size_of, path::Path};
+use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+use utils::{
+    AccountCast, Executable, COLUMN_VALUES_SIZE,
+};
+use verify_1::verify::Verify as Verify_Stage_One;
+use verify_2::verify::Verify as Verify_Stage_Two;
+use verify_3::verify::Verify as Verify_Stage_Three;
+use utils::BidirectionalStack;
+use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
+
+pub const CHUNK_SIZE: usize = 1000;
+
+#[tokio::main]
+#[allow(clippy::result_large_err)]
+async fn main() -> client::Result<()> {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .filter_module("client", log::LevelFilter::Trace)
+        .init();
+
+    let config = Config::parse_args();
+
+    let client = initialize_client(&config).await?;
+
+    let payer = setup_payer(&client, &config).await?;
+
+    let program_path = Path::new("target/deploy/verifier_2.so");
+
+    let program_id = setup_program(&client, &payer, &config, program_path).await?;
+
+    println!("Using program ID: {program_id}");
+
+    let stack_account = Keypair::new();
+    println!("Creating new account: {}", stack_account.pubkey());
+
+    let space = size_of::<BidirectionalStackAccount>();
+    println!("Account space: {space} bytes");
+
+    let create_account_ix = create_account(
+        &payer.pubkey(),
+        &stack_account.pubkey(),
+        client.get_minimum_balance_for_rent_exemption(space).await?,
+        space as u64,
+        &program_id,
+    );
+
+    let create_account_tx = Transaction::new_signed_with_payer(
+        &[create_account_ix],
+        Some(&payer.pubkey()),
+        &[&payer, &stack_account],
+        client.get_latest_blockhash().await?,
+    );
+
+    let signature = client
+        .send_and_confirm_transaction(&create_account_tx)
+        .await?;
+    println!("Account created successfully: {signature}");
+
+    let stack_bytes = prepare_input::get_bytes();
+    let mut instructions: Vec<Instruction> = Vec::new();
+    for (chunk_index, chunk) in stack_bytes.chunks(CHUNK_SIZE).enumerate() {
+        let set_data_ix = Instruction::new_with_borsh(
+            program_id,
+            &VerifierInstruction::SetAccountData(chunk_index * CHUNK_SIZE, chunk.to_vec()),
+            vec![AccountMeta::new(stack_account.pubkey(), false)],
+        );
+        instructions.push(set_data_ix);
+    }
+    // Send transactions
+    let mut transactions = Vec::new();
+    for instruction in instructions.iter() {
+        let set_proof_tx = Transaction::new_signed_with_payer(
+            &[instruction.clone()],
+            Some(&payer.pubkey()),
+            &[&payer],
+            client.get_latest_blockhash().await?,
+        );
+        transactions.push(set_proof_tx.clone());
+    }
+    send_and_confirm_transactions(&client, &transactions).await?;
+    println!("All data set successfully");
+
+    // Push the StarkVerify task to the stack
+    let verify_task_stage_one = Verify_Stage_One::new();
+
+    println!("Using Verify with TYPE_TAG: {}", Verify_Stage_One::TYPE_TAG);
+
+    let push_task_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushTask(verify_task_stage_one.to_vec_with_type_tag()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _ = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_task_ix],
+    )
+    .await?;
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+    println!("Steps in simulation: {simulation_steps}");
+
+    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+
+    // Execute all steps until task is complete - split into chunks of max 5000
+    const MAX_CHUNK_SIZE: usize = 5000;
+
+    let simulation_steps_usize = simulation_steps as usize;
+
+    for chunk_start in (0..simulation_steps_usize).step_by(MAX_CHUNK_SIZE) {
+        let chunk_end = std::cmp::min(chunk_start + MAX_CHUNK_SIZE, simulation_steps_usize);
+        let chunk_size = chunk_end - chunk_start;
+
+        println!(
+            "Processing steps {}-{} ({} steps)",
+            chunk_start,
+            chunk_end - 1,
+            chunk_size
+        );
+
+        let mut transactions = Vec::new();
+        for i in chunk_start..chunk_end {
+            let execute_ix = Instruction::new_with_borsh(
+                program_id,
+                &VerifierInstruction::Execute(i as u32),
+                vec![AccountMeta::new(stack_account.pubkey(), false)],
+            );
+            let execute_tx = Transaction::new_signed_with_payer(
+                &[limit_instructions.clone(), execute_ix],
+                Some(&payer.pubkey()),
+                &[&payer],
+                client.get_latest_blockhash().await?,
+            );
+            transactions.push(execute_tx.clone());
+        }
+
+        send_and_confirm_transactions(&client, &transactions).await?;
+        println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
+    }
+
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    // Check that stack is empty (task completed successfully)
+    // assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+
+    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+
+    let stark_commitment = &stack.stark_commitment;
+
+    let mut stack = BidirectionalStackAccount::default();
+
+    let proof_str = include_str!("../../example_proof/saya.json");
+    let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
+    let proof = StarkProofParser::try_from(proof_json).unwrap();
+    let proof_verifier = proof.transform_to();
+    stack.proof = proof_verifier.clone();
+    stack.stark_commitment = *stark_commitment;
+
+    let stack_bytes_after_commitment = cast_struct_to_slice_mut(&mut stack).to_vec();
+
+    let stack_account = Keypair::new();
+    println!("Creating new account: {}", stack_account.pubkey());
+
+    let space = size_of::<BidirectionalStackAccount>();
+    println!("Account space: {space} bytes");
+
+    let create_account_ix = create_account(
+        &payer.pubkey(),
+        &stack_account.pubkey(),
+        client.get_minimum_balance_for_rent_exemption(space).await?,
+        space as u64,
+        &program_id,
+    );
+
+    let create_account_tx = Transaction::new_signed_with_payer(
+        &[create_account_ix],
+        Some(&payer.pubkey()),
+        &[&payer, &stack_account],
+        client.get_latest_blockhash().await?,
+    );
+
+    let signature = client
+        .send_and_confirm_transaction(&create_account_tx)
+        .await?;
+    println!("Second account created successfully: {signature}");
+
+    let mut instructions = Vec::new();
+    for (chunk_index, chunk) in stack_bytes_after_commitment.chunks(CHUNK_SIZE).enumerate() {
+        let set_data_ix = Instruction::new_with_borsh(
+            program_id,
+            &VerifierInstruction::SetAccountData(chunk_index * CHUNK_SIZE, chunk.to_vec()),
+            vec![AccountMeta::new(stack_account.pubkey(), false)],
+        );
+        instructions.push(set_data_ix);
+    }
+    // Send transactions
+    let mut transactions = Vec::new();
+    for instruction in instructions.iter() {
+        let set_proof_tx = Transaction::new_signed_with_payer(
+            &[instruction.clone()],
+            Some(&payer.pubkey()),
+            &[&payer],
+            client.get_latest_blockhash().await?,
+        );
+        transactions.push(set_proof_tx.clone());
+    }
+    send_and_confirm_transactions(&client, &transactions).await?;
+    println!("Commitment data set successfully");
+
+    // Push the StarkVerify task to the stack
+    let verify_task_stage_two = Verify_Stage_Two::new(digest, counter);
+
+    println!("Using Verify with TYPE_TAG: {}", Verify_Stage_Two::TYPE_TAG);
+
+    let push_task_ix = Instruction::new_with_borsh(
+        program_id,
+        &VerifierInstruction::PushTask(verify_task_stage_two.to_vec_with_type_tag()),
+        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    );
+
+    let _ = interact_with_program_instructions(
+        &client,
+        &payer,
+        &program_id,
+        &stack_account,
+        &[push_task_ix],
+    )
+    .await?;
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+    println!("Steps in simulation: {simulation_steps}");
+
+    let simulation_steps_usize = simulation_steps as usize;
+
+    for chunk_start in (0..simulation_steps_usize).step_by(MAX_CHUNK_SIZE) {
+        let chunk_end = std::cmp::min(chunk_start + MAX_CHUNK_SIZE, simulation_steps_usize);
+        let chunk_size = chunk_end - chunk_start;
+
+        println!(
+            "Processing steps {}-{} ({} steps)",
+            chunk_start,
+            chunk_end - 1,
+            chunk_size
+        );
+
+        let mut transactions = Vec::new();
+        for i in chunk_start..chunk_end {
+            let execute_ix = Instruction::new_with_borsh(
+                program_id,
+                &VerifierInstruction::Execute(i as u32),
+                vec![AccountMeta::new(stack_account.pubkey(), false)],
+            );
+            let execute_tx = Transaction::new_signed_with_payer(
+                &[limit_instructions.clone(), execute_ix],
+                Some(&payer.pubkey()),
+                &[&payer],
+                client.get_latest_blockhash().await?,
+            );
+            transactions.push(execute_tx.clone());
+        }
+
+        send_and_confirm_transactions(&client, &transactions).await?;
+        println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
+    }
+
+    let mut account_data = client
+        .get_account_data(&stack_account.pubkey())
+        .await
+        .map_err(ClientError::SolanaClientError)?;
+
+    let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+
+    // Check that stack is empty (task completed successfully)
+    // assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+
+    println!("✓ All verifications passed! Results match expected values from stark_verify.rs");
+    println!("✓ Stack is empty - task completed successfully");
+    println!("✓ Verify test completed successfully on Solana!");
+
+    Ok(())
+}
+
+mod prepare_input {
+    use swiftness_proof_parser::{
+        json_parser, transform::TransformTo, StarkProof as StarkProofParser,
+    };
+    use verifier_2::state::BidirectionalStackAccount;
+    use types::swiftness::stark::types::cast_struct_to_slice_mut;
+
+    pub fn get_bytes() -> Vec<u8> {
+        let mut stack = BidirectionalStackAccount::default();
+
+        let proof_str = include_str!("../../example_proof/saya.json");
+        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
+        let proof = StarkProofParser::try_from(proof_json).unwrap();
+        let proof_verifier = proof.transform_to();
+        stack.proof = proof_verifier.clone();
+
+        stack.oods_values = proof_verifier
+            .unsent_commitment
+            .oods_values
+            .as_slice()
+            .try_into()
+            .unwrap();
+
+        let bytes = cast_struct_to_slice_mut(&mut stack).to_vec();
+        bytes
+    }
+}

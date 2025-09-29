@@ -13,3 +13,4 @@ poseidon.workspace = true
 validate-public-input.workspace = true
 get-hash.workspace = true
 stark-commit.workspace = true
+transcript.workspace = true

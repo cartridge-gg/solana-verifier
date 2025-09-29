@@ -1,10 +1,10 @@
 use felt::Felt;
-use stark_verify::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
+use stark_verify_verification::eval_oods_polynomial_inner::EvalOodsPolynomialInner;
 use types::swiftness::global_values::EcPoint;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::stark::types::StarkProof;
 use utils::{BidirectionalStack, Scheduler, OODS_VALUES_SIZE};
-use verifier_2::state::BidirectionalStackAccount;
+use verifier_3::state::BidirectionalStackAccount;
 mod fixtures;
 use fixtures::{fri_config, fri_unsent_commitment, oods_values, stark_config};
 use types::swiftness::air::recursive_with_poseidon::Layout;

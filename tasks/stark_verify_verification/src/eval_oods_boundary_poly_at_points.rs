@@ -6,8 +6,7 @@ use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
-    TypeIdentifiable, CONSTRAINT_DEGREE,
+    impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE
 };
 
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
@@ -66,7 +65,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.points_count = queries_len.to_biguint().try_into().unwrap();
-
+                println!("points_count: {}", self.points_count);
                 assert!(
                     self.points_count <= FUNVEC_QUERY_INDICES,
                     "Too many query points: {} > {}",
@@ -100,12 +99,9 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     return vec![];
                 }
 
-                let current_point = {
-                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-                    let points = &fri_verify_data.fri_decommitment.points;
-                    let current_point = points.at(self.current_point_index);
-                    *current_point
-                };
+                // Read only the current point (not all points)
+                let current_point = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
                 let (stark_commitment, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
 
@@ -125,35 +121,53 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let composition_decommitment = &proof.witness.composition_decommitment;
 
                 // Collect column values for this point (following the original algorithm)
-                let mut column_values = Vec::with_capacity(
-                    self.n_original_columns as usize
-                        + self.n_interaction_columns as usize
-                        + CONSTRAINT_DEGREE,
-                );
+                // Use fixed-size array instead of Vec for Solana BPF
+                let max_columns = self.n_original_columns as usize
+                + self.n_interaction_columns as usize
+                + CONSTRAINT_DEGREE;
+
+                assert!(max_columns<= COLUMN_VALUES_SIZE as usize);
+
+                let mut column_values = [Felt::ZERO; COLUMN_VALUES_SIZE]; // Fixed size, adjust as needed
 
                 let i = self.current_point_index;
 
                 // Add original trace columns
                 let original_start = i * self.n_original_columns as usize;
                 let original_end = (i + 1) * self.n_original_columns as usize;
-                column_values.extend(
-                    &traces_decommitment.original.values.as_slice()[original_start..original_end],
-                );
+                let original_slice = &traces_decommitment.original.values.as_slice()[original_start..original_end];
+                let mut col_idx = 0;
+                for &value in original_slice.iter() {
+                    if col_idx < column_values.len() {
+                        column_values[col_idx] = value;
+                        col_idx += 1;
+                    }
+                }
 
                 // Add interaction trace columns
                 let interaction_start = i * self.n_interaction_columns as usize;
                 let interaction_end = (i + 1) * self.n_interaction_columns as usize;
-                column_values.extend(
-                    &traces_decommitment.interaction.values.as_slice()
-                        [interaction_start..interaction_end],
-                );
+                let interaction_slice = &traces_decommitment.interaction.values.as_slice()
+                    [interaction_start..interaction_end];
+                let mut col_idx = self.n_original_columns as usize;
+                for &value in interaction_slice.iter() {
+                    if col_idx < column_values.len() {
+                        column_values[col_idx] = value;
+                        col_idx += 1;
+                    }
+                }
 
                 // Add composition columns
                 let composition_start = i * CONSTRAINT_DEGREE;
                 let composition_end = (i + 1) * CONSTRAINT_DEGREE;
-                column_values.extend(
-                    &composition_decommitment.values.as_slice()[composition_start..composition_end],
-                );
+                let composition_slice = &composition_decommitment.values.as_slice()[composition_start..composition_end];
+                let mut col_idx = (self.n_original_columns + self.n_interaction_columns) as usize;
+                for &value in composition_slice.iter() {
+                    if col_idx < column_values.len() {
+                        column_values[col_idx] = value;
+                        col_idx += 1;
+                    }
+                }
 
                 // Store column values in the preallocated column_values array
                 let column_values_array = stack.get_proof_data_references::<StarkProof>().6;
@@ -243,18 +257,20 @@ impl Executable for ComputeQueryPoints {
 
         let shift = Felt::TWO.pow_felt(&(MAX_DOMAIN_SIZE - log_eval_domain_size));
 
-        let mut points = Vec::with_capacity(queries_len.to_biguint().try_into().unwrap());
+        // Use fixed-size array instead of Vec for Solana BPF
+        let mut points = [Felt::ZERO; FUNVEC_QUERY_INDICES];
 
-        for _ in 0..queries_len.to_biguint().try_into().unwrap() {
+        let queries_count = queries_len.to_biguint().try_into().unwrap();
+        for i in 0..queries_count {
             let query = Felt::from_bytes_be_slice(stack.borrow_front());
             let index: u64 = (query * shift).to_biguint().try_into().unwrap();
             let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
-            points.push(point);
+            points[i] = point;
             stack.pop_front();
         }
 
-        for point in points.iter().rev() {
-            stack.push_front(&point.to_bytes_be()).unwrap();
+        for i in (0..queries_count).rev() {
+            stack.push_front(&points[i].to_bytes_be()).unwrap();
         }
         stack.push_front(&queries_len.to_bytes_be()).unwrap();
 

@@ -1,6 +1,6 @@
 use crate::table_commit::TableCommit;
-use crate::transcript_random_felt::TranscriptRandomFelt;
-use crate::transcript_random_felt::TranscriptReadFeltVector;
+use transcript::transcript::TranscriptRandomFelt;
+use transcript::transcript::TranscriptReadFeltVector;
 use felt::Felt;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{StarkCommitment, StarkProof};

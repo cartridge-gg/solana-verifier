@@ -6,7 +6,6 @@ pub mod proof_of_work;
 pub mod stark_commit;
 pub mod table_commit;
 pub mod traces_commit;
-pub mod transcript_random_felt;
 pub mod verify_oods;
 
 pub use crate::eval_composition_polynomial::EvalCompositionPolynomial;

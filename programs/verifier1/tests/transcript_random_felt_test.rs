@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark_commit::transcript_random_felt::TranscriptRandomFelt;
+use transcript::transcript::TranscriptRandomFelt;
 use starknet_crypto::poseidon_hash;
 use starknet_crypto::Felt as StarknetFelt;
 use utils::{BidirectionalStack, Scheduler};

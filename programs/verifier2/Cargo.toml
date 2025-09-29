@@ -20,9 +20,11 @@ felt.workspace = true
 types.workspace = true
 pedersen.workspace = true
 poseidon.workspace = true   
-stark-verify.workspace = true
+stark-verify-decommitments.workspace = true
+stark-verify-verification.workspace = true
 verify-public-input.workspace = true
 verify-2.workspace = true
+transcript.workspace = true
 
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }

@@ -1,5 +1,5 @@
-use crate::transcript_random_felt::TranscriptRandomFelt;
-use crate::transcript_random_felt::TranscriptReadFeltVector;
+use transcript::transcript::TranscriptRandomFelt;
+use transcript::transcript::TranscriptReadFeltVector;
 use crate::FriCommit;
 use crate::PowersArray;
 use crate::ProofOfWork;

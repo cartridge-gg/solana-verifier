@@ -1,4 +1,4 @@
-use stark_verify::stark_verify::StarkVerify;
+use stark_verify_decommitments::stark_verify::StarkVerify;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 use verify_public_input::hash_public_input::VerifyPublicInput;
 
@@ -7,7 +7,6 @@ pub enum VerifyStep {
     GenerateQueries,
     GenerateQueriesLoop,
     StarkVerify,
-    VerifyPublicInput,
     Done,
 }
 
@@ -50,12 +49,8 @@ impl Executable for Verify {
                     "Stack should be empty before StarkVerify"
                 );
 
-                self.step = VerifyStep::VerifyPublicInput;
-                vec![StarkVerify::new(0, 0).to_vec_with_type_tag()]
-            }
-            VerifyStep::VerifyPublicInput => {
                 self.step = VerifyStep::Done;
-                vec![VerifyPublicInput::new().to_vec_with_type_tag()]
+                vec![StarkVerify::new(0, 0).to_vec_with_type_tag()]
             }
             VerifyStep::Done => {
                 vec![]

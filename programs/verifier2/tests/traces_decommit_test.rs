@@ -1,5 +1,5 @@
 use felt::Felt;
-use stark_verify::traces_decommit::TracesDecommit;
+use stark_verify_decommitments::traces_decommit::TracesDecommit;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use utils::{BidirectionalStack, Scheduler};
