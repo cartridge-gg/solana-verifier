@@ -1,13 +1,16 @@
 use std::vec;
 
 use felt::Felt;
-use types::{funvec::FunVec, swiftness::{
-    commitment::table::types::Commitment as TableCommitment,
-    global_values::InteractionElements,
-    stark::types::{
-        cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+use types::{
+    funvec::FunVec,
+    swiftness::{
+        commitment::table::types::Commitment as TableCommitment,
+        global_values::InteractionElements,
+        stark::types::{
+            cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+        },
     },
-}};
+};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2,
     ProofData, StarkVerifyTrait, TypeIdentifiable,
@@ -63,14 +66,15 @@ impl Executable for StarkVerify {
                 stack.pop_front();
 
                 for _ in 0..queries_len.to_biguint().try_into().unwrap() {
-                    self.queries.push(Felt::from_bytes_be_slice(stack.borrow_front()));
+                    self.queries
+                        .push(Felt::from_bytes_be_slice(stack.borrow_front()));
                     stack.pop_front();
                 }
 
                 for query in self.queries.as_slice().iter().rev() {
                     stack.push_front(&query.to_bytes_be()).unwrap();
                 }
-                
+
                 stack
                     .push_front(&Felt::from(self.queries.len()).to_bytes_be())
                     .unwrap();

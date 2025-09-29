@@ -107,7 +107,9 @@ impl Executable for Verify {
                         stack.push_front(&sample.to_bytes_be()).unwrap();
                     }
 
-                    stack.push_front(&Felt::from(sorted_samples.len()).to_bytes_be()).unwrap();
+                    stack
+                        .push_front(&Felt::from(sorted_samples.len()).to_bytes_be())
+                        .unwrap();
 
                     self.step = VerifyStep::StarkVerify;
                     vec![]

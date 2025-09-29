@@ -28,7 +28,10 @@ fn test_eval_ods_boundary_poly_at_points() {
             .as_slice()
             .try_into()
             .unwrap();
-    println!("constraint_coefficients_len: {:?}", stack.constraint_coefficients.len());
+    println!(
+        "constraint_coefficients_len: {:?}",
+        stack.constraint_coefficients.len()
+    );
     stack.oods_values = proof_verifier
         .unsent_commitment
         .oods_values

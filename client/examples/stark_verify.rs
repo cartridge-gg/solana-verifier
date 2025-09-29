@@ -255,9 +255,9 @@ mod prepare_input {
     use types::swiftness::stark::types::StarkCommitment;
     use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
     use utils::BidirectionalStack;
+    use utils::CacheStorage;
     use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
-    use utils::CacheStorage;
 
     use crate::constraint_coefficients;
 
