@@ -1,5 +1,5 @@
-use types::swiftness::fri::types::{LayerWitness, Witness};
 use types::funvec::FunVec;
+use types::swiftness::fri::types::{LayerWitness, Witness};
 
 mod layer_0;
 mod layer_1;

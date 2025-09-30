@@ -1,8 +1,8 @@
 use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
-use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};
 use types::swiftness::stark::types::cast_slice_to_struct_mut;
+use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};
 use types::swiftness::stark::types::{
     cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };

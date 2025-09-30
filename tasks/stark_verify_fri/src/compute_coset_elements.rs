@@ -1,5 +1,8 @@
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData, TypeIdentifiable};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    TypeIdentifiable,
+};
 
 use super::group::get_fri_group;
 use types::funvec::FunVec;
@@ -52,8 +55,8 @@ impl Default for ComputeCosetElements {
 
 impl Executable for ComputeCosetElements {
     fn execute<T: BidirectionalStack + ProofData + CacheStorage>(
-        &mut self, 
-        stack: &mut T
+        &mut self,
+        stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.stage {
             ComputeCosetElementsStep::Init => {
@@ -61,16 +64,18 @@ impl Executable for ComputeCosetElements {
                 self.current_index = 0;
                 self.coset_x_inv = Felt::ZERO;
                 fri_verify_data.working_elements.flush();
-        
+
                 self.stage = ComputeCosetElementsStep::ProcessElement;
                 vec![]
             }
             ComputeCosetElementsStep::ProcessElement => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
-                let coset_size_usize: usize = fri_verify_data.coset_size.to_biguint().try_into().unwrap();
+                let coset_size_usize: usize =
+                    fri_verify_data.coset_size.to_biguint().try_into().unwrap();
 
                 if self.current_index < coset_size_usize {
-                    let target_index = self.coset_start_index + Felt::from(self.current_index as u64);
+                    let target_index =
+                        self.coset_start_index + Felt::from(self.current_index as u64);
 
                     // ZMIANA: używamy get_first_active_query()
                     let q = fri_verify_data.get_first_active_query();

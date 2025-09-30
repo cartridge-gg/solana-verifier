@@ -1,7 +1,13 @@
 use felt::{Felt, NonZeroFelt};
-use types::swiftness::{fri::types::FriLayerQuery, stark::types::{FriVerifyData, StarkCommitment, StarkProof}};
-use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable, ProofData, TypeIdentifiable};
 use types::swiftness::global_values::InteractionElements;
+use types::swiftness::{
+    fri::types::FriLayerQuery,
+    stark::types::{FriVerifyData, StarkCommitment, StarkProof},
+};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
+    ProofData, TypeIdentifiable,
+};
 
 use crate::fri_verify_layers::FriVerifyLayers;
 // use crate::fri_verify_layers::FriVerifyLayers;
@@ -39,13 +45,16 @@ impl Default for FriVerify {
 }
 
 impl Executable for FriVerify {
-    fn execute<T: BidirectionalStack + ProofData + CacheStorage + CachedProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage + CachedProofData>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.stage {
             FriVerifyStep::Init => {
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                 let queries_len = fri_verify_data.queries.len();
                 let fri_len = fri_verify_data.fri_decommitment.values.len();
-                
+
                 assert_eq!(
                     fri_len, queries_len,
                     "FRI decommitment length does not match queries length"
@@ -66,13 +75,12 @@ impl Executable for FriVerify {
                         });
                     }
                 }
-                
+
                 fri_verify_data.init_active_queries();
-                
+
                 self.stage = FriVerifyStep::VerifyLastLayer;
                 vec![FriVerifyLayers::new().to_vec_with_type_tag()]
             }
-
 
             FriVerifyStep::VerifyLastLayer => {
                 let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
@@ -82,7 +90,7 @@ impl Executable for FriVerify {
                 >();
 
                 let fri_commitment = &stark_commitment.fri;
-                
+
                 for i in 0..fri_verify_data.active_query_count {
                     let query = fri_verify_data.layer_queries.get(i).unwrap();
 

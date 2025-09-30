@@ -1,5 +1,8 @@
 use felt::Felt;
-use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData, TypeIdentifiable};
+use utils::{
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    TypeIdentifiable,
+};
 
 use types::swiftness::stark::types::FriVerifyData;
 
@@ -43,7 +46,10 @@ impl Default for FriFormula {
 }
 
 impl Executable for FriFormula {
-    fn execute<T: BidirectionalStack + ProofData + CacheStorage>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         match self.stage {
             FriFormulaStep::Compute => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
@@ -118,13 +124,16 @@ impl Executable for FriFormula {
                     }
                 };
 
-                if let Some(coset_index) = fri_verify_data.working_indices.get(fri_verify_data.current_coset_index) {
+                if let Some(coset_index) = fri_verify_data
+                    .working_indices
+                    .get(fri_verify_data.current_coset_index)
+                {
                     let next_query = types::swiftness::fri::types::FriLayerQuery {
                         index: *coset_index,
                         y_value: result,
                         x_inv_value: fri_verify_data.next_x_inv_value,
                     };
-                    
+
                     fri_verify_data.push_next_query(next_query);
                     fri_verify_data.current_coset_index += 1;
                 }

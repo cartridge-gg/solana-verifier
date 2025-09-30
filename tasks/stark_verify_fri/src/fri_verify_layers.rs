@@ -1,11 +1,12 @@
 use felt::Felt;
 use types::swiftness::{global_values::InteractionElements, stark::types::cast_struct_to_slice};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable, ProofData, StarkVerifyTrait, TypeIdentifiable
+    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
+    ProofData, StarkVerifyTrait, TypeIdentifiable,
 };
 
-use stark_verify_decommitments::table_decommit::TableDecommit;
 use crate::compute_next_layer::ComputeNextLayer;
+use stark_verify_decommitments::table_decommit::TableDecommit;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables};
 
 // Task for verifying FRI layers
@@ -42,7 +43,9 @@ impl Default for FriVerifyLayers {
 }
 
 impl Executable for FriVerifyLayers {
-    fn execute<T: BidirectionalStack + ProofData + StarkVerifyTrait + CachedProofData + CacheStorage>(
+    fn execute<
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + CachedProofData + CacheStorage,
+    >(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {

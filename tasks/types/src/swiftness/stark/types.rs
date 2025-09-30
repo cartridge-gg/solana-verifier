@@ -1,6 +1,7 @@
 use super::config::StarkConfig;
 use crate::funvec::{
-    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_COSET_ELEMENTS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_FRI_LAYER_QUERIES, FUNVEC_LEAVES, FUNVEC_OODS, FUNVEC_QUERIES, FUNVEC_QUERY_INDICES
+    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_COSET_ELEMENTS, FUNVEC_DECOMMITMENT_VALUES,
+    FUNVEC_FRI_LAYER_QUERIES, FUNVEC_LEAVES, FUNVEC_OODS, FUNVEC_QUERIES, FUNVEC_QUERY_INDICES,
 };
 use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
@@ -110,7 +111,6 @@ impl Default for VerifyVariables {
     }
 }
 
-
 #[derive(Debug, PartialEq)]
 #[repr(C)]
 pub struct FriVerifyData {
@@ -161,7 +161,7 @@ impl FriVerifyData {
             None
         }
     }
-    
+
     #[inline]
     pub fn remove_first_active_query(&mut self) {
         if self.active_query_count > 0 {
@@ -169,19 +169,19 @@ impl FriVerifyData {
             self.active_query_count = self.active_query_count.saturating_sub(1);
         }
     }
-    
+
     #[inline]
     pub fn push_next_query(&mut self, query: fri::types::FriLayerQuery) {
         self.layer_queries.push(query);
     }
-    
+
     pub fn advance_layer(&mut self) {
         // Usuń active queries (shift je out)
         self.layer_queries.shift(self.active_query_count);
         // Teraz "next" są na początku - ustaw jako active
         self.active_query_count = self.layer_queries.len();
     }
-    
+
     #[inline]
     pub fn init_active_queries(&mut self) {
         self.active_query_count = self.layer_queries.len();

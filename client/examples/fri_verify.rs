@@ -2,6 +2,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
@@ -9,19 +10,18 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use stark_verify_fri::fri_verify::FriVerify;
-use types::swiftness::stark::types::cast_struct_to_slice;
 use std::{mem::size_of, path::Path};
+use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier_4::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
 
 pub const CHUNK_SIZE: usize = 1000;
 
 /// Main entry point for the Solana program client
 #[tokio::main]
 #[allow(clippy::result_large_err)]
-    async fn main() -> client::Result<()> {
-        env_logger::Builder::from_default_env()
+async fn main() -> client::Result<()> {
+    env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
         .filter_module("client", log::LevelFilter::Trace)
         .init();

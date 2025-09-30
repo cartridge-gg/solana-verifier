@@ -1,7 +1,7 @@
 use felt::Felt;
-use types::swiftness::commitment::{table, vector};
 use types::funvec::FunVec;
 use types::swiftness::air::trace::Witness;
+use types::swiftness::commitment::{table, vector};
 
 pub fn get() -> Witness {
     Witness {

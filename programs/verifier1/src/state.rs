@@ -5,7 +5,9 @@ use types::swiftness::stark::types::{
     cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };
 use utils::{
-    AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData, FullProofDataVerifier2, FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait
+    AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData,
+    FullProofDataVerifier2, FullProofDataVerifier3, ProofData, StarkCommitmentTrait,
+    StarkVerifyTrait,
 };
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
@@ -369,14 +371,12 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
 
 impl CachedProofData for BidirectionalStackAccount {
     fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
-
         panic!("get_stark_commitment_proof_and_cache not supported in verifier2")
     }
 
     fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
         &mut self,
     ) -> (&mut T, &mut P, &mut C) {
-
         panic!("get_stark_commitment_proof_and_cache_mut not supported in verifier2")
     }
 }
