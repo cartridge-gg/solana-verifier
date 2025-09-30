@@ -1,7 +1,6 @@
 use super::config::StarkConfig;
 use crate::funvec::{
-    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_COSET_ELEMENTS, FUNVEC_DECOMMITMENT_VALUES,
-    FUNVEC_LEAVES, FUNVEC_OODS, FUNVEC_QUERIES, FUNVEC_QUERY_INDICES,
+    FunVec, FUNVEC_AUTHENTICATIONS, FUNVEC_COSET_ELEMENTS, FUNVEC_DECOMMITMENT_VALUES, FUNVEC_FRI_LAYER_QUERIES, FUNVEC_LEAVES, FUNVEC_OODS, FUNVEC_QUERIES, FUNVEC_QUERY_INDICES
 };
 use crate::swiftness;
 use crate::swiftness::air::public_memory::PublicInput;
@@ -111,24 +110,24 @@ impl Default for VerifyVariables {
     }
 }
 
+
 #[derive(Debug, PartialEq)]
 #[repr(C)]
 pub struct FriVerifyData {
     pub queries: FunVec<Felt, FUNVEC_QUERIES>,
     pub fri_decommitment: swiftness::commitment::types::Decommitment,
     pub current_layer: usize,
-    pub working_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>,
-    pub next_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_QUERIES>, // For storing next layer queries
-    pub working_elements: FunVec<Felt, FUNVEC_LEAVES>,
-    pub sibling_witness: FunVec<Felt, FUNVEC_LEAVES>, // Global sibling witness for all cosets
+    pub layer_queries: FunVec<fri::types::FriLayerQuery, FUNVEC_FRI_LAYER_QUERIES>,
+    pub active_query_count: usize,
+    pub working_elements: FunVec<Felt, FUNVEC_COSET_ELEMENTS>,
+    pub sibling_witness: FunVec<Felt, FUNVEC_LEAVES>,
     pub working_indices: FunVec<Felt, FUNVEC_QUERY_INDICES>,
     pub working_y_values: FunVec<Felt, FUNVEC_LEAVES>,
     pub coset_size: Felt,
     pub eval_point: Felt,
-    pub next_x_inv_value: Felt, // For storing x_inv_value for next_queries
-    pub coset_x_inv: Felt,      // For storing coset_x_inv for fri_formula
-    pub coset_elements: FunVec<Felt, FUNVEC_COSET_ELEMENTS>,
-    pub current_coset_index: usize, // Track which coset is being processed
+    pub next_x_inv_value: Felt,
+    pub coset_x_inv: Felt,
+    pub current_coset_index: usize,
 }
 
 impl Default for FriVerifyData {
@@ -137,8 +136,8 @@ impl Default for FriVerifyData {
             queries: FunVec::default(),
             fri_decommitment: swiftness::commitment::types::Decommitment::default(),
             current_layer: 0,
-            working_queries: FunVec::default(),
-            next_queries: FunVec::default(),
+            layer_queries: FunVec::default(),
+            active_query_count: 0,
             working_elements: FunVec::default(),
             sibling_witness: FunVec::default(),
             working_indices: FunVec::default(),
@@ -147,9 +146,45 @@ impl Default for FriVerifyData {
             eval_point: Felt::ZERO,
             next_x_inv_value: Felt::ZERO,
             coset_x_inv: Felt::ZERO,
-            coset_elements: FunVec::default(),
             current_coset_index: 0,
         }
+    }
+}
+
+// Helper methods - TYLKO dla queries
+impl FriVerifyData {
+    #[inline]
+    pub fn get_first_active_query(&self) -> Option<&fri::types::FriLayerQuery> {
+        if self.active_query_count > 0 {
+            self.layer_queries.get(0)
+        } else {
+            None
+        }
+    }
+    
+    #[inline]
+    pub fn remove_first_active_query(&mut self) {
+        if self.active_query_count > 0 {
+            self.layer_queries.shift(1);
+            self.active_query_count = self.active_query_count.saturating_sub(1);
+        }
+    }
+    
+    #[inline]
+    pub fn push_next_query(&mut self, query: fri::types::FriLayerQuery) {
+        self.layer_queries.push(query);
+    }
+    
+    pub fn advance_layer(&mut self) {
+        // Usuń active queries (shift je out)
+        self.layer_queries.shift(self.active_query_count);
+        // Teraz "next" są na początku - ustaw jako active
+        self.active_query_count = self.layer_queries.len();
+    }
+    
+    #[inline]
+    pub fn init_active_queries(&mut self) {
+        self.active_query_count = self.layer_queries.len();
     }
 }
 #[cfg(test)]

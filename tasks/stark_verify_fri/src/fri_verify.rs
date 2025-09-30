@@ -2,6 +2,8 @@ use felt::{Felt, NonZeroFelt};
 use types::swiftness::{fri::types::FriLayerQuery, stark::types::{FriVerifyData, StarkCommitment, StarkProof}};
 use utils::{impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable, ProofData, TypeIdentifiable};
 use types::swiftness::global_values::InteractionElements;
+
+use crate::fri_verify_layers::FriVerifyLayers;
 // use crate::fri_verify_layers::FriVerifyLayers;
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -43,7 +45,7 @@ impl Executable for FriVerify {
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                 let queries_len = fri_verify_data.queries.len();
                 let fri_len = fri_verify_data.fri_decommitment.values.len();
-
+                
                 assert_eq!(
                     fri_len, queries_len,
                     "FRI decommitment length does not match queries length"
@@ -53,11 +55,10 @@ impl Executable for FriVerify {
                     if index < fri_verify_data.fri_decommitment.values.len()
                         && index < fri_verify_data.fri_decommitment.points.len()
                     {
-                        // Translate the coset to the homogenous group to have simple FRI equations.
                         let shifted_x_value = fri_verify_data.fri_decommitment.points.at(index)
                             * FIELD_GENERATOR_INVERSE;
 
-                        fri_verify_data.working_queries.push(FriLayerQuery {
+                        fri_verify_data.layer_queries.push(FriLayerQuery {
                             index: *query,
                             y_value: *fri_verify_data.fri_decommitment.values.at(index),
                             x_inv_value: Felt::ONE
@@ -65,25 +66,25 @@ impl Executable for FriVerify {
                         });
                     }
                 }
+                
+                fri_verify_data.init_active_queries();
+                
                 self.stage = FriVerifyStep::VerifyLastLayer;
-                println!("Pushing FriVerifyLayers task");
-                // vec![FriVerifyLayers::new().to_vec_with_type_tag()]
-                vec![]
+                vec![FriVerifyLayers::new().to_vec_with_type_tag()]
             }
 
+
             FriVerifyStep::VerifyLastLayer => {
-                // Use the new extended API to get all data in one call, avoiding borrowing conflicts
                 let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
-                    StarkCommitment<InteractionElements>,
-                    StarkProof,
-                    FriVerifyData
+                StarkCommitment<InteractionElements>,
+                StarkProof,
+                FriVerifyData
                 >();
 
                 let fri_commitment = &stark_commitment.fri;
-                let working_queries_len = fri_verify_data.working_queries.len();
-
-                for i in 0..working_queries_len {
-                    let query = fri_verify_data.working_queries.get(i).unwrap();
+                
+                for i in 0..fri_verify_data.active_query_count {
+                    let query = fri_verify_data.layer_queries.get(i).unwrap();
 
                     let horner_result = self.horner_eval(
                         fri_commitment.last_layer_coefficients.as_slice(),
@@ -91,10 +92,7 @@ impl Executable for FriVerify {
                     );
 
                     if horner_result != query.y_value {
-                        panic!(
-                            "Last layer verification failed: expected {}, got {}",
-                            query.y_value, horner_result
-                        );
+                        panic!("Last layer verification failed");
                     }
                 }
 

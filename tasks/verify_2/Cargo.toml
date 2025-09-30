@@ -13,4 +13,5 @@ poseidon.workspace = true
 verify-public-input.workspace = true
 stark-verify-decommitments.workspace = true
 stark-verify-verification.workspace = true
+stark-verify-fri.workspace = true
 transcript.workspace = true

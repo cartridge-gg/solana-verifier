@@ -1,5 +1,5 @@
 [package]
-name = "verifier-2"
+name = "verifier-4"
 version.workspace = true
 edition.workspace = true
 
@@ -24,8 +24,9 @@ stark-verify-decommitments.workspace = true
 stark-verify-verification.workspace = true
 stark-verify-fri.workspace = true
 verify-public-input.workspace = true
-verify-2.workspace = true
+verify-4.workspace = true
 transcript.workspace = true
+verifier-2.workspace = true
 
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }
