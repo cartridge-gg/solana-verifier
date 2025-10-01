@@ -200,6 +200,7 @@ impl Executable for VectorDecommit {
                 stack
                     .push_front(&Felt::from(self.queries_count).to_bytes_be())
                     .unwrap();
+                println!("DEBUG: queries_count = {}", self.queries_count);
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();
@@ -217,7 +218,6 @@ impl Executable for VectorDecommit {
                     commitment_hash == self.reference_commitment_hash,
                     "Commitment hash verification failed"
                 );
-                println!("DEBUG: VectorDecommitStep::VerifyCommitmentHash done");
                 self.step = VectorDecommitStep::Done;
                 vec![]
             }

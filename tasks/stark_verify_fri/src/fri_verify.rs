@@ -25,7 +25,7 @@ const FIELD_GENERATOR_INVERSE: Felt =
 #[repr(C)]
 pub enum FriVerifyStep {
     Init,
-    VerifyLastLayer,
+    VerifyLastLayer(usize),
     Done,
 }
 impl_type_identifiable!(FriVerify);
@@ -78,35 +78,43 @@ impl Executable for FriVerify {
 
                 fri_verify_data.init_active_queries();
 
-                self.stage = FriVerifyStep::VerifyLastLayer;
+                self.stage = FriVerifyStep::VerifyLastLayer(0);
                 vec![FriVerifyLayers::new().to_vec_with_type_tag()]
             }
 
-            FriVerifyStep::VerifyLastLayer => {
-                let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
-                StarkCommitment<InteractionElements>,
-                StarkProof,
-                FriVerifyData
+                FriVerifyStep::VerifyLastLayer(chunk_index) => {
+                    println!("DEBUG: FriVerifyStep::VerifyLastLayer step");
+                    let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                    StarkCommitment<InteractionElements>,
+                    StarkProof,
+                    FriVerifyData
                 >();
-
+            
                 let fri_commitment = &stark_commitment.fri;
-
-                for i in 0..fri_verify_data.active_query_count {
+                let chunk_size = 4; // Sprawdź 4 queries na raz
+                let start = chunk_index * chunk_size;
+                let end = (start + chunk_size).min(fri_verify_data.active_query_count);
+            
+                for i in start..end {
                     let query = fri_verify_data.layer_queries.get(i).unwrap();
-
                     let horner_result = self.horner_eval(
-                        fri_commitment.last_layer_coefficients.as_slice(),
+                        &fri_commitment.last_layer_coefficients.as_slice(),
                         Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
                     );
-
+            
                     if horner_result != query.y_value {
                         panic!("Last layer verification failed");
                     }
                 }
-
-                self.stage = FriVerifyStep::Done;
+            
+                if end >= fri_verify_data.active_query_count {
+                    self.stage = FriVerifyStep::Done;
+                } else {
+                    self.stage = FriVerifyStep::VerifyLastLayer(chunk_index + 1);
+                }
                 vec![]
             }
+
             FriVerifyStep::Done => {
                 vec![]
             }

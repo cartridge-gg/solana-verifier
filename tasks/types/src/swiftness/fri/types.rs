@@ -29,6 +29,7 @@ pub struct LayerWitness {
     pub table_witness: table::types::Witness,
 }
 
+#[repr(C)]
 #[derive(Debug, PartialEq, Default)]
 pub struct Commitment {
     pub config: swiftness::fri::config::Config,
@@ -36,12 +37,11 @@ pub struct Commitment {
     // pub inner_layers: Vec<swiftness::commitment::table::types::Commitment>,
     pub inner_layers: FunVec<swiftness::commitment::table::types::Commitment, FUNVEC_LAYERS>,
     // Array of size n_layers, of one evaluation point for each layer.
-    pub eval_points: Vec<Felt>,
+    pub eval_points: FunVec<Felt, FUNVEC_LAYERS>,
     // Array of size 2**log_last_layer_degree_bound containing coefficients for the last layer
     // polynomial.
-    pub last_layer_coefficients: Vec<Felt>,
+    pub last_layer_coefficients: FunVec<Felt, FUNVEC_LAST_LAYER>,
 }
-
 #[repr(C)]
 #[derive(PartialEq, Eq, Debug, Clone, Default, Copy)]
 pub struct FriLayerQuery {

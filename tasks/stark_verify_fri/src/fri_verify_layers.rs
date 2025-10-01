@@ -59,6 +59,7 @@ impl Executable for FriVerifyLayers {
                 FriVerifyData
             >();
                 let fri_commitment = &stark_commitment.fri;
+                println!("\nDEBUG: fri_commitment = {:?}", fri_commitment);
                 fri_verify_data.current_layer = 0;
                 let n_layers_usize: usize = fri_commitment
                     .config
@@ -75,6 +76,7 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::ProcessLayer => {
+                println!("DEBUG: FriVerifyLayersStep::ProcessLayer step");
                 // Use the new extended API to get all data in one call, avoiding borrowing conflicts
                 let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
                     StarkCommitment<InteractionElements>,
@@ -100,6 +102,7 @@ impl Executable for FriVerifyLayers {
                         .layers
                         .get(fri_verify_data.current_layer)
                         .unwrap();
+                    // println!("DEBUG: target_layer_witness = {:?}", target_layer_witness);
 
                     // Prepare parameters for compute_next_layer
                     let step_size = fri_commitment
@@ -107,18 +110,21 @@ impl Executable for FriVerifyLayers {
                         .fri_step_sizes
                         .get(fri_verify_data.current_layer + 1)
                         .unwrap();
+                    println!("\nDEBUG: step_size = {:?}", step_size);
 
                     fri_verify_data.coset_size = Felt::TWO.pow_felt(step_size);
                     fri_verify_data.eval_point = *fri_commitment
                         .eval_points
                         .get(fri_verify_data.current_layer)
                         .unwrap();
+                    println!("\nDEBUG: eval_point = {:?}", fri_verify_data.eval_point);
 
                     for i in 0..target_layer_witness.leaves.len() {
                         if let Some(value) = target_layer_witness.leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
                         }
                     }
+                    // println!("\nDEBUG: sibling_witness = {:?}", fri_verify_data.sibling_witness);
                     self.stage = FriVerifyLayersStep::PushTableData;
                     vec![ComputeNextLayer::new().to_vec_with_type_tag()]
                 } else {
@@ -129,6 +135,7 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::PushTableData => {
+                println!("DEBUG: FriVerifyLayersStep::PushTableData step");
                 let (y_values, indices, table_witness, target_commitment) = {
                     // Use the new extended API to get all data in one call
                     let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<

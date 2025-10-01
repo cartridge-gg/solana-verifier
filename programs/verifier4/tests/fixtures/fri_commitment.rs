@@ -229,7 +229,7 @@ pub fn get() -> FriCommitment {
                 },
             },
         ]),
-        eval_points: vec![
+        eval_points: FunVec::from_vec(vec![
             "0x496c968f1dac9c4e65716021ecbad75f43995e95232b76f9511f1c2bdb125e1",
             "0x21405f4b938b8e96735126fe129009b6875fa3836b43caeae53f1c2868fe2ea",
             "0x6beae26510027e130e3e2eaddf855ce622cbfee5f4fda948ac8d7994f82a5fe",
@@ -241,8 +241,9 @@ pub fn get() -> FriCommitment {
         ]
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
-        .collect(),
-        last_layer_coefficients: vec![
+        .collect()),
+
+        last_layer_coefficients: FunVec::from_vec(vec![
             "0x66c796d3d02b79f1651070cb45f0bf66555e52586bde97db07d3587acebcb1e",
             "0x5a65f0a67b296d6fde75095e7bf9bb15147cdf46dac056a3515f3211c755a84",
             "0x2a86628c832b25e8f7c66db9cd8e75acb17c032f73184e794b314d5b6768f16",
@@ -310,6 +311,6 @@ pub fn get() -> FriCommitment {
         ]
         .iter()
         .map(|f| Felt::from_hex_unchecked(f))
-        .collect(),
+        .collect()),
     }
 }

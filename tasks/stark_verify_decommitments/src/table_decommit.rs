@@ -29,7 +29,6 @@ pub enum TableDecommitStep {
     HashSingleQuery,
     CollectHashResult,
     PrepareVectorDecommit,
-    ExecuteVectorDecommit,
     Done,
 }
 
@@ -106,6 +105,7 @@ impl Executable for TableDecommit {
 
                 self.total_queries = queries_count;
                 println!("Total queries: {}", self.total_queries);
+                assert!(self.total_queries != 0, "Total queries must be greater than 0");
 
                 self.step = TableDecommitStep::ProcessDecommitment;
                 vec![]
@@ -192,8 +192,6 @@ impl Executable for TableDecommit {
 
                     for i in 0..self.total_queries {
                         let index = queries_slice[i * 2];
-                        println!("DEBUG: index: {:?}", index);
-
                         verify_variables.queries[i * 2] = index;
                         verify_variables.queries[i * 2 + 1] = Felt::ZERO;
                     }
@@ -279,19 +277,12 @@ impl Executable for TableDecommit {
                 stack
                     .push_front(&Felt::from(self.total_queries).to_bytes_be())
                     .unwrap();
-                println!("DEBUG: total_queries = {}", self.total_queries);
 
                 // Push vector commitment
                 commitment_push_to_stack(&self.commitment, stack);
-                self.step = TableDecommitStep::ExecuteVectorDecommit;
+                self.step = TableDecommitStep::Done;
                 vec![VectorDecommit::new().to_vec_with_type_tag()]
             }
-
-            TableDecommitStep::ExecuteVectorDecommit => {
-                self.step = TableDecommitStep::Done;
-                vec![]
-            }
-
             TableDecommitStep::Done => {
                 vec![]
             }

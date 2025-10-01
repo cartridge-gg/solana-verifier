@@ -174,7 +174,7 @@ impl Executable for FriCommit {
                 stark_commitment
                     .fri
                     .last_layer_coefficients
-                    .extend_from_slice(last_layer_coefficients.as_slice());
+                    .extend(last_layer_coefficients.as_slice());
 
                 TranscriptReadFeltVector::push_input(
                     self.current_transcript_digest,
