@@ -5,7 +5,6 @@ use utils::{
 };
 
 use super::group::get_fri_group;
-use types::funvec::FunVec;
 use types::swiftness::stark::types::FriVerifyData;
 
 #[derive(Debug, Clone)]
@@ -89,13 +88,11 @@ impl Executable for ComputeCosetElements {
                         let fri_group = get_fri_group();
                         let fri_group_element = *fri_group.get(self.current_index).unwrap();
                         self.coset_x_inv = query.x_inv_value * fri_group_element;
-                    } else {
-                        if !fri_verify_data.sibling_witness.is_empty() {
-                            let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
-                            fri_verify_data.sibling_witness.shift(1);
-                            fri_verify_data.working_elements.push(witness_value);
-                            fri_verify_data.working_y_values.push(witness_value);
-                        }
+                    } else if !fri_verify_data.sibling_witness.is_empty() {
+                        let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
+                        fri_verify_data.sibling_witness.shift(1);
+                        fri_verify_data.working_elements.push(witness_value);
+                        fri_verify_data.working_y_values.push(witness_value);
                     }
 
                     self.current_index += 1;

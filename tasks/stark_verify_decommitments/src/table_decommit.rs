@@ -105,7 +105,10 @@ impl Executable for TableDecommit {
 
                 self.total_queries = queries_count;
                 println!("Total queries: {}", self.total_queries);
-                assert!(self.total_queries != 0, "Total queries must be greater than 0");
+                assert!(
+                    self.total_queries != 0,
+                    "Total queries must be greater than 0"
+                );
 
                 self.step = TableDecommitStep::ProcessDecommitment;
                 vec![]

@@ -1,16 +1,16 @@
 mod fixtures;
 use felt::Felt;
+use stark_verify_fri::fri_verify::FriVerify;
 use types::funvec::FunVec;
 use types::swiftness::commitment;
 use types::swiftness::fri;
+use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
-use types::swiftness::global_values::InteractionElements;
 use utils::BidirectionalStack;
+use utils::CacheStorage;
 use utils::Scheduler;
 use verifier_4::state::BidirectionalStackAccount;
-use stark_verify_fri::fri_verify::FriVerify;
-use utils::CacheStorage;
 
 #[test]
 fn test_fri_verify() {
