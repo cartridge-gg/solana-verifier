@@ -1,4 +1,6 @@
+use crate::fri_verify_layers::FriVerifyLayers;
 use felt::{Felt, NonZeroFelt};
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::{
     fri::types::FriLayerQuery,
@@ -8,8 +10,6 @@ use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
     ProofData, TypeIdentifiable,
 };
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
-use crate::fri_verify_layers::FriVerifyLayers;
 // use crate::fri_verify_layers::FriVerifyLayers;
 #[derive(Debug, Clone)]
 #[repr(C)]

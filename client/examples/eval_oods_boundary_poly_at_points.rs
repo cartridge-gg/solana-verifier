@@ -12,13 +12,13 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
 use std::{mem::size_of, path::Path};
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::stark::types::FriVerifyData;
 use utils::BidirectionalStack;
 use utils::CacheStorage;
+use utils::CachedProofData;
 use utils::{AccountCast, Executable};
 use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-use utils::CachedProofData;
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 pub const CHUNK_SIZE: usize = 1000;
 
 #[tokio::main]

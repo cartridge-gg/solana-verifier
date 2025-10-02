@@ -38,7 +38,7 @@ pub fn test_proof_verification() {
         stack.execute();
         steps += 1;
     }
-    
+
     let counter = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
     println!("counter: {:?}", counter);
@@ -46,7 +46,7 @@ pub fn test_proof_verification() {
     println!("digest: {:?}", digest);
     stack.pop_front();
     let commitment = stack.stark_commitment;
-    
+
     println!("Starting Verifier 2");
     let mut stack = Verifier2StackAccount::default();
 
@@ -61,10 +61,8 @@ pub fn test_proof_verification() {
 
     println!("digest: {:?}", digest);
     println!("counter: {:?}", counter);
-    
-    let task = verify_2::verify::Verify::new(
-        digest,counter
-    );
+
+    let task = verify_2::verify::Verify::new(digest, counter);
     stack.push_task(task);
 
     while !stack.is_empty_back() {
@@ -115,8 +113,9 @@ pub fn test_proof_verification() {
     }
     println!("steps stage 3: {:?}", steps_stage_3);
 
-    let stark_verify_data = stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
-    
+    let stark_verify_data =
+        stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
+
     println!("Starting Verifier 4");
     let mut stack = Verifier4StackAccount::default();
 

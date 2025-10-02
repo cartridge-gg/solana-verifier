@@ -1,5 +1,6 @@
 use crate::error::VerifierError;
 use felt::Felt;
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::cast_struct_to_slice_mut;
@@ -13,7 +14,6 @@ use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, OODS_VALUES_SIZE,
     POSEIDON_BITS_SIZE, POWS_SIZE,
 };
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 /// State for verifier2 - includes cache and full computational arrays
 #[repr(C)]
@@ -392,7 +392,9 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         assert_eq!(coefficients.len(), N_CONSTRAINTS);
         self.constraint_coefficients.copy_from_slice(coefficients);
     }
-    fn get_stark_commitment_and_coefficients_mut<T: Sized>(&mut self) -> (&T, &mut [Felt; N_CONSTRAINTS]) {
+    fn get_stark_commitment_and_coefficients_mut<T: Sized>(
+        &mut self,
+    ) -> (&T, &mut [Felt; N_CONSTRAINTS]) {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };

@@ -53,9 +53,16 @@ pub fn test_proof_verification() {
     while !stack.is_empty_back() {
         stack.execute();
     }
-    let stark_verify_data = stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
-    println!("DEBUG Stage 3 - fri_decommitment size: {}", stark_verify_data.fri_decommitment.values.len());
-    println!("DEBUG Stage 3 - working_elements size: {}", stark_verify_data.working_elements.len());
+    let stark_verify_data =
+        stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
+    println!(
+        "DEBUG Stage 3 - fri_decommitment size: {}",
+        stark_verify_data.fri_decommitment.values.len()
+    );
+    println!(
+        "DEBUG Stage 3 - working_elements size: {}",
+        stark_verify_data.working_elements.len()
+    );
     let mut evaluations = Vec::new();
 
     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();

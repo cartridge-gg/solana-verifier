@@ -1,14 +1,17 @@
 use std::vec;
 
 use felt::{Felt, NonZeroFelt};
-use types::{funvec::{FunVec, FUNVEC_QUERY_INDICES}, swiftness::{
-    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-    global_values::InteractionElements,
-    stark::types::{FriVerifyData, StarkCommitment, StarkProof},
-}};
+use types::{
+    funvec::{FunVec, FUNVEC_QUERY_INDICES},
+    swiftness::{
+        air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+        global_values::InteractionElements,
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
+    },
+};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable, FullProofDataVerifier3,
-    ProofData, StarkVerifyTrait, TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
+    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
@@ -45,7 +48,12 @@ impl Default for StarkVerify {
 
 impl Executable for StarkVerify {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage + CachedProofData,
+        T: BidirectionalStack
+            + ProofData
+            + StarkVerifyTrait
+            + FullProofDataVerifier3
+            + CacheStorage
+            + CachedProofData,
     >(
         &mut self,
         stack: &mut T,
@@ -103,7 +111,8 @@ impl Executable for StarkVerify {
                     let point = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
                     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-                    let fri_decommitment: &mut FriDecommitment = &mut fri_verify_data.fri_decommitment;
+                    let fri_decommitment: &mut FriDecommitment =
+                        &mut fri_verify_data.fri_decommitment;
                     fri_decommitment.points.push(point);
                     points_vec.push(point);
                 }
@@ -111,12 +120,15 @@ impl Executable for StarkVerify {
                 for point in points_vec.as_slice().iter().rev() {
                     stack.push_front(&point.to_bytes_be()).unwrap();
                 }
-                    
+
                 stack.push_front(&points_len.to_bytes_be()).unwrap();
 
                 {
-                    let (stark_commitment, coeffs) = FullProofDataVerifier3::get_stark_commitment_and_coefficients_mut::<StarkCommitment<InteractionElements>>(stack);
-                    
+                    let (stark_commitment, coeffs) =
+                        FullProofDataVerifier3::get_stark_commitment_and_coefficients_mut::<
+                            StarkCommitment<InteractionElements>,
+                        >(stack);
+
                     coeffs.fill(Felt::ZERO);
                     for i in 0..stark_commitment.interaction_after_oods.len() {
                         coeffs[i] = *stark_commitment.interaction_after_oods.at(i);
@@ -134,7 +146,6 @@ impl Executable for StarkVerify {
             //     // vec![FriVerify::new().to_vec_with_type_tag()]
             //     vec![]
             // }
-
             StarkVerifyStep::Done => {
                 vec![]
             }

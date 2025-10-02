@@ -1,7 +1,7 @@
 use felt::Felt;
 use std::fmt::Debug;
-use types::swiftness::global_values::GlobalValues;
 use types::swiftness::commitment::types::Decommitment as FriDecommitment;
+use types::swiftness::global_values::GlobalValues;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
@@ -161,7 +161,9 @@ pub trait FullProofDataVerifier3: ExtendedProofData {
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
     fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
-    fn get_stark_commitment_and_coefficients_mut<T: Sized>(&mut self) -> (&T, &mut [Felt; N_CONSTRAINTS]);
+    fn get_stark_commitment_and_coefficients_mut<T: Sized>(
+        &mut self,
+    ) -> (&T, &mut [Felt; N_CONSTRAINTS]);
 }
 
 /// Cache-related proof data methods - only for verifiers that use cache

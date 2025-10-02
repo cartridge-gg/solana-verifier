@@ -69,8 +69,7 @@ impl Executable for StarkVerify {
                     stack.pop_front();
                 }
                 {
-                    let verify_variables: &mut VerifyVariables =
-                        stack.get_verify_variables_mut();
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
                     verify_variables.queries_indexes = self.queries;
                 }
 

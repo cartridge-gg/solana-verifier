@@ -13,18 +13,31 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::{funvec::FunVec, swiftness::stark::types::{FriVerifyData, StarkCommitment}};
 use types::swiftness::commitment::types::Decommitment;
-use types::swiftness::{global_values::InteractionElements, stark::types::cast_struct_to_slice_mut};
+use types::swiftness::{
+    global_values::InteractionElements, stark::types::cast_struct_to_slice_mut,
+};
+use types::{
+    funvec::FunVec,
+    swiftness::stark::types::{FriVerifyData, StarkCommitment},
+};
 use utils::BidirectionalStack;
 use utils::StarkCommitmentTrait;
-use utils::{AccountCast, Executable, CacheStorage};
+use utils::{AccountCast, CacheStorage, Executable};
 
 // Import z aliasami dla każdego verifier'a
-use verifier_1::{instruction::VerifierInstruction as VI1, state::BidirectionalStackAccount as Stack1};
-use verifier_2::{instruction::VerifierInstruction as VI2, state::BidirectionalStackAccount as Stack2};
-use verifier_3::{instruction::VerifierInstruction as VI3, state::BidirectionalStackAccount as Stack3};
-use verifier_4::{instruction::VerifierInstruction as VI4, state::BidirectionalStackAccount as Stack4};
+use verifier_1::{
+    instruction::VerifierInstruction as VI1, state::BidirectionalStackAccount as Stack1,
+};
+use verifier_2::{
+    instruction::VerifierInstruction as VI2, state::BidirectionalStackAccount as Stack2,
+};
+use verifier_3::{
+    instruction::VerifierInstruction as VI3, state::BidirectionalStackAccount as Stack3,
+};
+use verifier_4::{
+    instruction::VerifierInstruction as VI4, state::BidirectionalStackAccount as Stack4,
+};
 
 use verify_1::verify::Verify as Verify_Stage_One;
 use verify_2::verify::Verify as Verify_Stage_Two;
@@ -43,7 +56,7 @@ fn main() {
                 .enable_all()
                 .build()
                 .unwrap();
-            
+
             rt.block_on(async_main())
         })
         .unwrap()
@@ -73,17 +86,33 @@ async fn async_main() -> client::Result<()> {
 
     // ========== STAGE 2 ==========
     println!("\n========== STAGE 2 ==========");
-    let queries = execute_stage_2(&client, &payer, &config, &stark_commitment, &digest, &counter).await?;
+    let queries = execute_stage_2(
+        &client,
+        &payer,
+        &config,
+        &stark_commitment,
+        &digest,
+        &counter,
+    )
+    .await?;
 
     // let stark_commitment = StarkCommitment::default();
     // let queries = Vec::new();
     // ========== STAGE 3 ==========
     println!("\n========== STAGE 3 ==========");
-    let stark_verify_data = execute_stage_3(&client, &payer, &config, &stark_commitment, &queries).await?;
+    let stark_verify_data =
+        execute_stage_3(&client, &payer, &config, &stark_commitment, &queries).await?;
 
     // ========== STAGE 4 ==========
     println!("\n========== STAGE 4 ==========");
-    execute_stage_4(&client, &payer, &config, &stark_commitment, &stark_verify_data).await?;
+    execute_stage_4(
+        &client,
+        &payer,
+        &config,
+        &stark_commitment,
+        &stark_verify_data,
+    )
+    .await?;
 
     println!("\n✓ All 4 stages completed successfully!");
     println!("✓ All verifications passed!");
@@ -96,7 +125,11 @@ async fn execute_stage_1(
     client: &RpcClient,
     payer: &Keypair,
     config: &Config,
-) -> client::Result<(types::swiftness::stark::types::StarkCommitment<InteractionElements>, Felt, Felt)> {
+) -> client::Result<(
+    types::swiftness::stark::types::StarkCommitment<InteractionElements>,
+    Felt,
+    Felt,
+)> {
     println!("Starting Verifier 1");
     let program_path = Path::new("target/deploy/verifier_1.so");
     let program_id = setup_program(client, payer, config, program_path).await?;
@@ -121,7 +154,8 @@ async fn execute_stage_1(
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix]).await?;
+    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix])
+        .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -132,7 +166,14 @@ async fn execute_stage_1(
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    execute_transactions_v1(client, payer, &program_id, &stack_account, simulation_steps as u32).await?;
+    execute_transactions_v1(
+        client,
+        payer,
+        &program_id,
+        &stack_account,
+        simulation_steps as u32,
+    )
+    .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -179,11 +220,8 @@ async fn execute_stage_2(
 
     let stack_bytes = prepare_input::get_bytes_stage2(stark_commitment);
     set_account_data_chunked_v2(client, payer, &program_id, &stack_account, &stack_bytes).await?;
-    
-    let verify_task = Verify_Stage_Two::new(
-        *digest, 
-        *counter,
-    );
+
+    let verify_task = Verify_Stage_Two::new(*digest, *counter);
     println!("Using Verify with TYPE_TAG: {}", Verify_Stage_Two::TYPE_TAG);
 
     let push_task_ix = Instruction::new_with_borsh(
@@ -192,7 +230,8 @@ async fn execute_stage_2(
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix]).await?;
+    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix])
+        .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -203,7 +242,14 @@ async fn execute_stage_2(
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    execute_transactions_v2(client, payer, &program_id, &stack_account, simulation_steps as u32).await?;
+    execute_transactions_v2(
+        client,
+        payer,
+        &program_id,
+        &stack_account,
+        simulation_steps as u32,
+    )
+    .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -240,13 +286,17 @@ async fn execute_stage_3(
     set_account_data_chunked_v3(client, payer, &program_id, &stack_account, &stack_bytes).await?;
 
     let verify_task = Verify_Stage_Three::new();
-    println!("Using Verify with TYPE_TAG: {}", Verify_Stage_Three::TYPE_TAG);
+    println!(
+        "Using Verify with TYPE_TAG: {}",
+        Verify_Stage_Three::TYPE_TAG
+    );
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
         &VI3::PushTask(verify_task.to_vec_with_type_tag()),
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
-    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix]).await?;
+    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix])
+        .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -256,24 +306,42 @@ async fn execute_stage_3(
     let stack = Stack3::cast_mut(&mut account_data);
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
-    let fri_after_simulation = stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
-    println!("AFTER simulation (LOCAL) - cache values len: {:?}", fri_after_simulation.fri_decommitment);
+    let fri_after_simulation =
+        stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>();
+    println!(
+        "AFTER simulation (LOCAL) - cache values len: {:?}",
+        fri_after_simulation.fri_decommitment
+    );
 
-    execute_transactions_v3(client, payer, &program_id, &stack_account, simulation_steps as u32).await?;
+    execute_transactions_v3(
+        client,
+        payer,
+        &program_id,
+        &stack_account,
+        simulation_steps as u32,
+    )
+    .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
         .await
         .map_err(ClientError::SolanaClientError)?;
     println!("account_data length: {}", account_data.len());
-    let offset_do_cached_data = size_of::<Stack3>() - size_of::<types::swiftness::stark::types::FriVerifyData>();
-    println!("First 100 bytes of cached_data region: {:?}", &account_data[offset_do_cached_data..offset_do_cached_data+100]);
+    let offset_do_cached_data =
+        size_of::<Stack3>() - size_of::<types::swiftness::stark::types::FriVerifyData>();
+    println!(
+        "First 100 bytes of cached_data region: {:?}",
+        &account_data[offset_do_cached_data..offset_do_cached_data + 100]
+    );
 
     let stack = Stack3::cast_mut(&mut account_data);
     assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
 
     let fri_verify_data: &types::swiftness::stark::types::FriVerifyData = stack.borrow_from_cache();
-    println!("AFTER transaction (ONCHAIN) - cache values len: {:?}", fri_verify_data.fri_decommitment);
+    println!(
+        "AFTER transaction (ONCHAIN) - cache values len: {:?}",
+        fri_verify_data.fri_decommitment
+    );
     println!("✓ Stage 3 completed");
     Ok(fri_verify_data.clone())
 }
@@ -285,7 +353,10 @@ async fn execute_stage_4(
     stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
     stark_verify_data: &types::swiftness::stark::types::FriVerifyData,
 ) -> client::Result<()> {
-    println!("DEBUG Stage 4 - fri_decommitment {:?}", stark_verify_data.fri_decommitment);
+    println!(
+        "DEBUG Stage 4 - fri_decommitment {:?}",
+        stark_verify_data.fri_decommitment
+    );
 
     println!("Starting Verifier 4");
     let program_path = Path::new("target/deploy/verifier_4.so");
@@ -302,7 +373,10 @@ async fn execute_stage_4(
     set_account_data_chunked_v4(client, payer, &program_id, &stack_account, &stack_bytes).await?;
 
     let verify_task = Verify_Stage_Four::new();
-    println!("Using Verify with TYPE_TAG: {}", Verify_Stage_Four::TYPE_TAG);
+    println!(
+        "Using Verify with TYPE_TAG: {}",
+        Verify_Stage_Four::TYPE_TAG
+    );
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,
@@ -310,7 +384,8 @@ async fn execute_stage_4(
         vec![AccountMeta::new(stack_account.pubkey(), false)],
     );
 
-    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix]).await?;
+    interact_with_program_instructions(client, payer, &program_id, &stack_account, &[push_task_ix])
+        .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -321,7 +396,14 @@ async fn execute_stage_4(
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    execute_transactions_v4(client, payer, &program_id, &stack_account, simulation_steps as u32).await?;
+    execute_transactions_v4(
+        client,
+        payer,
+        &program_id,
+        &stack_account,
+        simulation_steps as u32,
+    )
+    .await?;
 
     let mut account_data = client
         .get_account_data(&stack_account.pubkey())
@@ -346,7 +428,8 @@ async fn execute_stage_4(
     );
     assert_eq!(
         result_output_hash,
-        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400").unwrap(),
+        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400")
+            .unwrap(),
         "Output hash mismatch"
     );
 
@@ -380,7 +463,9 @@ async fn create_account_tx(
         client.get_latest_blockhash().await?,
     );
 
-    client.send_and_confirm_transaction(&create_account_tx).await?;
+    client
+        .send_and_confirm_transaction(&create_account_tx)
+        .await?;
     println!("Account created successfully");
     Ok(())
 }
@@ -639,12 +724,14 @@ async fn execute_transactions_v4(
 }
 
 mod prepare_input {
-    use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+    use felt::Felt;
+    use swiftness_proof_parser::{
+        json_parser, transform::TransformTo, StarkProof as StarkProofParser,
+    };
     use types::funvec::FunVec;
     use types::swiftness::commitment::types::Decommitment;
     use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use felt::Felt;
     use utils::{CacheStorage, StarkCommitmentTrait};
     use verifier_1::state::BidirectionalStackAccount as Stack1;
     use verifier_2::state::BidirectionalStackAccount as Stack2;
@@ -656,10 +743,15 @@ mod prepare_input {
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
-        
+
         let mut stack = Stack1::default();
         stack.proof = proof_verifier.clone();
-        stack.oods_values = proof_verifier.unsent_commitment.oods_values.as_slice().try_into().unwrap();
+        stack.oods_values = proof_verifier
+            .unsent_commitment
+            .oods_values
+            .as_slice()
+            .try_into()
+            .unwrap();
 
         cast_struct_to_slice_mut(&mut stack).to_vec()
     }
@@ -668,37 +760,50 @@ mod prepare_input {
         stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
     ) -> Vec<u8> {
         let proof_str = include_str!("../../example_proof/saya.json");
-            let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
-            let proof = StarkProofParser::try_from(proof_json).unwrap();
-            let proof_verifier = proof.transform_to();
-            
-            let mut stack = Stack2::default();
-            stack.proof = proof_verifier.clone();
-            stack.oods_values = proof_verifier.unsent_commitment.oods_values.as_slice().try_into().unwrap();
-            stack.set_stark_commitment(stark_commitment);
-    
-            cast_struct_to_slice_mut(&mut stack).to_vec()
-        }
+        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
+        let proof = StarkProofParser::try_from(proof_json).unwrap();
+        let proof_verifier = proof.transform_to();
+
+        let mut stack = Stack2::default();
+        stack.proof = proof_verifier.clone();
+        stack.oods_values = proof_verifier
+            .unsent_commitment
+            .oods_values
+            .as_slice()
+            .try_into()
+            .unwrap();
+        stack.set_stark_commitment(stark_commitment);
+
+        cast_struct_to_slice_mut(&mut stack).to_vec()
+    }
 
     pub fn get_bytes_stage3(
         stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
         queries: &[Felt],
     ) -> Vec<u8> {
         use std::mem::size_of;
-    
+
         println!("Size of Stack3: {}", size_of::<Stack3>());
-        println!("Size of FriVerifyData: {}", size_of::<types::swiftness::stark::types::FriVerifyData>());
-        
+        println!(
+            "Size of FriVerifyData: {}",
+            size_of::<types::swiftness::stark::types::FriVerifyData>()
+        );
+
         let proof_str = include_str!("../../example_proof/saya.json");
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
-        
+
         let mut stack = Stack3::default();
         stack.proof = proof_verifier.clone();
-        stack.oods_values = proof_verifier.unsent_commitment.oods_values.as_slice().try_into().unwrap();
+        stack.oods_values = proof_verifier
+            .unsent_commitment
+            .oods_values
+            .as_slice()
+            .try_into()
+            .unwrap();
         stack.set_stark_commitment(stark_commitment);
-        
+
         let stark_verify_data = types::swiftness::stark::types::FriVerifyData {
             queries: FunVec::from_vec(queries.to_vec()),
             fri_decommitment: Decommitment::default(),
@@ -728,7 +833,7 @@ mod prepare_input {
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
-        
+
         let mut stack = Stack4::default();
         stack.proof = proof_verifier;
         stack.set_stark_commitment(stark_commitment);

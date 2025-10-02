@@ -198,7 +198,7 @@ impl Executable for FriVerifyLayers {
                     .push_front(&Felt::from(indices.len()).to_bytes_be())
                     .unwrap();
                 println!("indices.len(): {}", indices.len());
-                
+
                 commitment_push_to_stack(&target_commitment, stack);
 
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;

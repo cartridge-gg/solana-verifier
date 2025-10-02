@@ -239,7 +239,10 @@ impl Executable for EvalOodsPolynomialInner {
                     column_values,
                 ) = stack.get_proof_data_references::<StarkProof>();
                 assert!(oods_values[0] != Felt::ZERO, "OODS values is 0");
-                assert!(constraint_coefficients[0] != Felt::ZERO, "Constraint coefficients is 0");
+                assert!(
+                    constraint_coefficients[0] != Felt::ZERO,
+                    "Constraint coefficients is 0"
+                );
                 assert!(column_values[0] != Felt::ZERO, "Column values is 0");
                 // println!("column_values: {:?}", column_values);
                 // println!("oods_values: {:?}", oods_values);

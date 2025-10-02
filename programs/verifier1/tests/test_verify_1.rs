@@ -36,7 +36,11 @@ pub fn test_proof_verification() {
     let digest = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
     assert_eq!(counter, Felt::ZERO);
-    assert_eq!(digest, Felt::from_hex("0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e").unwrap());
+    assert_eq!(
+        digest,
+        Felt::from_hex("0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e")
+            .unwrap()
+    );
     println!("Verify completed in {} steps", steps);
     assert!(
         stack.is_empty_front(),
