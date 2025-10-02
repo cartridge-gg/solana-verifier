@@ -116,19 +116,16 @@ pub trait ExtendedProofData: ProofData {
 }
 
 /// Full proof data with all arrays and complex operations - for verifiers that need everything
-pub trait FullProofDataVerifier2: ExtendedProofData {
+pub trait ProofDataDecommitment: ExtendedProofData {
     /// Get both domains and mask_column_row references to avoid borrowing conflicts
     #[allow(clippy::type_complexity)]
     fn get_proof_data_references<T: Sized>(
         &mut self,
     ) -> (
-        &T,
-        &[Felt; POWS_SIZE],
         &[Felt; DOMAINS_SIZE],
         &mut [Felt; OODS_VALUES_SIZE],
         &mut GlobalValues,
         &mut [Felt; N_CONSTRAINTS],
-        &mut [Felt; COLUMN_VALUES_SIZE],
         &mut [Felt; BITS_SIZE],
         &mut [Felt; POSEIDON_BITS_SIZE],
     );
@@ -140,17 +137,14 @@ pub trait FullProofDataVerifier2: ExtendedProofData {
     fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
 }
 
-pub trait FullProofDataVerifier3: ExtendedProofData {
+pub trait ProofDataVerification: ExtendedProofData {
     /// Get both domains and mask_column_row references to avoid borrowing conflicts
     #[allow(clippy::type_complexity)]
     fn get_proof_data_references<T: Sized>(
         &mut self,
     ) -> (
-        &T,
         &[Felt; POWS_SIZE],
-        &[Felt; DOMAINS_SIZE],
         &mut [Felt; OODS_VALUES_SIZE],
-        &mut GlobalValues,
         &mut [Felt; N_CONSTRAINTS],
         &mut [Felt; COLUMN_VALUES_SIZE],
     );
@@ -166,7 +160,7 @@ pub trait FullProofDataVerifier3: ExtendedProofData {
 }
 
 /// Cache-related proof data methods - only for verifiers that use cache
-pub trait CachedProofData: FullProofDataVerifier2 {
+pub trait CachedProofData: ProofDataDecommitment {
     fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C);
     fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
         &mut self,
@@ -221,10 +215,10 @@ pub trait Executable: Sized + TypeIdentifiable {
             + StarkCommitmentTrait
             + StarkVerifyTrait
             + ExtendedProofData
-            + FullProofDataVerifier2
+            + ProofDataDecommitment
             + CacheStorage
             + CachedProofData
-            + FullProofDataVerifier3;
+            + ProofDataVerification;
     fn is_finished(&mut self) -> bool {
         false
     }

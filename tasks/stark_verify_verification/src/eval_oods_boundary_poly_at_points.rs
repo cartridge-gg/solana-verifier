@@ -7,13 +7,12 @@ use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
-    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
+    ProofData, ProofDataVerification, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
     CONSTRAINT_DEGREE,
 };
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
 const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
 
-// EvalOodsBoundaryPolyAtPoints task - using fixed-size arrays for Solana BPF
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct EvalOodsBoundaryPolyAtPoints {
@@ -57,7 +56,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
         T: BidirectionalStack
             + ProofData
             + StarkVerifyTrait
-            + FullProofDataVerifier3
+            + ProofDataVerification
             + CacheStorage
             + CachedProofData,
     >(
@@ -113,7 +112,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 stack.pop_front();
 
                 let (stark_commitment, proof) =
-                    FullProofDataVerifier3::get_stark_commitment_and_proof::<
+                    ProofDataVerification::get_stark_commitment_and_proof::<
                         StarkCommitment<InteractionElements>,
                         StarkProof,
                     >(stack);
@@ -186,7 +185,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
 
                 // Store column values in the preallocated column_values array
                 let column_values_array =
-                    FullProofDataVerifier3::get_proof_data_references::<StarkProof>(stack).6;
+                    ProofDataVerification::get_proof_data_references::<StarkProof>(stack).3;
                 for (j, &value) in column_values.iter().enumerate() {
                     if j < column_values_array.len() {
                         column_values_array[j] = value;

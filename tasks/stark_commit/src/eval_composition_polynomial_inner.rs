@@ -3,7 +3,7 @@ use felt::Felt;
 use types::swiftness::air::consts::*;
 use types::swiftness::air::recursive_with_poseidon::consts::FELT_1;
 use types::swiftness::stark::types::StarkProof;
-use utils::FullProofDataVerifier2;
+use utils::ProofDataDecommitment;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 // Macro to maintain readability: column_row[col][row] -> mask_values[index]
@@ -263,7 +263,7 @@ impl Default for EvalCompositionPolynomialInner {
 }
 
 impl Executable for EvalCompositionPolynomialInner {
-    fn execute<T: BidirectionalStack + ProofData + FullProofDataVerifier2>(
+    fn execute<T: BidirectionalStack + ProofData + ProofDataDecommitment>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
@@ -424,8 +424,7 @@ impl Executable for EvalCompositionPolynomialInner {
             }
 
             EvalCompositionPolynomialInnerPhase::ComputeCpuDecodeIntermediates => {
-                let (_, _, _, mv, _, _, _, bits, _) =
-                    stack.get_proof_data_references::<StarkProof>();
+                let (_, mv, _, _, bits, _) = stack.get_proof_data_references::<StarkProof>();
 
                 bits[0] = column_row!(mv, 0, 0) - (column_row!(mv, 0, 1) + column_row!(mv, 0, 1));
                 bits[1] = column_row!(mv, 0, 1) - (column_row!(mv, 0, 2) + column_row!(mv, 0, 2));
@@ -452,7 +451,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeCpuDecodeConstraints => {
-                let (_, _, domains, mv, g, constraints_coef, _, bits, _) =
+                let (domains, mv, g, constraints_coef, bits, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 let flag_op1_base_op0_0 = FELT_1 - (bits[2] + bits[4] + bits[3]);
@@ -503,17 +502,8 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeCpuOperandsConstraints => {
-                let (
-                    _,
-                    _,
-                    domains,
-                    mask_values,
-                    global_values,
-                    constraint_coefficients,
-                    _,
-                    bits,
-                    _,
-                ) = stack.get_proof_data_references::<StarkProof>();
+                let (domains, mask_values, global_values, constraint_coefficients, bits, _) =
+                    stack.get_proof_data_references::<StarkProof>();
 
                 let flag_op1_base_op0_0 = FELT_1 - (bits[2] + bits[4] + bits[3]);
                 let flag_res_op1_0 = FELT_1 - (bits[5] + bits[6] + bits[9]);
@@ -612,17 +602,8 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeCallRet => {
-                let (
-                    _,
-                    _,
-                    domains,
-                    mask_values,
-                    global_values,
-                    constraint_coefficients,
-                    _,
-                    bits,
-                    _,
-                ) = stack.get_proof_data_references::<StarkProof>();
+                let (domains, mask_values, global_values, constraint_coefficients, bits, _) =
+                    stack.get_proof_data_references::<StarkProof>();
 
                 let flag_res_op1_0 = FELT_1 - (bits[5] + bits[6] + bits[9]);
 
@@ -687,7 +668,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeInitialFinal => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
 
@@ -726,7 +707,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeMemory => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 let mut total_sum = FELT_0;
@@ -796,7 +777,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeRangeCheck16 => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
                 // Constraint: range_check16/perm/init0.
@@ -848,7 +829,7 @@ impl Executable for EvalCompositionPolynomialInner {
             }
 
             EvalCompositionPolynomialInnerPhase::ComputeDilutedCheck => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
 
@@ -913,7 +894,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputePedersenStep1 => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 let mut total_sum = FELT_0;
@@ -1015,7 +996,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputePedersenStep2 => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
 
@@ -1101,7 +1082,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeRangeCheck => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 let mut total_sum = FELT_0;
@@ -1160,7 +1141,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeBitwise => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
 
@@ -1267,7 +1248,7 @@ impl Executable for EvalCompositionPolynomialInner {
             }
 
             EvalCompositionPolynomialInnerPhase::ComputePoseidonStep1 => {
-                let (_, _, domains, mask_values, global_values, constraint_coefficients, _, _, _) =
+                let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;
 
@@ -1336,7 +1317,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputePoseidonStep2 => {
-                let (_, _, _, mask_values, _, _, _, _, poseidon_bits) =
+                let (_, mask_values, _, _, _, poseidon_bits) =
                     stack.get_proof_data_references::<StarkProof>();
 
                 let poseidon_poseidon_full_rounds_state0_cubed_0 =
@@ -1401,13 +1382,10 @@ impl Executable for EvalCompositionPolynomialInner {
             }
             EvalCompositionPolynomialInnerPhase::ComputePoseidonStep3 => {
                 let (
-                    _,
-                    _,
                     domains,
                     mask_values,
                     global_values,
                     constraint_coefficients,
-                    _,
                     _,
                     poseidon_bits,
                 ) = stack.get_proof_data_references::<StarkProof>();
@@ -1496,13 +1474,10 @@ impl Executable for EvalCompositionPolynomialInner {
             }
             EvalCompositionPolynomialInnerPhase::ComputePoseidonStep4 => {
                 let (
-                    _,
-                    _,
                     domains,
                     mask_values,
                     global_values,
                     constraint_coefficients,
-                    _,
                     _,
                     poseidon_bits,
                 ) = stack.get_proof_data_references::<StarkProof>();

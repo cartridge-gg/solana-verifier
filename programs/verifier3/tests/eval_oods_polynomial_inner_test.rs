@@ -138,8 +138,6 @@ fn test_eval_oods_polynomial_inner() {
         .unwrap(),
     };
 
-    stack.global_values = global_values;
-
     let point = Felt::from_hex("0x7f90255cc310f54635400a0fc3ad5d4dcd9afb685485297d828f04cb9c29fcb")
         .unwrap();
     let oods_point =

@@ -10,8 +10,8 @@ use types::{
     },
 };
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2,
-    ProofData, StarkVerifyTrait, TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    ProofDataDecommitment, StarkVerifyTrait, TypeIdentifiable,
 };
 
 pub use crate::vector_decommit::VectorDecommit;
@@ -49,7 +49,7 @@ impl Default for StarkVerify {
 
 impl Executable for StarkVerify {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier2 + CacheStorage,
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + ProofDataDecommitment + CacheStorage,
     >(
         &mut self,
         stack: &mut T,

@@ -11,7 +11,7 @@ use types::{
 };
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
-    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable,
+    ProofData, ProofDataVerification, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
@@ -51,7 +51,7 @@ impl Executable for StarkVerify {
         T: BidirectionalStack
             + ProofData
             + StarkVerifyTrait
-            + FullProofDataVerifier3
+            + ProofDataVerification
             + CacheStorage
             + CachedProofData,
     >(
@@ -125,7 +125,7 @@ impl Executable for StarkVerify {
 
                 {
                     let (stark_commitment, coeffs) =
-                        FullProofDataVerifier3::get_stark_commitment_and_coefficients_mut::<
+                        ProofDataVerification::get_stark_commitment_and_coefficients_mut::<
                             StarkCommitment<InteractionElements>,
                         >(stack);
 
