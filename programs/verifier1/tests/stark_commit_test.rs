@@ -49,6 +49,10 @@ fn test_stark_commit_with_reference_values() {
         steps += 1;
     }
 
+    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
     println!("StarkCommit completed in {} steps", steps);
 
     let stark_commitment = stack.stark_commitment;
@@ -129,6 +133,9 @@ fn test_stark_commit_with_reference_values() {
         expected_stark_commitment.fri.last_layer_coefficients
     );
 
+
+    assert_eq!(counter, Felt::ZERO);
+    assert_eq!(digest, Felt::from_hex_unchecked("0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e"));
     // Check that stack is empty
     assert_eq!(stack.front_index, 0, "Stack should be empty");
     assert_eq!(stack.back_index, 65536, "Stack should be empty");
