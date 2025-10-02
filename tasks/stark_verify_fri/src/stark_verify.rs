@@ -57,12 +57,3 @@ impl Executable for StarkVerify {
         self.step == StarkVerifyStep::Done
     }
 }
-
-// #[inline(always)]
-// fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-//     commitment: &TableCommitment,
-//     stack: &mut T,
-// ) {
-//     let commitment_bytes = cast_struct_to_slice(commitment);
-//     stack.push_front(commitment_bytes).unwrap();
-// }

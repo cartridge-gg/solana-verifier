@@ -9,7 +9,7 @@ use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
     ProofData, TypeIdentifiable,
 };
-// use crate::fri_verify_layers::FriVerifyLayers;
+
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct FriVerify {
@@ -51,28 +51,26 @@ impl Executable for FriVerify {
         match self.stage {
             FriVerifyStep::Init => {
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-                let queries_len = fri_verify_data.queries.len();
-                let fri_len = fri_verify_data.fri_decommitment.values.len();
 
                 assert_eq!(
-                    fri_len, queries_len,
+                    fri_verify_data.fri_decommitment.values.len(),
+                    fri_verify_data.queries.len(),
                     "FRI decommitment length does not match queries length"
                 );
 
-                for (index, query) in fri_verify_data.queries.iter().enumerate() {
-                    if index < fri_verify_data.fri_decommitment.values.len()
-                        && index < fri_verify_data.fri_decommitment.points.len()
-                    {
-                        let shifted_x_value = fri_verify_data.fri_decommitment.points.at(index)
-                            * FIELD_GENERATOR_INVERSE;
+                let query_count = fri_verify_data.queries.len();
+                for index in 0..query_count {
+                    let query = *fri_verify_data.queries.at(index);
+                    let point = *fri_verify_data.fri_decommitment.points.at(index);
+                    let value = *fri_verify_data.fri_decommitment.values.at(index);
 
-                        fri_verify_data.layer_queries.push(FriLayerQuery {
-                            index: *query,
-                            y_value: *fri_verify_data.fri_decommitment.values.at(index),
-                            x_inv_value: Felt::ONE
-                                .field_div(&NonZeroFelt::from_felt_unchecked(shifted_x_value)),
-                        });
-                    }
+                    fri_verify_data.layer_queries.push(FriLayerQuery {
+                        index: query,
+                        y_value: value,
+                        x_inv_value: Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(
+                            point * FIELD_GENERATOR_INVERSE,
+                        )),
+                    });
                 }
 
                 fri_verify_data.init_active_queries();
@@ -89,28 +87,32 @@ impl Executable for FriVerify {
                     FriVerifyData
                 >();
 
-                let fri_commitment = &stark_commitment.fri;
-                let chunk_size = 4; // Sprawdź 4 queries na raz
-                let start = chunk_index * chunk_size;
-                let end = (start + chunk_size).min(fri_verify_data.active_query_count);
+                const CHUNK_SIZE: usize = 4;
+                let start = chunk_index * CHUNK_SIZE;
+                let end = (start + CHUNK_SIZE).min(fri_verify_data.active_query_count);
 
                 for i in start..end {
                     let query = fri_verify_data.layer_queries.get(i).unwrap();
-                    let horner_result = self.horner_eval(
-                        fri_commitment.last_layer_coefficients.as_slice(),
-                        Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value)),
-                    );
 
-                    if horner_result != query.y_value {
-                        panic!("Last layer verification failed");
+                    // Horner eval inline
+                    let mut result = Felt::ZERO;
+                    let coefficients = stark_commitment.fri.last_layer_coefficients.as_slice();
+                    let point =
+                        Felt::ONE.field_div(&NonZeroFelt::from_felt_unchecked(query.x_inv_value));
+
+                    for coef in coefficients.iter().rev() {
+                        result = result * point + coef;
                     }
+
+                    assert_eq!(result, query.y_value, "Last layer verification failed");
                 }
 
-                if end >= fri_verify_data.active_query_count {
-                    self.stage = FriVerifyStep::Done;
+                self.stage = if end >= fri_verify_data.active_query_count {
+                    FriVerifyStep::Done
                 } else {
-                    self.stage = FriVerifyStep::VerifyLastLayer(chunk_index + 1);
-                }
+                    FriVerifyStep::VerifyLastLayer(chunk_index + 1)
+                };
+
                 vec![]
             }
 
@@ -122,16 +124,5 @@ impl Executable for FriVerify {
 
     fn is_finished(&mut self) -> bool {
         self.stage == FriVerifyStep::Done
-    }
-}
-
-impl FriVerify {
-    #[inline(always)]
-    fn horner_eval(&self, coefficients: &[Felt], point: Felt) -> Felt {
-        let mut result = Felt::ZERO;
-        for coef in coefficients.iter().rev() {
-            result = result * point + coef;
-        }
-        result
     }
 }

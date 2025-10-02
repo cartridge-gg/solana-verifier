@@ -92,6 +92,7 @@ pub struct StarkCommitment<InteractionElements> {
 #[derive(Debug)]
 pub struct VerifyVariables {
     // Store queries as pairs of (index, value, depth) - each query takes 3 Felts
+    // fix this as it's not intuitive - we have temp_queries to store queries that have two fields (index, value)
     pub queries: [Felt; FUNVEC_QUERIES],
     pub authentications: [Felt; FUNVEC_AUTHENTICATIONS],
     pub decommitment_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
@@ -153,7 +154,6 @@ impl Default for FriVerifyData {
     }
 }
 
-// Helper methods - TYLKO dla queries
 impl FriVerifyData {
     #[inline]
     pub fn get_first_active_query(&self) -> Option<&fri::types::FriLayerQuery> {
@@ -178,9 +178,7 @@ impl FriVerifyData {
     }
 
     pub fn advance_layer(&mut self) {
-        // Usuń active queries (shift je out)
         self.layer_queries.shift(self.active_query_count);
-        // Teraz "next" są na początku - ustaw jako active
         self.active_query_count = self.layer_queries.len();
     }
 
