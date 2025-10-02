@@ -512,7 +512,7 @@ pub async fn write_program_to_buffer(
         let signature = client.send_transaction(&write_tx).await.map_err(|e| {
             ClientError::TransactionError(format!("Failed to send chunk at offset {offset}: {e}"))
         })?;
-        // trace!(offset:% = offset, signature:% = signature; "Chunk sent");
+        trace!(offset:% = offset, signature:% = signature; "Chunk sent");
         offset = chunk_end;
     }
 

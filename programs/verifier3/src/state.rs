@@ -1,9 +1,8 @@
 use crate::error::VerifierError;
 use felt::Felt;
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::{GlobalValues, InteractionElements};
+use types::swiftness::stark::types::cast_slice_to_struct;
 use types::swiftness::stark::types::cast_slice_to_struct_mut;
-use types::swiftness::stark::types::{cast_slice_to_struct, FriVerifyData};
 use types::swiftness::stark::types::{
     cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };
@@ -408,7 +407,7 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
-        (&*stark_commitment, &mut self.constraint_coefficients)
+        (stark_commitment, &mut self.constraint_coefficients)
     }
 }
 

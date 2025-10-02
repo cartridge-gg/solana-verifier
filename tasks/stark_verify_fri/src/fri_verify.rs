@@ -1,6 +1,5 @@
 use crate::fri_verify_layers::FriVerifyLayers;
 use felt::{Felt, NonZeroFelt};
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::{
     fri::types::FriLayerQuery,

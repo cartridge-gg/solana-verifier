@@ -1,6 +1,5 @@
 use felt::Felt;
 use std::fmt::Debug;
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::GlobalValues;
 
 pub const CAPACITY: usize = 65536;

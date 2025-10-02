@@ -1,11 +1,4 @@
 use std::vec;
-
-use felt::{Felt, NonZeroFelt};
-use types::swiftness::{
-    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-    global_values::InteractionElements,
-    stark::types::{FriVerifyData, StarkCommitment, StarkProof},
-};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
     ProofData, StarkVerifyTrait, TypeIdentifiable,
@@ -45,7 +38,7 @@ impl Executable for StarkVerify {
         T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
     >(
         &mut self,
-        stack: &mut T,
+        _stack: &mut T,
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::FriVerify => {

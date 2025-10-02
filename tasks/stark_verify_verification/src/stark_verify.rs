@@ -130,8 +130,12 @@ impl Executable for StarkVerify {
                         >(stack);
 
                     coeffs.fill(Felt::ZERO);
-                    for i in 0..stark_commitment.interaction_after_oods.len() {
-                        coeffs[i] = *stark_commitment.interaction_after_oods.at(i);
+                    for (i, coeff) in coeffs
+                        .iter_mut()
+                        .enumerate()
+                        .take(stark_commitment.interaction_after_oods.len())
+                    {
+                        *coeff = *stark_commitment.interaction_after_oods.at(i);
                     }
                 }
 

@@ -3,7 +3,6 @@ use felt::{Felt, NonZeroFelt};
 use types::funvec::FUNVEC_QUERY_INDICES;
 use types::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
 use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
-use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{

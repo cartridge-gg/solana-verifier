@@ -1,11 +1,9 @@
 use stark_verify_verification::stark_verify::StarkVerify;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
-use verify_public_input::hash_public_input::VerifyPublicInput;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
     StarkVerify,
-    // VerifyPublicInput,
     Done,
 }
 
@@ -42,10 +40,6 @@ impl Executable for Verify {
                 self.step = VerifyStep::Done;
                 vec![StarkVerify::new().to_vec_with_type_tag()]
             }
-            // VerifyStep::VerifyPublicInput => {
-            //     self.step = VerifyStep::Done;
-            //     vec![VerifyPublicInput::new().to_vec_with_type_tag()]
-            // }
             VerifyStep::Done => {
                 vec![]
             }
