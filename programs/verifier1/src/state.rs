@@ -5,8 +5,9 @@ use types::swiftness::stark::types::{
     cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };
 use utils::{
-    AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, FullProofDataVerifier2,
-    FullProofDataVerifier3, ProofData, StarkCommitmentTrait, StarkVerifyTrait,
+    AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData,
+    FullProofDataVerifier2, FullProofDataVerifier3, ProofData, StarkCommitmentTrait,
+    StarkVerifyTrait,
 };
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
@@ -326,14 +327,9 @@ impl FullProofDataVerifier2 for BidirectionalStackAccount {
         &mut self.constraint_coefficients
     }
 
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
         assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        unsafe {
-            let constraint_coefficients_ptr = &self.constraint_coefficients
-                as *const [Felt; N_CONSTRAINTS]
-                as *mut [Felt; N_CONSTRAINTS];
-            (*constraint_coefficients_ptr).copy_from_slice(coefficients);
-        }
+        self.constraint_coefficients.copy_from_slice(coefficients);
     }
 }
 
@@ -358,13 +354,35 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         panic!("get_stark_commitment_and_proof_mut not supported in verifier1")
     }
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS] {
-        panic!("get_constraint_coefficients not supported in verifier1")
+        &self.constraint_coefficients
     }
+
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
-        panic!("get_constraint_coefficients_mut not supported in verifier1")
+        &mut self.constraint_coefficients
     }
-    fn set_constraint_coefficients(&self, _coefficients: &[Felt]) {
-        panic!("set_constraint_coefficients not supported in verifier1")
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
+        assert_eq!(coefficients.len(), N_CONSTRAINTS);
+        self.constraint_coefficients.copy_from_slice(coefficients);
+    }
+    fn get_stark_commitment_and_coefficients_mut<T: Sized>(
+        &mut self,
+    ) -> (&T, &mut [Felt; N_CONSTRAINTS]) {
+        let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        (stark_commitment, &mut self.constraint_coefficients)
+    }
+}
+
+impl CachedProofData for BidirectionalStackAccount {
+    fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C) {
+        panic!("get_stark_commitment_proof_and_cache not supported in verifier2")
+    }
+
+    fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut C) {
+        panic!("get_stark_commitment_proof_and_cache_mut not supported in verifier2")
     }
 }
 

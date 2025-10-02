@@ -1,0 +1,43 @@
+[package]
+name = "verifier-4"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+borsh.workspace = true
+solana-program.workspace = true
+thiserror.workspace = true
+
+utils.workspace = true
+
+felt.workspace = true
+types.workspace = true
+pedersen.workspace = true
+poseidon.workspace = true   
+stark-verify-decommitments.workspace = true
+stark-verify-verification.workspace = true
+stark-verify-fri.workspace = true
+verify-public-input.workspace = true
+verify-4.workspace = true
+transcript.workspace = true
+verifier-1.workspace = true
+verifier-2.workspace = true
+verifier-3.workspace = true
+verify-1.workspace = true
+verify-2.workspace = true
+verify-3.workspace = true
+
+
+[dev-dependencies]
+swiftness_proof_parser = { path = "../../parser" }
+serde_json = "1.0"
+starknet-crypto = "0.7.1"
+
+[build-dependencies]
+pathdiff = "0.2.1"

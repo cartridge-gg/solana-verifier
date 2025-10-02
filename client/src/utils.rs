@@ -98,7 +98,7 @@ pub async fn request_and_confirm_airdrop(
     } else {
         "Additional airdrop"
     };
-    trace!("{message} requested, waiting for confirmation...");
+    // trace!("{message} requested, waiting for confirmation...");
 
     let sig = client
         .request_airdrop(&keypair.pubkey(), amount)
@@ -114,7 +114,7 @@ pub async fn request_and_confirm_airdrop(
 
     confirm_transaction_with_retries(client, &sig, config.transaction_retry_count, config).await?;
 
-    trace!("{message} confirmed!");
+    // trace!("{message} confirmed!");
     Ok(())
 }
 

@@ -22,6 +22,7 @@ client = { path = "./client" }
 verifier-2 = { path = "./programs/verifier2" }
 verifier-1 = { path = "./programs/verifier1" }
 verifier-3 = { path = "./programs/verifier3" }
+verifier-4 = { path = "./programs/verifier4" }
 
 utils = { path = "./programs/utils" }
 
@@ -35,8 +36,10 @@ get-hash = { path = "./tasks/get_hash" }
 stark-verify-decommitments = { path = "./tasks/stark_verify_decommitments" }
 stark-verify-verification = { path = "./tasks/stark_verify_verification" }
 stark-commit = { path = "./tasks/stark_commit" }
+stark-verify-fri = { path = "./tasks/stark_verify_fri" }
 verify-public-input = { path = "./tasks/verify_public_input" }
 verify-1 = { path = "./tasks/verify_1" }
 verify-2 = { path = "./tasks/verify_2" }
 verify-3 = { path = "./tasks/verify_3" }
+verify-4 = { path = "./tasks/verify_4" }
 transcript = { path = "./tasks/transcript" }

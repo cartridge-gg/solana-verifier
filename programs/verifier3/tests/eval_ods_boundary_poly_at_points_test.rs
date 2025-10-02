@@ -10,7 +10,9 @@ mod fixtures;
 use crate::fixtures::constraint_coefficients;
 use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBoundaryPolyAtPoints;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use utils::CacheStorage;
+use utils::CachedProofData;
 use utils::StarkCommitmentTrait;
 
 #[test]

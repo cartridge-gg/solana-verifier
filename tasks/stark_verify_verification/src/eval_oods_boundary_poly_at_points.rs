@@ -6,10 +6,10 @@ use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
-    ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE, CONSTRAINT_DEGREE,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
+    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
+    CONSTRAINT_DEGREE,
 };
-
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
 const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
 
@@ -54,7 +54,12 @@ impl Default for EvalOodsBoundaryPolyAtPoints {
 
 impl Executable for EvalOodsBoundaryPolyAtPoints {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
+        T: BidirectionalStack
+            + ProofData
+            + StarkVerifyTrait
+            + FullProofDataVerifier3
+            + CacheStorage
+            + CachedProofData,
     >(
         &mut self,
         stack: &mut T,
@@ -68,6 +73,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let queries_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.points_count = queries_len.to_biguint().try_into().unwrap();
+                assert!(self.points_count != 0, "Points count is 0");
                 println!("points_count: {}", self.points_count);
                 assert!(
                     self.points_count <= FUNVEC_QUERY_INDICES,
@@ -106,7 +112,11 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let current_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let (stark_commitment, proof) = stack.get_stark_commitment_and_proof::<StarkCommitment<InteractionElements>, StarkProof>();
+                let (stark_commitment, proof) =
+                    FullProofDataVerifier3::get_stark_commitment_and_proof::<
+                        StarkCommitment<InteractionElements>,
+                        StarkProof,
+                    >(stack);
 
                 // Extract OODS evaluation info from commitment and proof
                 let oods_point = stark_commitment.interaction_after_composition;
@@ -175,7 +185,8 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 }
 
                 // Store column values in the preallocated column_values array
-                let column_values_array = stack.get_proof_data_references::<StarkProof>().6;
+                let column_values_array =
+                    FullProofDataVerifier3::get_proof_data_references::<StarkProof>(stack).6;
                 for (j, &value) in column_values.iter().enumerate() {
                     if j < column_values_array.len() {
                         column_values_array[j] = value;
@@ -194,10 +205,12 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
             EvalOodsBoundaryStep::CollectResult => {
                 let evaluation = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
+                println!("evaluation: {:?}", evaluation);
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                 fri_verify_data.fri_decommitment.values.push(evaluation);
 
                 self.current_point_index += 1;
+                println!("current_point_index: {}", self.current_point_index);
                 self.step = EvalOodsBoundaryStep::PreparePoint;
                 vec![]
             }

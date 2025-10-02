@@ -2,6 +2,7 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     send_and_confirm_with_limit, setup_payer, setup_program, ClientError, Config,
 };
+use felt::Felt;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
@@ -15,6 +16,7 @@ use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
     stark::types::StarkCommitment,
 };
+use utils::BidirectionalStack;
 use utils::{AccountCast, Executable};
 use verifier_1::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 use verify_1::verify::Verify;
@@ -201,6 +203,17 @@ async fn main() -> client::Result<()> {
         .map_err(ClientError::SolanaClientError)?;
 
     let stack = BidirectionalStackAccount::cast_mut(&mut account_data);
+    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
+    stack.pop_front();
+    assert_eq!(counter, Felt::ZERO);
+    assert_eq!(
+        digest,
+        Felt::from_hex_unchecked(
+            "0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e"
+        )
+    );
     assert_eq!(stack.front_index, 0, "Stack should be empty");
     assert_eq!(stack.back_index, 65536, "Stack should be empty");
     Ok(())

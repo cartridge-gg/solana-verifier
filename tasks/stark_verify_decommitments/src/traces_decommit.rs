@@ -87,12 +87,6 @@ impl Executable for TracesDecommit {
                     .authentications
                     .len();
 
-                println!(
-                    "DEBUG: decommitment_values_len: {:?}",
-                    self.decommitment_values_len
-                );
-                println!("DEBUG: witness_count: {:?}", self.witness_count);
-
                 self.step = TracesDecommitStep::PrepareOriginalWitnessAuth;
                 vec![]
             }

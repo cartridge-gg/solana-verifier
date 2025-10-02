@@ -1,7 +1,7 @@
 cargo clean 
 rm -rf keypairs/
 rm -rf test-ledger/
-cd programs/verifier3
+cd programs/verifier4
 cargo build-sbf
 cd ../..
-cargo run --example eval_oods_boundary_poly_at_points
+cargo run --example verify
