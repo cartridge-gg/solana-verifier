@@ -1,6 +1,7 @@
 use felt::Felt;
 use std::fmt::Debug;
 use types::swiftness::global_values::GlobalValues;
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
@@ -17,7 +18,7 @@ pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
 // pub const CACHE_SIZE: usize = 1048576;
-pub const CACHE_SIZE: usize = 411552;
+pub const CACHE_SIZE: usize = 147480;
 
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
@@ -137,7 +138,7 @@ pub trait FullProofDataVerifier2: ExtendedProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]);
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
 }
 
 pub trait FullProofDataVerifier3: ExtendedProofData {
@@ -159,7 +160,8 @@ pub trait FullProofDataVerifier3: ExtendedProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]);
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
+    fn get_stark_commitment_and_coefficients_mut<T: Sized>(&mut self) -> (&T, &mut [Felt; N_CONSTRAINTS]);
 }
 
 /// Cache-related proof data methods - only for verifiers that use cache

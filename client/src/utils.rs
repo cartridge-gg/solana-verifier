@@ -98,7 +98,7 @@ pub async fn request_and_confirm_airdrop(
     } else {
         "Additional airdrop"
     };
-    trace!("{message} requested, waiting for confirmation...");
+    // trace!("{message} requested, waiting for confirmation...");
 
     let sig = client
         .request_airdrop(&keypair.pubkey(), amount)
@@ -114,7 +114,7 @@ pub async fn request_and_confirm_airdrop(
 
     confirm_transaction_with_retries(client, &sig, config.transaction_retry_count, config).await?;
 
-    trace!("{message} confirmed!");
+    // trace!("{message} confirmed!");
     Ok(())
 }
 
@@ -512,7 +512,7 @@ pub async fn write_program_to_buffer(
         let signature = client.send_transaction(&write_tx).await.map_err(|e| {
             ClientError::TransactionError(format!("Failed to send chunk at offset {offset}: {e}"))
         })?;
-        trace!(offset:% = offset, signature:% = signature; "Chunk sent");
+        // trace!(offset:% = offset, signature:% = signature; "Chunk sent");
         offset = chunk_end;
     }
 

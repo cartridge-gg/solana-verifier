@@ -30,7 +30,7 @@ pub struct LayerWitness {
 }
 
 #[repr(C)]
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct Commitment {
     pub config: swiftness::fri::config::Config,
     // Array of size n_layers - 1 containing table commitments for each inner layer.

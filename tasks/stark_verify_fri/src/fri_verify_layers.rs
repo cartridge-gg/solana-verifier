@@ -59,7 +59,6 @@ impl Executable for FriVerifyLayers {
                 FriVerifyData
             >();
                 let fri_commitment = &stark_commitment.fri;
-                println!("\nDEBUG: fri_commitment = {:?}", fri_commitment);
                 fri_verify_data.current_layer = 0;
                 let n_layers_usize: usize = fri_commitment
                     .config
@@ -198,7 +197,8 @@ impl Executable for FriVerifyLayers {
                 stack
                     .push_front(&Felt::from(indices.len()).to_bytes_be())
                     .unwrap();
-
+                println!("indices.len(): {}", indices.len());
+                
                 commitment_push_to_stack(&target_commitment, stack);
 
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;

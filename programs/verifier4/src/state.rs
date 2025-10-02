@@ -15,6 +15,7 @@ use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
     OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
 };
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 /// Minimal state for verifier4 - basic proof verification only
 #[repr(C)]
@@ -333,8 +334,9 @@ impl FullProofDataVerifier2 for BidirectionalStackAccount {
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         panic!("get_constraint_coefficients_mut not supported in verifier2")
     }
-    fn set_constraint_coefficients(&self, _coefficients: &[Felt]) {
-        panic!("set_constraint_coefficients not supported in verifier2")
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
+        assert_eq!(coefficients.len(), N_CONSTRAINTS);
+        self.constraint_coefficients.copy_from_slice(coefficients);
     }
 }
 
@@ -408,14 +410,16 @@ impl FullProofDataVerifier3 for BidirectionalStackAccount {
         panic!("get_constraint_coefficients_mut not supported in verifier4")
     }
 
-    fn set_constraint_coefficients(&self, coefficients: &[Felt]) {
+    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
         assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        unsafe {
-            let constraint_coefficients_ptr = &self.constraint_coefficients
-                as *const [Felt; N_CONSTRAINTS]
-                as *mut [Felt; N_CONSTRAINTS];
-            (*constraint_coefficients_ptr).copy_from_slice(coefficients);
-        }
+        self.constraint_coefficients.copy_from_slice(coefficients);
+    }
+
+    fn get_stark_commitment_and_coefficients_mut<T: Sized>(&mut self) -> (&T, &mut [Felt; N_CONSTRAINTS]) {
+        let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
+        (&*stark_commitment, &mut self.constraint_coefficients)
     }
 }
 

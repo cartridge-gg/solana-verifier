@@ -8,7 +8,7 @@ use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
     ProofData, TypeIdentifiable,
 };
-
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 use crate::fri_verify_layers::FriVerifyLayers;
 // use crate::fri_verify_layers::FriVerifyLayers;
 #[derive(Debug, Clone)]

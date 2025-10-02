@@ -46,14 +46,14 @@ pub struct Commitment {
     pub last_layer_coefficients: FunVec<Felt, FUNVEC_LAST_LAYER>,
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone, Copy)]
 #[repr(C)]
 pub struct Decommitment {
     // Array of size n_values, containing the values of the input layer at query indices.
     pub values: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
     // Array of size n_values, containing the field elements that correspond to the query indices
-    // (See queries_to_points).
     pub points: FunVec<Felt, FUNVEC_DECOMMITMENT_VALUES>,
+    // (See queries_to_points).
 }
 
 #[repr(C)]

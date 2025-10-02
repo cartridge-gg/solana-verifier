@@ -17,7 +17,8 @@ use utils::BidirectionalStack;
 use utils::CacheStorage;
 use utils::{AccountCast, Executable};
 use verifier_3::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
-
+use utils::CachedProofData;
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 pub const CHUNK_SIZE: usize = 1000;
 
 #[tokio::main]

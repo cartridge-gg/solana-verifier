@@ -13,7 +13,7 @@ use solana_system_interface::instruction::create_account;
 use stark_commit::stark_commit::StarkCommit;
 use std::{mem::size_of, path::Path};
 use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::stark::types::StarkCommitment;
+use types::{funvec::FunVec, swiftness::stark::types::StarkCommitment};
 use types::swiftness::{
     global_values::{GlobalValues, InteractionElements},
     stark::types::cast_struct_to_slice,
@@ -412,10 +412,10 @@ async fn main() -> client::Result<()> {
         "0x2077c8e77e96c8db5212cf46c32546f1bd9a3e97c63aebccacc1438ffcc9aa7",
     ];
 
-    let expected_last_layer_coeffs: Vec<Felt> = expected_last_layer_coeffs
+    let expected_last_layer_coeffs: FunVec<Felt, 256> = FunVec::from_vec(expected_last_layer_coeffs
         .iter()
         .map(|hex| Felt::from_hex_unchecked(hex))
-        .collect();
+        .collect());
 
     println!("Verifying commitment hashes...");
     // Verify traces commitments
@@ -457,7 +457,8 @@ async fn main() -> client::Result<()> {
     );
 
     assert_eq!(
-        computed_stark_commitment.fri.last_layer_coefficients, expected_last_layer_coeffs,
+        computed_stark_commitment.fri.last_layer_coefficients,
+        expected_last_layer_coeffs,
         "FRI last layer coefficients mismatch"
     );
 

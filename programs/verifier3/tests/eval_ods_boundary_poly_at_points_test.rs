@@ -12,6 +12,8 @@ use stark_verify_verification::eval_oods_boundary_poly_at_points::EvalOodsBounda
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use utils::CacheStorage;
 use utils::StarkCommitmentTrait;
+use utils::CachedProofData;
+use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 #[test]
 fn test_eval_ods_boundary_poly_at_points() {

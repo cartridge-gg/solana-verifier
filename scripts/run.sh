@@ -4,4 +4,4 @@ rm -rf test-ledger/
 cd programs/verifier4
 cargo build-sbf
 cd ../..
-cargo run --example fri_verify
+cargo run --example verify

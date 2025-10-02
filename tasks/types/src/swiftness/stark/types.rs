@@ -79,7 +79,7 @@ pub struct StarkWitness {
     pub fri_witness: FriWitness,
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct StarkCommitment<InteractionElements> {
     pub traces: TracesCommitment<InteractionElements>,
     pub composition: TableCommitment,
@@ -97,6 +97,7 @@ pub struct VerifyVariables {
     pub decommitment_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub montgomery_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub temp_queries: [Felt; FUNVEC_QUERIES],
+    pub queries_indexes: FunVec<Felt, 16>,
 }
 
 impl Default for VerifyVariables {
@@ -107,11 +108,12 @@ impl Default for VerifyVariables {
             decommitment_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
+            queries_indexes: FunVec::default(),
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 #[repr(C)]
 pub struct FriVerifyData {
     pub queries: FunVec<Felt, FUNVEC_QUERIES>,

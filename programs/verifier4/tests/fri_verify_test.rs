@@ -30,7 +30,7 @@ fn test_fri_verify() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
-        println!("Step: {}", steps);
+        // println!("Step: {}", steps);
         steps += 1;
     }
 

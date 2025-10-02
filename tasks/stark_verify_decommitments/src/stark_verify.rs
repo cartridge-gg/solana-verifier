@@ -27,7 +27,7 @@ pub enum StarkVerifyStep {
 #[repr(C)]
 pub struct StarkVerify {
     step: StarkVerifyStep,
-    queries: FunVec<Felt, 20>,
+    queries: FunVec<Felt, 16>,
 }
 
 impl_type_identifiable!(StarkVerify);
@@ -67,6 +67,11 @@ impl Executable for StarkVerify {
                     self.queries
                         .push(Felt::from_bytes_be_slice(stack.borrow_front()));
                     stack.pop_front();
+                }
+                {
+                    let verify_variables: &mut VerifyVariables =
+                        stack.get_verify_variables_mut();
+                    verify_variables.queries_indexes = self.queries;
                 }
 
                 for query in self.queries.as_slice().iter().rev() {

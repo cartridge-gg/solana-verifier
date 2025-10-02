@@ -5,7 +5,7 @@ use verify_public_input::hash_public_input::VerifyPublicInput;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerifyStep {
     StarkVerify,
-    VerifyPublicInput,
+    // VerifyPublicInput,
     Done,
 }
 
@@ -39,13 +39,13 @@ impl Executable for Verify {
                     "Stack should be empty before StarkVerify"
                 );
 
-                self.step = VerifyStep::VerifyPublicInput;
+                self.step = VerifyStep::Done;
                 vec![StarkVerify::new().to_vec_with_type_tag()]
             }
-            VerifyStep::VerifyPublicInput => {
-                self.step = VerifyStep::Done;
-                vec![VerifyPublicInput::new().to_vec_with_type_tag()]
-            }
+            // VerifyStep::VerifyPublicInput => {
+            //     self.step = VerifyStep::Done;
+            //     vec![VerifyPublicInput::new().to_vec_with_type_tag()]
+            // }
             VerifyStep::Done => {
                 vec![]
             }
