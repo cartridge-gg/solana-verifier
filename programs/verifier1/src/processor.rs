@@ -137,11 +137,60 @@ impl Processor {
 
         Ok(())
     }
+
+    /// Copy data from another account to our account
+    pub fn process_copy_from_account(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        msg!("Processing CopyFromAccount instruction");
+
+        let accounts_iter = &mut accounts.iter();
+        let source_account = next_account_info(accounts_iter)?;
+        let dest_account = next_account_info(accounts_iter)?;
+
+        // Verify destination account is owned by this program
+        if dest_account.owner != program_id {
+            msg!("Error: Destination account not owned by this program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // Verify destination is writable
+        if !dest_account.is_writable {
+            msg!("Error: Destination account not writable");
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Borrow data (source is readonly, dest is mut)
+        let src_data = source_account.try_borrow_data()?;
+        let mut dst_data = dest_account.try_borrow_mut_data()?;
+
+        // Verify size
+        if dst_data.len() < src_data.len() {
+            msg!(
+                "Error: Destination too small ({} < {})",
+                dst_data.len(),
+                src_data.len()
+            );
+            return Err(ProgramError::AccountDataTooSmall);
+        }
+
+        // Copy data
+        dst_data[..src_data.len()].copy_from_slice(&src_data);
+        msg!(
+            "Successfully copied {} bytes from {} to {}",
+            src_data.len(),
+            source_account.key,
+            dest_account.key
+        );
+
+        Ok(())
+    }
 }
 
 /// Instruction processor
 pub fn process_instruction(
-    _program_id: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
@@ -163,6 +212,9 @@ pub fn process_instruction(
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
         VerifierInstruction::TestExecute => Processor::process_test_execute(accounts),
+        VerifierInstruction::CopyFromAccount => {
+            Processor::process_copy_from_account(program_id, accounts)
+        }
         VerifierInstruction::Close => Processor::close(accounts),
     }
 }

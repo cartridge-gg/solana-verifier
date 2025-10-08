@@ -1,8 +1,9 @@
 use client::{initialize_client, setup_payer, setup_program, Config};
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
     signature::{Keypair, Signer},
-    system_program,
+    system_instruction,
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;

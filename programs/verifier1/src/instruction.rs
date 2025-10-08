@@ -30,6 +30,13 @@ pub enum VerifierInstruction {
     /// 0. `[writable]` The verifier account
     TestExecute,
 
+    /// Copies data from another account (owned by different program)
+    ///
+    /// Accounts expected:
+    /// 0. `[]` Source account (readonly, can be owned by any program)
+    /// 1. `[writable]` Destination account (must be owned by this program)
+    CopyFromAccount,
+
     /// Closes the verifier account
     ///
     /// Accounts expected:
