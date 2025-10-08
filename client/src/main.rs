@@ -27,8 +27,8 @@ async fn main() -> client::Result<()> {
         .init();
     let cli = Cli::parse();
     match cli.command {
-        Subcommands::Verify(config) => verify::verify(&config).await?,
         Subcommands::Deploy(config) => deploy::deploy(&config).await?,
+        Subcommands::Verify(config) => verify::verify(&config).await?,
         Subcommands::RetriveFunds(config) => retrive_funds::retrive_funds(&config).await?,
     }
     Ok(())
