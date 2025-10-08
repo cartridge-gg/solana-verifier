@@ -79,6 +79,24 @@ impl Processor {
         Ok(())
     }
 
+    /// Process test execute - simple CPI test that just increments front_index
+    pub fn process_test_execute(accounts: &[AccountInfo]) -> ProgramResult {
+        msg!("Processing TestExecute instruction for CPI test");
+
+        let accounts_iter = &mut accounts.iter();
+        let account = next_account_info(accounts_iter)?;
+
+        // Simple test: just increment front_index to verify CPI can modify account
+        let mut data = account.try_borrow_mut_data()?;
+        let stack_account = BidirectionalStackAccount::cast_mut(*data);
+
+        let old_front_index = stack_account.front_index;
+        stack_account.front_index += 1;
+        msg!("CPI Test SUCCESS: front_index changed from {} to {}", old_front_index, stack_account.front_index);
+
+        Ok(())
+    }
+
     pub fn process_set_account_data(
         accounts: &[AccountInfo],
         offset: usize,
@@ -144,7 +162,7 @@ pub fn process_instruction(
             Processor::process_push_data(accounts, data_payload)
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
-
+        VerifierInstruction::TestExecute => Processor::process_test_execute(accounts),
         VerifierInstruction::Close => Processor::close(accounts),
     }
 }

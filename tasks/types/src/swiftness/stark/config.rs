@@ -3,6 +3,8 @@ use crate::swiftness::commitment;
 use crate::swiftness::fri::config::Config as FriConfig;
 use crate::swiftness::pow;
 use felt::Felt;
+
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct StarkConfig {
     pub traces: trace::config::Config,

@@ -16,9 +16,11 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
-// pub const CACHE_SIZE: usize = 1048576;
 pub const CACHE_SIZE: usize = 147480;
 
+// Universal stack account module
+pub mod universal_stack;
+pub use universal_stack::{UniversalStackAccount, UniversalStackError, VerifierMode};
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
     /// Cast a slice to an immutable reference of Self
@@ -123,9 +125,9 @@ pub trait ProofDataDecommitment: ExtendedProofData {
         &mut self,
     ) -> (
         &[Felt; DOMAINS_SIZE],
-        &mut [Felt; OODS_VALUES_SIZE],
-        &mut GlobalValues,
-        &mut [Felt; N_CONSTRAINTS],
+        &[Felt; OODS_VALUES_SIZE],
+        &GlobalValues,
+        &[Felt; N_CONSTRAINTS],
         &mut [Felt; BITS_SIZE],
         &mut [Felt; POSEIDON_BITS_SIZE],
     );
@@ -260,3 +262,4 @@ pub trait Executable: Sized + TypeIdentifiable {
         vec
     }
 }
+

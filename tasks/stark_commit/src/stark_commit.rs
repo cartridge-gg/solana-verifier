@@ -402,6 +402,7 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::FriCommit => {
+                println!("FriCommit");
                 for i in (0..self.oods_coefficients_count).rev() {
                     let oods_coefficient = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
@@ -423,6 +424,7 @@ impl Executable for StarkCommit {
             }
 
             StarkCommitStep::ProofOfWork => {
+                println!("ProofOfWork");
                 self.current_transcript_counter = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.current_transcript_digest = Felt::from_bytes_be_slice(stack.borrow_front());

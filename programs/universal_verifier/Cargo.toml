@@ -1,0 +1,47 @@
+[package]
+name = "universal-verifier"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "universal_verifier"
+
+[features]
+no-entrypoint = []
+test-sbf = []
+
+[dependencies]
+borsh.workspace = true
+solana-program.workspace = true
+thiserror.workspace = true
+felt.workspace = true
+types.workspace = true
+utils.workspace = true
+
+# Import only verifier_1 for instruction format (all verifiers use same instruction enum)
+# verifier-1 = { workspace = true, features = ["no-entrypoint"] }
+
+# Import verifier_2/3/4 for test dispatch (only in non-Solana builds)
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+verifier-1.workspace = true
+verifier-2.workspace = true
+verifier-3.workspace = true
+verifier-4.workspace = true
+
+[dev-dependencies]
+swiftness_proof_parser = { path = "../../parser" }
+serde_json = "1.0"
+starknet-crypto = "0.7.1"
+# Task crates needed for tests
+verify-1.workspace = true
+verify-2.workspace = true
+verify-3.workspace = true
+verify-4.workspace = true
+# Verifier programs needed for test dispatch
+verifier-2.workspace = true
+verifier-3.workspace = true
+verifier-4.workspace = true
+
+[build-dependencies]
+pathdiff = "0.2.1"

@@ -259,10 +259,10 @@ fn calculate_expected_get_hash(
         StarkFelt::from_bytes_be(&public_input.layout.to_bytes_be()),
     ];
 
-    if let Some(dynamic_params) = &public_input.dynamic_params {
-        let dynamic_params_vec: Vec<u32> = (*dynamic_params).into();
-        hash_data.extend(dynamic_params_vec.into_iter().map(|x| StarkFelt::from(x)));
-    }
+    // if let Some(dynamic_params) = &public_input.dynamic_params {
+    //     let dynamic_params_vec: Vec<u32> = (*dynamic_params).into();
+    //     hash_data.extend(dynamic_params_vec.into_iter().map(|x| StarkFelt::from(x)));
+    // }
 
     hash_data.extend(public_input.segments.iter().flat_map(|s| {
         let begin_addr_bytes = s.begin_addr.to_bytes_be();

@@ -263,7 +263,7 @@ impl Default for EvalCompositionPolynomialInner {
 }
 
 impl Executable for EvalCompositionPolynomialInner {
-    fn execute<T: BidirectionalStack + ProofData + ProofDataDecommitment>(
+    fn execute<T: BidirectionalStack + ProofDataDecommitment>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
@@ -602,6 +602,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeCallRet => {
+                println!("ComputeCallRet");
                 let (domains, mask_values, global_values, constraint_coefficients, bits, _) =
                     stack.get_proof_data_references::<StarkProof>();
 
@@ -668,6 +669,7 @@ impl Executable for EvalCompositionPolynomialInner {
                 vec![]
             }
             EvalCompositionPolynomialInnerPhase::ComputeInitialFinal => {
+                println!("ComputeInitialFinal");
                 let (domains, mask_values, global_values, constraint_coefficients, _, _) =
                     stack.get_proof_data_references::<StarkProof>();
                 let mut total_sum = FELT_0;

@@ -299,9 +299,9 @@ impl ProofDataDecommitment for BidirectionalStackAccount {
         &mut self,
     ) -> (
         &[Felt; DOMAINS_SIZE],
-        &mut [Felt; OODS_VALUES_SIZE],
-        &mut GlobalValues,
-        &mut [Felt; N_CONSTRAINTS],
+        &[Felt; OODS_VALUES_SIZE],
+        &GlobalValues,
+        &[Felt; N_CONSTRAINTS],
         &mut [Felt; BITS_SIZE],
         &mut [Felt; POSEIDON_BITS_SIZE],
     ) {
@@ -695,7 +695,7 @@ mod tests {
         let numeric_data = &[0, 1, 2, 3, 4, 5];
         let binary_data = &[0xFF, 0xAA, 0x55, 0x00];
 
-        stack.push_front(string_data).unwrap();
+        <BidirectionalStackAccount as BidirectionalStack>::push_front(&mut stack, string_data).unwrap();
         stack.push_back(numeric_data).unwrap();
         stack.push_front(binary_data).unwrap();
 
