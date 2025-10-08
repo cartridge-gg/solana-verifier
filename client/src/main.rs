@@ -18,12 +18,34 @@ enum Subcommands {
     RetriveFunds(Config),
 }
 
-#[tokio::main]
+fn main() {
+    let result = std::thread::Builder::new()
+        .stack_size(32 * 1024 * 1024)
+        .spawn(|| {
+            env_logger::Builder::from_default_env()
+                .filter_level(log::LevelFilter::Info)
+                .init();
+
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .thread_stack_size(32 * 1024 * 1024)
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async_main())
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+
+    if let Err(e) = result {
+        eprintln!("Error: {:?}", e);
+        std::process::exit(1);
+    }
+}
+
 #[allow(clippy::result_large_err)]
-async fn main() -> client::Result<()> {
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Info)
-        .init();
+async fn async_main() -> client::Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Subcommands::Deploy(config) => deploy::deploy(&config).await?,

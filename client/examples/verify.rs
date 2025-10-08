@@ -25,7 +25,6 @@ use utils::BidirectionalStack;
 use utils::StarkCommitmentTrait;
 use utils::{AccountCast, CacheStorage, Executable};
 
-// Import z aliasami dla każdego verifier'a
 use verifier_1::{
     instruction::VerifierInstruction as VI1, state::BidirectionalStackAccount as Stack1,
 };
