@@ -6,7 +6,8 @@ use types::swiftness::stark::types::{
 };
 use utils::{
     AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData, ProofData,
-    ProofDataDecommitment, ProofDataVerification, StarkCommitmentTrait, StarkVerifyTrait, CACHE_SIZE,
+    ProofDataDecommitment, ProofDataVerification, StarkCommitmentTrait, StarkVerifyTrait,
+    CACHE_SIZE,
 };
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,

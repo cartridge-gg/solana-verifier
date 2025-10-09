@@ -7,8 +7,8 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
-use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
+use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
 use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
 
 #[tokio::main]
