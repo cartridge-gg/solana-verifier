@@ -98,6 +98,24 @@ impl Processor {
         Ok(())
     }
 
+    /// Process test execute - simple CPI test that just increments front_index
+    pub fn process_test_execute(accounts: &[AccountInfo]) -> ProgramResult {
+        msg!("Processing TestExecute instruction for CPI test");
+
+        let accounts_iter = &mut accounts.iter();
+        let account = next_account_info(accounts_iter)?;
+
+        // Simple test: just increment front_index to verify CPI can modify account
+        let mut data = account.try_borrow_mut_data()?;
+        let stack_account = BidirectionalStackAccount::cast_mut(*data);
+
+        let old_front_index = stack_account.front_index;
+        stack_account.front_index += 1;
+        msg!("CPI Test SUCCESS: front_index changed from {} to {}", old_front_index, stack_account.front_index);
+
+        Ok(())
+    }
+
     pub fn process_set_account_data(
         accounts: &[AccountInfo],
         offset: usize,
@@ -187,6 +205,49 @@ impl Processor {
 
         Ok(())
     }
+
+    /// Transfer ownership of an account to a new program
+    /// Following the pattern: resize(0) -> assign -> resize(original_size)
+    pub fn process_transfer_ownership(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        msg!("Processing TransferOwnership instruction");
+
+        let accounts_iter = &mut accounts.iter();
+        let target_account = next_account_info(accounts_iter)?;
+        let new_owner_account = next_account_info(accounts_iter)?;
+
+        // Verify current account is owned by this program
+        if target_account.owner != program_id {
+            msg!("Error: Account not owned by this program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // Save original size
+        let original_size = target_account.data_len();
+        msg!("Original account size: {}", original_size);
+
+        // Step 1: Resize to zero (required before ownership transfer)
+        msg!("Step 1: Resizing to 0 bytes");
+        target_account.resize(0)?;
+
+        // Step 2: Assign to new owner
+        msg!("Step 2: Assigning to new owner: {}", new_owner_account.key);
+        target_account.assign(new_owner_account.key);
+
+        // Step 3: Resize back to original size
+        msg!("Step 3: Resizing back to {} bytes", original_size);
+        target_account.resize(original_size)?;
+
+        msg!(
+            "Successfully transferred ownership of {} to {}",
+            target_account.key,
+            new_owner_account.key
+        );
+
+        Ok(())
+    }
 }
 
 /// Instruction processor
@@ -212,8 +273,12 @@ pub fn process_instruction(
             Processor::process_push_data(accounts, data_payload)
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
+        VerifierInstruction::TestExecute => Processor::process_test_execute(accounts),
         VerifierInstruction::CopyFromAccount => {
             Processor::process_copy_from_account(program_id, accounts)
+        }
+        VerifierInstruction::TransferOwnership => {
+            Processor::process_transfer_ownership(program_id, accounts)
         }
         VerifierInstruction::Close => Processor::close(accounts),
     }

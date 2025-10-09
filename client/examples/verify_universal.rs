@@ -1,7 +1,7 @@
-/// Universal Stack Account Verification Example - ON-CHAIN
+/// Universal Stack Account Verification Example - ON-CHAIN (PING-PONG)
 ///
-/// This example demonstrates using UniversalStackAccount with the universal-verifier
-/// program on Solana. It uses a SINGLE account that switches modes between verifiers.
+/// This example demonstrates the PING-PONG architecture with 2 accounts alternating
+/// ownership between 4 verifier programs. Data is copied between accounts as ownership transfers.
 
 use client::{
     initialize_client, send_and_confirm_transactions, setup_payer, setup_program, Config,
@@ -17,9 +17,15 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
 use types::swiftness::stark::types::FriVerifyData;
-use universal_verifier::instruction::UniversalVerifierInstruction;
-use universal_verifier::scheduler::UniversalStackExecute;
-use utils::{AccountCast, BidirectionalStack, CacheStorage, Executable, UniversalStackAccount, VerifierMode};
+use utils::{AccountCast, BidirectionalStack, CacheStorage, Executable, UniversalStackAccount};
+use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
+use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
+use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
+use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
+use verifier_3::instruction::VerifierInstruction as Verifier3Instruction;
+use verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount;
+use verifier_4::instruction::VerifierInstruction as Verifier4Instruction;
+use verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount;
 
 use verify_1::verify::Verify as Verify_Stage_One;
 use verify_2::verify::Verify as Verify_Stage_Two;
@@ -28,15 +34,6 @@ use verify_4::verify::Verify as Verify_Stage_Four;
 
 pub const CHUNK_SIZE: usize = 1000;
 const MAX_CHUNK_SIZE: usize = 3000;
-
-fn simulate_steps(stack: &mut UniversalStackAccount) -> u128 {
-    let mut simulation_steps = 0;
-    while !stack.is_empty_back() {
-        stack.execute();
-        simulation_steps += 1;
-    }
-    simulation_steps
-}
 
 fn main() {
     let result = std::thread::Builder::new()
@@ -72,74 +69,62 @@ async fn async_main() -> client::Result<()> {
     let payer = setup_payer(&client, &config).await?;
 
     println!("\n========================================");
-    println!("  Universal Verifier - Multi-Program CPI");
+    println!("  PING-PONG Verifier - 2 Accounts");
     println!("========================================\n");
 
-    // Deploy ALL programs: universal_verifier + verifier_1/2/3/4
+    // Deploy ALL 4 verifier programs
     println!("Deploying programs...");
-
-    let universal_program_id = setup_program(&client, &payer, &config,
-        Path::new("target/deploy/universal_verifier.so")).await?;
-    println!("✓ Universal Verifier (orchestrator): {}", universal_program_id);
 
     let verifier1_program_id = setup_program(&client, &payer, &config,
         Path::new("target/deploy/verifier_1.so")).await?;
-    println!("✓ Verifier 1 (worker): {}", verifier1_program_id);
+    println!("✓ Verifier 1: {}", verifier1_program_id);
 
     let verifier2_program_id = setup_program(&client, &payer, &config,
         Path::new("target/deploy/verifier_2.so")).await?;
-    println!("✓ Verifier 2 (worker): {}", verifier2_program_id);
+    println!("✓ Verifier 2: {}", verifier2_program_id);
 
     let verifier3_program_id = setup_program(&client, &payer, &config,
         Path::new("target/deploy/verifier_3.so")).await?;
-    println!("✓ Verifier 3 (worker): {}", verifier3_program_id);
+    println!("✓ Verifier 3: {}", verifier3_program_id);
 
     let verifier4_program_id = setup_program(&client, &payer, &config,
         Path::new("target/deploy/verifier_4.so")).await?;
-    println!("✓ Verifier 4 (worker): {}", verifier4_program_id);
+    println!("✓ Verifier 4: {}", verifier4_program_id);
 
-    // TODO: Update verifier_programs.rs with these IDs and recompile
-    println!("\n⚠️  IMPORTANT: Update programs/universal_verifier/src/verifier_programs.rs");
-    println!("   with the following Program IDs and rebuild:");
-    println!("   VERIFIER_1_PROGRAM_ID = {}", verifier1_program_id);
-    println!("   VERIFIER_2_PROGRAM_ID = {}", verifier2_program_id);
-    println!("   VERIFIER_3_PROGRAM_ID = {}", verifier3_program_id);
-    println!("   VERIFIER_4_PROGRAM_ID = {}", verifier4_program_id);
-
-    // Create ONE universal stack account (owned by universal_verifier)
-    let stack_account = Keypair::new();
-    println!("\n✓ Creating single universal account: {}", stack_account.pubkey());
+    // Create TWO accounts for ping-pong
+    let account1 = Keypair::new();
+    let account2 = Keypair::new();
 
     let space = size_of::<UniversalStackAccount>();
-    println!("  UniversalStackAccount size: {} bytes", space);
-    create_account_tx(&client, &payer, &stack_account, space, &universal_program_id).await?;
+    println!("\n✓ Creating account1: {} (owner: verifier1)", account1.pubkey());
+    println!("  Account size: {} bytes", space);
+    create_account_tx(&client, &payer, &account1, space, &verifier1_program_id).await?;
 
-    // ========== STAGE 1: Verifier1 Mode ==========
-    println!("\n========== STAGE 1: Verifier1 Mode ==========");
+    println!("\n✓ Creating account2: {} (owner: verifier2)", account2.pubkey());
+    create_account_tx(&client, &payer, &account2, space, &verifier2_program_id).await?;
+
+    // ========== STAGE 1: Verifier1 on Account1 ==========
+    println!("\n========== STAGE 1: Verifier1 on Account1 ==========");
 
     // Prepare account data for Verifier1
     let stack_bytes = prepare_input::get_bytes_stage1();
-    set_account_data_chunked(&client, &payer, &universal_program_id, &stack_account, &stack_bytes).await?;
-
-    // Switch to Verifier1 mode
-    switch_mode(&client, &payer, &universal_program_id, &stack_account, VerifierMode::Verifier1).await?;
-    println!("✓ Switched to Verifier1 mode");
+    set_account_data_chunked(&client, &payer, &verifier1_program_id, &account1, &stack_bytes).await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_One::new();
-    push_task(&client, &payer, &universal_program_id, &stack_account, verify_task.to_vec_with_type_tag()).await?;
+    push_task(&client, &payer, &verifier1_program_id, &account1, verify_task.to_vec_with_type_tag()).await?;
 
     // Calculate exact number of steps needed via simulation
-    let mut account_data = client.get_account_data(&stack_account.pubkey()).await?;
-    let stack = UniversalStackAccount::cast_mut(&mut account_data);
-    let simulation_steps = simulate_steps(stack);
+    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
+    let stack = Verifier1StackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
     println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_transactions(&client, &payer, &universal_program_id, &stack_account, simulation_steps as u32, &verifier1_program_id).await?;
+    execute_verifier(&client, &payer, &verifier1_program_id, &account1, simulation_steps as u32).await?;
 
     println!("Transactions executed");
     // Read results
-    let mut account_data = client.get_account_data(&stack_account.pubkey()).await?;
+    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
     let stack = UniversalStackAccount::cast_mut(&mut account_data);
 
     let counter = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -150,87 +135,116 @@ async fn async_main() -> client::Result<()> {
 
     println!("  Counter: {:?}", counter);
     println!("  Digest: {:?}", digest);
-    println!("✓ Stage 1 completed");
+    println!("✓ Stage 1 completed on account1");
 
-    // ========== STAGE 2: Verifier2 Mode ==========
-    println!("\n========== STAGE 2: Verifier2 Mode ==========");
+    // ========== STAGE 2: Verifier2 on Account2 (PING-PONG: copy account1 → account2) ==========
+    println!("\n========== STAGE 2: Verifier2 on Account2 ==========");
+
+    // PING-PONG: Copy data from account1 to account2
+    println!("  Copying account1 → account2...");
+    copy_from_account(&client, &payer, &verifier2_program_id, &account1, &account2).await?;
 
     // Prepare account data for Verifier2
     let stack_bytes = prepare_input::get_bytes_stage2(&commitment);
-    set_account_data_chunked(&client, &payer, &universal_program_id, &stack_account, &stack_bytes).await?;
-
-    // Switch to Verifier2 mode
-    switch_mode(&client, &payer, &universal_program_id, &stack_account, VerifierMode::Verifier2).await?;
-    println!("✓ Switched to Verifier2 mode");
+    set_account_data_chunked(&client, &payer, &verifier2_program_id, &account2, &stack_bytes).await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Two::new(digest, counter);
-    push_task(&client, &payer, &universal_program_id, &stack_account, verify_task.to_vec_with_type_tag()).await?;
+    push_task(&client, &payer, &verifier2_program_id, &account2, verify_task.to_vec_with_type_tag()).await?;
 
-    // Execute verification (max steps as safety limit)
-    let max_steps = 50000; // Will stop early when task completes
-    println!("  Executing (max {} steps)", max_steps);
+    // Calculate exact number of steps needed via simulation
+    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
+    let stack = Verifier2StackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+    println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_transactions(&client, &payer, &universal_program_id, &stack_account, max_steps, &verifier2_program_id).await?;
+    execute_verifier(&client, &payer, &verifier2_program_id, &account2, simulation_steps as u32).await?;
 
     // Read results
-    let mut account_data = client.get_account_data(&stack_account.pubkey()).await?;
+    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
     let stack = UniversalStackAccount::cast_mut(&mut account_data);
 
     let queries = stack.verify_variables.queries_indexes.to_vec();
     println!("  Extracted {} queries", queries.len());
-    println!("✓ Stage 2 completed");
+    println!("✓ Stage 2 completed on account2");
 
-    // ========== STAGE 3: Verifier3 Mode ==========
-    println!("\n========== STAGE 3: Verifier3 Mode ==========");
+    // ========== STAGE 3: Verifier3 on Account1 (TRANSFER ownership account1: verifier1 → verifier3) ==========
+    println!("\n========== STAGE 3: Verifier3 on Account1 ==========");
+
+    // Debug: Check current ownership
+    let account1_before = client.get_account(&account1.pubkey()).await?;
+    let account2_before = client.get_account(&account2.pubkey()).await?;
+    println!("  DEBUG: Before transfer:");
+    println!("    account1 owner: {}", account1_before.owner);
+    println!("    account2 owner: {}", account2_before.owner);
+    println!("    verifier1 program: {}", verifier1_program_id);
+    println!("    verifier3 program: {}", verifier3_program_id);
+
+    // Transfer ownership of account1 from verifier1 to verifier3
+    println!("  Transferring ownership account1: verifier1 → verifier3...");
+    transfer_ownership(&client, &payer, &verifier1_program_id, &account1, &verifier3_program_id).await?;
+
+    // Debug: Verify ownership after transfer
+    let account1_after = client.get_account(&account1.pubkey()).await?;
+    println!("  DEBUG: After transfer:");
+    println!("    account1 owner: {}", account1_after.owner);
+
+    // PING-PONG: Copy data from account2 back to account1
+    println!("  Copying account2 → account1...");
+    println!("  DEBUG: Calling copy_from_account with dest_program={}", verifier3_program_id);
+    copy_from_account(&client, &payer, &verifier3_program_id, &account2, &account1).await?;
 
     // Prepare account data for Verifier3
     let stack_bytes = prepare_input::get_bytes_stage3(&commitment, &queries);
-    set_account_data_chunked(&client, &payer, &universal_program_id, &stack_account, &stack_bytes).await?;
-
-    // Switch to Verifier3 mode
-    switch_mode(&client, &payer, &universal_program_id, &stack_account, VerifierMode::Verifier3).await?;
-    println!("✓ Switched to Verifier3 mode");
+    set_account_data_chunked(&client, &payer, &verifier3_program_id, &account1, &stack_bytes).await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Three::new();
-    push_task(&client, &payer, &universal_program_id, &stack_account, verify_task.to_vec_with_type_tag()).await?;
+    push_task(&client, &payer, &verifier3_program_id, &account1, verify_task.to_vec_with_type_tag()).await?;
 
-    // Execute verification (max steps as safety limit)
-    let max_steps = 50000; // Will stop early when task completes
-    println!("  Executing (max {} steps)", max_steps);
+    // Calculate exact number of steps needed via simulation
+    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
+    let stack = Verifier3StackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+    println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_transactions(&client, &payer, &universal_program_id, &stack_account, max_steps, &verifier3_program_id).await?;
+    execute_verifier(&client, &payer, &verifier3_program_id, &account1, simulation_steps as u32).await?;
 
     // Read results from cache
-    let mut account_data = client.get_account_data(&stack_account.pubkey()).await?;
+    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
     let stack = UniversalStackAccount::cast_mut(&mut account_data);
     let stark_verify_data = stack.borrow_from_cache::<FriVerifyData>().clone();
-    println!("✓ Stage 3 completed");
+    println!("✓ Stage 3 completed on account1 (owner: verifier3)");
 
-    // ========== STAGE 4: Verifier4 Mode ==========
-    println!("\n========== STAGE 4: Verifier4 Mode ==========");
+    // ========== STAGE 4: Verifier4 on Account2 (TRANSFER ownership account2: verifier2 → verifier4) ==========
+    println!("\n========== STAGE 4: Verifier4 on Account2 ==========");
+
+    // Transfer ownership of account2 from verifier2 to verifier4
+    println!("  Transferring ownership account2: verifier2 → verifier4...");
+    transfer_ownership(&client, &payer, &verifier2_program_id, &account2, &verifier4_program_id).await?;
+
+    // PING-PONG: Copy data from account1 to account2
+    println!("  Copying account1 → account2...");
+    copy_from_account(&client, &payer, &verifier4_program_id, &account1, &account2).await?;
 
     // Prepare account data for Verifier4
     let stack_bytes = prepare_input::get_bytes_stage4(&commitment, &stark_verify_data);
-    set_account_data_chunked(&client, &payer, &universal_program_id, &stack_account, &stack_bytes).await?;
-
-    // Switch to Verifier4 mode
-    switch_mode(&client, &payer, &universal_program_id, &stack_account, VerifierMode::Verifier4).await?;
-    println!("✓ Switched to Verifier4 mode");
+    set_account_data_chunked(&client, &payer, &verifier4_program_id, &account2, &stack_bytes).await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Four::new();
-    push_task(&client, &payer, &universal_program_id, &stack_account, verify_task.to_vec_with_type_tag()).await?;
+    push_task(&client, &payer, &verifier4_program_id, &account2, verify_task.to_vec_with_type_tag()).await?;
 
-    // Execute verification (max steps as safety limit)
-    let max_steps = 50000; // Will stop early when task completes
-    println!("  Executing (max {} steps)", max_steps);
+    // Calculate exact number of steps needed via simulation
+    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
+    let stack = Verifier4StackAccount::cast_mut(&mut account_data);
+    let simulation_steps = stack.simulate();
+    println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_transactions(&client, &payer, &universal_program_id, &stack_account, max_steps, &verifier4_program_id).await?;
+    execute_verifier(&client, &payer, &verifier4_program_id, &account2, simulation_steps as u32).await?;
 
     // Read final results
-    let mut account_data = client.get_account_data(&stack_account.pubkey()).await?;
+    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
     let stack = UniversalStackAccount::cast_mut(&mut account_data);
 
     let result_program_hash = Felt::from_bytes_be_slice(stack.borrow_front());
@@ -254,9 +268,12 @@ async fn async_main() -> client::Result<()> {
         "Output hash mismatch"
     );
 
-    println!("\n✓ All 4 stages completed successfully using ONE account!");
+    println!("\n✓ All 4 stages completed successfully using PING-PONG architecture!");
     println!("✓ All verifications passed!");
-    println!("✓ Universal verifier test completed on Solana!");
+    println!("✓ PING-PONG verifier test completed on Solana!");
+    println!("\nFinal owners:");
+    println!("  Account1: {} (owner: verifier3)", account1.pubkey());
+    println!("  Account2: {} (owner: verifier4)", account2.pubkey());
 
     Ok(())
 }
@@ -289,27 +306,59 @@ async fn create_account_tx(
     Ok(())
 }
 
-async fn switch_mode(
+async fn copy_from_account(
     client: &RpcClient,
     payer: &Keypair,
-    program_id: &solana_sdk::pubkey::Pubkey,
-    stack_account: &Keypair,
-    mode: VerifierMode,
+    dest_program_id: &solana_sdk::pubkey::Pubkey,
+    source_account: &Keypair,
+    dest_account: &Keypair,
 ) -> client::Result<()> {
-    let switch_mode_ix = Instruction::new_with_borsh(
-        *program_id,
-        &UniversalVerifierInstruction::SwitchMode(mode),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
+    let copy_ix = Instruction::new_with_borsh(
+        *dest_program_id,
+        &Verifier2Instruction::CopyFromAccount, // All verifiers have the same instruction
+        vec![
+            AccountMeta::new_readonly(source_account.pubkey(), false),
+            AccountMeta::new(dest_account.pubkey(), false),
+        ],
     );
 
     let tx = Transaction::new_signed_with_payer(
-        &[switch_mode_ix],
+        &[copy_ix],
         Some(&payer.pubkey()),
         &[payer],
         client.get_latest_blockhash().await?,
     );
 
     client.send_and_confirm_transaction(&tx).await?;
+    println!("  ✓ Copied successfully");
+    Ok(())
+}
+
+async fn transfer_ownership(
+    client: &RpcClient,
+    payer: &Keypair,
+    current_owner_program_id: &solana_sdk::pubkey::Pubkey,
+    account: &Keypair,
+    new_owner_program_id: &solana_sdk::pubkey::Pubkey,
+) -> client::Result<()> {
+    let transfer_ix = Instruction::new_with_borsh(
+        *current_owner_program_id,
+        &Verifier1Instruction::TransferOwnership, // All verifiers have the same instruction
+        vec![
+            AccountMeta::new(account.pubkey(), false),
+            AccountMeta::new_readonly(*new_owner_program_id, false),
+        ],
+    );
+
+    let tx = Transaction::new_signed_with_payer(
+        &[transfer_ix],
+        Some(&payer.pubkey()),
+        &[payer],
+        client.get_latest_blockhash().await?,
+    );
+
+    client.send_and_confirm_transaction(&tx).await?;
+    println!("  ✓ Ownership transferred successfully");
     Ok(())
 }
 
@@ -317,15 +366,15 @@ async fn set_account_data_chunked(
     client: &RpcClient,
     payer: &Keypair,
     program_id: &solana_sdk::pubkey::Pubkey,
-    stack_account: &Keypair,
+    account: &Keypair,
     stack_bytes: &[u8],
 ) -> client::Result<()> {
     let mut transactions = Vec::new();
     for (chunk_index, chunk) in stack_bytes.chunks(CHUNK_SIZE).enumerate() {
         let set_data_ix = Instruction::new_with_borsh(
             *program_id,
-            &UniversalVerifierInstruction::SetAccountData(chunk_index * CHUNK_SIZE, chunk.to_vec()),
-            vec![AccountMeta::new(stack_account.pubkey(), false)],
+            &Verifier1Instruction::SetAccountData(chunk_index * CHUNK_SIZE, chunk.to_vec()),
+            vec![AccountMeta::new(account.pubkey(), false)],
         );
         let tx = Transaction::new_signed_with_payer(
             &[set_data_ix],
@@ -344,13 +393,13 @@ async fn push_task(
     client: &RpcClient,
     payer: &Keypair,
     program_id: &solana_sdk::pubkey::Pubkey,
-    stack_account: &Keypair,
+    account: &Keypair,
     task_data: Vec<u8>,
 ) -> client::Result<()> {
     let push_task_ix = Instruction::new_with_borsh(
         *program_id,
-        &UniversalVerifierInstruction::PushTask(task_data),
-        vec![AccountMeta::new(stack_account.pubkey(), false)],
+        &Verifier1Instruction::PushTask(task_data),
+        vec![AccountMeta::new(account.pubkey(), false)],
     );
 
     let tx = Transaction::new_signed_with_payer(
@@ -365,15 +414,14 @@ async fn push_task(
     Ok(())
 }
 
-async fn execute_transactions(
+async fn execute_verifier(
     client: &RpcClient,
     payer: &Keypair,
     program_id: &solana_sdk::pubkey::Pubkey,
-    stack_account: &Keypair,
+    account: &Keypair,
     simulation_steps: u32,
-    verifier_program_id: &solana_sdk::pubkey::Pubkey,
 ) -> client::Result<()> {
-       let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
+    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
     let simulation_steps_usize = simulation_steps as usize;
 
     let mut step = 0;
@@ -387,11 +435,8 @@ async fn execute_transactions(
         for i in step..chunk_end {
             let execute_ix = Instruction::new_with_borsh(
                 *program_id,
-                &UniversalVerifierInstruction::ExecuteWithProgramId(i as u32, verifier_program_id.to_bytes()),
-                vec![
-                    AccountMeta::new(stack_account.pubkey(), false),
-                    AccountMeta::new(*verifier_program_id, false),
-                ],
+                &Verifier1Instruction::Execute(i as u32),
+                vec![AccountMeta::new(account.pubkey(), false)],
             );
             let tx = Transaction::new_signed_with_payer(
                 &[limit_instructions.clone(), execute_ix],
@@ -417,7 +462,7 @@ mod prepare_input {
     use types::swiftness::commitment::types::Decommitment;
     use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use utils::{CacheStorage, StarkCommitmentTrait, UniversalStackAccount, VerifierMode};
+    use utils::{CacheStorage, StarkCommitmentTrait, UniversalStackAccount};
 
     pub fn get_bytes_stage1() -> Vec<u8> {
         let proof_str = include_str!("../../example_proof/saya.json");
@@ -425,7 +470,7 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = UniversalStackAccount::new(VerifierMode::Verifier1);
+        let mut stack = UniversalStackAccount::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
             .unsent_commitment
@@ -445,7 +490,7 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = UniversalStackAccount::new(VerifierMode::Verifier2);
+        let mut stack = UniversalStackAccount::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
             .unsent_commitment
@@ -467,7 +512,7 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = UniversalStackAccount::new(VerifierMode::Verifier3);
+        let mut stack = UniversalStackAccount::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
             .unsent_commitment
@@ -507,7 +552,7 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = UniversalStackAccount::new(VerifierMode::Verifier4);
+        let mut stack = UniversalStackAccount::default();
         stack.proof = proof_verifier;
         stack.set_stark_commitment(stark_commitment);
         stack.store_in_cache(stark_verify_data);

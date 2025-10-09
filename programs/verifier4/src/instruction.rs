@@ -24,12 +24,25 @@ pub enum VerifierInstruction {
     /// 0. `[writable]` The verifier account
     Execute(u32),
 
+    /// Test CPI: just increments front_index
+    ///
+    /// Accounts expected:
+    /// 0. `[writable]` The verifier account
+    TestExecute,
+
     /// Copies data from another account (owned by different program)
     ///
     /// Accounts expected:
     /// 0. `[]` Source account (readonly, can be owned by any program)
     /// 1. `[writable]` Destination account (must be owned by this program)
     CopyFromAccount,
+
+    /// Transfers ownership of account to a new program
+    ///
+    /// Accounts expected:
+    /// 0. `[writable]` The account to transfer
+    /// 1. `[]` The new owner program ID
+    TransferOwnership,
 
     /// Closes the verifier account
     ///

@@ -101,6 +101,9 @@ account.realloc(904176, false)?;  // Resize back
 
 - [x] CopyFromAccount instruction in all verifiers
 - [x] Test for verifier1 → verifier2 copy
-- [ ] Ownership transfer mechanism
+- [x] Ownership transfer mechanism (TransferOwnership instruction in verifier1)
+- [x] Test for ownership transfer (test_two_accounts.rs now includes transfer test)
 - [ ] Full 4-verifier test
 - [ ] Integration with existing verify_universal flow
+
+See OWNERSHIP_TRANSFER_TEST.md for detailed documentation of the transfer mechanism.

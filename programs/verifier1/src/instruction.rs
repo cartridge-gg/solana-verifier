@@ -37,6 +37,13 @@ pub enum VerifierInstruction {
     /// 1. `[writable]` Destination account (must be owned by this program)
     CopyFromAccount,
 
+    /// Transfers ownership of account to a new program
+    ///
+    /// Accounts expected:
+    /// 0. `[writable]` The account to transfer
+    /// 1. `[]` The new owner program ID
+    TransferOwnership,
+
     /// Closes the verifier account
     ///
     /// Accounts expected:
