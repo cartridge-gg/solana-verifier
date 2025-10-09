@@ -92,7 +92,11 @@ impl Processor {
 
         let old_front_index = stack_account.front_index;
         stack_account.front_index += 1;
-        msg!("CPI Test SUCCESS: front_index changed from {} to {}", old_front_index, stack_account.front_index);
+        msg!(
+            "CPI Test SUCCESS: front_index changed from {} to {}",
+            old_front_index,
+            stack_account.front_index
+        );
 
         Ok(())
     }

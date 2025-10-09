@@ -6,6 +6,7 @@ use types::swiftness::stark::types::{cast_slice_to_struct, VerifyVariables};
 use types::swiftness::stark::types::{
     cast_struct_to_slice, cast_struct_to_slice_mut, StarkCommitment, StarkProof,
 };
+use utils::VerifierMode;
 use utils::{
     AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData, ProofData,
     ProofDataDecommitment, ProofDataVerification, StarkCommitmentTrait, StarkVerifyTrait,
@@ -15,7 +16,6 @@ use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
     OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
 };
-use utils::VerifierMode;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -710,7 +710,8 @@ mod tests {
         let numeric_data = &[0, 1, 2, 3, 4, 5];
         let binary_data = &[0xFF, 0xAA, 0x55, 0x00];
 
-        <BidirectionalStackAccount as BidirectionalStack>::push_front(&mut stack, string_data).unwrap();
+        <BidirectionalStackAccount as BidirectionalStack>::push_front(&mut stack, string_data)
+            .unwrap();
         stack.push_back(numeric_data).unwrap();
         stack.push_front(binary_data).unwrap();
 

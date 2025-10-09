@@ -262,4 +262,3 @@ pub trait Executable: Sized + TypeIdentifiable {
         vec
     }
 }
-

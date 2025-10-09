@@ -37,7 +37,10 @@ async fn main() -> client::Result<()> {
 
     // Create account1 (owned by verifier1)
     let account1 = Keypair::new();
-    println!("\nCreating account1: {} (owner: verifier1)", account1.pubkey());
+    println!(
+        "\nCreating account1: {} (owner: verifier1)",
+        account1.pubkey()
+    );
 
     let create_account1_ix = create_account(
         &payer.pubkey(),
@@ -58,7 +61,10 @@ async fn main() -> client::Result<()> {
 
     // Create account2 (owned by verifier2)
     let account2 = Keypair::new();
-    println!("\nCreating account2: {} (owner: verifier2)", account2.pubkey());
+    println!(
+        "\nCreating account2: {} (owner: verifier2)",
+        account2.pubkey()
+    );
 
     let create_account2_ix = create_account(
         &payer.pubkey(),
@@ -133,7 +139,7 @@ async fn main() -> client::Result<()> {
         account1_info.owner, verifier1_program_id,
         "Account1 should still be owned by verifier1"
     );
-    
+
     let account1_data = client.get_account_data(&account1.pubkey()).await?;
     // front_index is at offset 8 (after mode field + padding)
     let front_index = u64::from_le_bytes(account1_data[8..16].try_into().unwrap());
@@ -176,28 +182,25 @@ async fn main() -> client::Result<()> {
         account2_info.owner, verifier2_program_id,
         "Account2 should be owned by verifier2"
     );
-    
+
     let account2_data = client.get_account_data(&account2.pubkey()).await?;
     // front_index is at offset 8
     let front_index2 = u64::from_le_bytes(account2_data[8..16].try_into().unwrap());
     println!("  Account2 front_index after copy: {}", front_index2);
     println!("  Account2 owner verified: verifier2");
 
-    assert_eq!(
-        front_index, front_index2,
-        "Data should match after copy"
-    );
+    assert_eq!(front_index, front_index2, "Data should match after copy");
     println!("✓ Copy test passed! Data matches: {}", front_index);
 
     // STEP 3: Transfer ownership of account1 from verifier1 to verifier2
     println!("\n=== STEP 3: Transfer ownership account1: verifier1 → verifier2 ===");
     println!("NOTE: Transfer will ZERO the account data!");
-    
+
     // Verify current owner
     let account1_info = client.get_account(&account1.pubkey()).await?;
     println!("Account1 current owner: {}", account1_info.owner);
     println!("Verifier1 program ID: {}", verifier1_program_id);
-    
+
     let transfer_ix = Instruction::new_with_borsh(
         verifier1_program_id,
         &Verifier1Instruction::TransferOwnership,
@@ -228,7 +231,7 @@ async fn main() -> client::Result<()> {
     // ASSERT: Verify new owner
     let account1_info_after = client.get_account(&account1.pubkey()).await?;
     println!("Account1 new owner: {}", account1_info_after.owner);
-    
+
     assert_eq!(
         account1_info_after.owner, verifier2_program_id,
         "Account1 should now be owned by verifier2 after transfer"
@@ -238,8 +241,11 @@ async fn main() -> client::Result<()> {
     // ASSERT: Verify account1 is now zeroed (consequence of resize(0))
     let account1_after_transfer = client.get_account_data(&account1.pubkey()).await?;
     let zeroed_front_index = u64::from_le_bytes(account1_after_transfer[8..16].try_into().unwrap());
-    println!("  Account1 front_index after transfer (should be 0): {}", zeroed_front_index);
-    
+    println!(
+        "  Account1 front_index after transfer (should be 0): {}",
+        zeroed_front_index
+    );
+
     assert_eq!(
         zeroed_front_index, 0,
         "Account1 should be zeroed after ownership transfer"
@@ -254,7 +260,7 @@ async fn main() -> client::Result<()> {
         &Verifier2Instruction::CopyFromAccount,
         vec![
             AccountMeta::new_readonly(account2.pubkey(), false), // Source (has data)
-            AccountMeta::new(account1.pubkey(), false),          // Dest (zeroed, now owned by verifier2)
+            AccountMeta::new(account1.pubkey(), false), // Dest (zeroed, now owned by verifier2)
         ],
     );
 
@@ -282,10 +288,13 @@ async fn main() -> client::Result<()> {
         account1_info_restored.owner, verifier2_program_id,
         "Account1 should still be owned by verifier2"
     );
-    
+
     let account1_restored = client.get_account_data(&account1.pubkey()).await?;
     let restored_front_index = u64::from_le_bytes(account1_restored[8..16].try_into().unwrap());
-    println!("  Account1 front_index after restore: {}", restored_front_index);
+    println!(
+        "  Account1 front_index after restore: {}",
+        restored_front_index
+    );
     println!("  Account1 owner still verified: verifier2");
 
     assert_eq!(
@@ -327,10 +336,13 @@ async fn main() -> client::Result<()> {
         account1_final_info.owner, verifier2_program_id,
         "Account1 should be owned by verifier2 at the end"
     );
-    
+
     let account1_final = client.get_account_data(&account1.pubkey()).await?;
     let final_front_index = u64::from_le_bytes(account1_final[8..16].try_into().unwrap());
-    println!("  Account1 front_index after verifier2 modify: {}", final_front_index);
+    println!(
+        "  Account1 front_index after verifier2 modify: {}",
+        final_front_index
+    );
     println!("  Account1 owner still verified: verifier2");
 
     assert_eq!(
@@ -342,10 +354,10 @@ async fn main() -> client::Result<()> {
 
     // FINAL ASSERTIONS: Verify complete final state
     println!("\n=== FINAL STATE VERIFICATION ===");
-    
+
     let final_account1 = client.get_account(&account1.pubkey()).await?;
     let final_account2 = client.get_account(&account2.pubkey()).await?;
-    
+
     assert_eq!(
         final_account1.owner, verifier2_program_id,
         "Final: Account1 should be owned by verifier2"
@@ -354,23 +366,31 @@ async fn main() -> client::Result<()> {
         final_account2.owner, verifier2_program_id,
         "Final: Account2 should be owned by verifier2"
     );
-    
+
     assert_eq!(
-        final_account1.data.len(), space,
+        final_account1.data.len(),
+        space,
         "Final: Account1 should maintain correct size"
     );
     assert_eq!(
-        final_account2.data.len(), space,
+        final_account2.data.len(),
+        space,
         "Final: Account2 should maintain correct size"
     );
-    
+
     let final_account1_data = client.get_account_data(&account1.pubkey()).await?;
     let final_account2_data = client.get_account_data(&account2.pubkey()).await?;
     let final_index1 = u64::from_le_bytes(final_account1_data[8..16].try_into().unwrap());
     let final_index2 = u64::from_le_bytes(final_account2_data[8..16].try_into().unwrap());
-    
-    println!("✓ Account1: owner=verifier2, size={} bytes, front_index={}", space, final_index1);
-    println!("✓ Account2: owner=verifier2, size={} bytes, front_index={}", space, final_index2);
+
+    println!(
+        "✓ Account1: owner=verifier2, size={} bytes, front_index={}",
+        space, final_index1
+    );
+    println!(
+        "✓ Account2: owner=verifier2, size={} bytes, front_index={}",
+        space, final_index2
+    );
 
     // Summary
     println!("\n=== PING-PONG TEST SUMMARY ===");

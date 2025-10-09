@@ -65,8 +65,7 @@ fn main() {
     dispatch_code.push_str("        + utils::ProofDataVerification,\n");
     dispatch_code.push_str("{\n");
     dispatch_code.push_str("    // Create a raw pointer to avoid multiple mutable borrow issues\n");
-    dispatch_code
-        .push_str("    let stack_ptr = stack as *mut S;\n");
+    dispatch_code.push_str("    let stack_ptr = stack as *mut S;\n");
     dispatch_code.push_str("    \n");
     dispatch_code.push_str("    // Get the data from the back of the stack using unsafe\n");
     dispatch_code.push_str("    let data = unsafe { (*stack_ptr).borrow_mut_back() };\n");

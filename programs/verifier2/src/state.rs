@@ -6,7 +6,7 @@ use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof, VerifyVariables};
 use utils::ProofDataVerification;
-use utils::{AccountCast, BidirectionalStack, N_CONSTRAINTS, VerifierMode, CACHE_SIZE};
+use utils::{AccountCast, BidirectionalStack, VerifierMode, CACHE_SIZE, N_CONSTRAINTS};
 use utils::{CacheStorage, CachedProofData, ExtendedProofData, ProofData, ProofDataDecommitment};
 use utils::{StarkCommitmentTrait, StarkVerifyTrait};
 use utils::{

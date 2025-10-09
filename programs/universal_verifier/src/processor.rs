@@ -78,7 +78,6 @@ impl Processor {
         Ok(())
     }
 
-
     /// Process the execute instruction - delegates to appropriate verifier via CPI
     pub fn process_execute(accounts: &[AccountInfo], nonce: u32) -> ProgramResult {
         msg!("Processing Execute instruction, nonce: {}", nonce);
@@ -133,8 +132,16 @@ impl Processor {
     }
 
     /// Process the execute with specific program ID instruction
-    pub fn process_execute_with_program_id(accounts: &[AccountInfo], nonce: u32, verifier_program_id: Pubkey) -> ProgramResult {
-        msg!("Processing ExecuteWithProgramId instruction, nonce: {}, program_id: {}", nonce, verifier_program_id);
+    pub fn process_execute_with_program_id(
+        accounts: &[AccountInfo],
+        nonce: u32,
+        verifier_program_id: Pubkey,
+    ) -> ProgramResult {
+        msg!(
+            "Processing ExecuteWithProgramId instruction, nonce: {}, program_id: {}",
+            nonce,
+            verifier_program_id
+        );
 
         // Get the stack account and verifier program account
         let accounts_iter = &mut accounts.iter();
@@ -144,20 +151,35 @@ impl Processor {
         let execute_ix = Instruction::new_with_borsh(
             verifier_program_id,
             &VerifierInstruction::Execute(nonce),
-            vec![AccountMeta::new(*stack_account.key, false), AccountMeta::new(*verifier_program_account.key, false)],
+            vec![
+                AccountMeta::new(*stack_account.key, false),
+                AccountMeta::new(*verifier_program_account.key, false),
+            ],
         );
 
         // Invoke the verifier program via CPI
-        invoke(&execute_ix, &[stack_account.clone(), verifier_program_account.clone()])?;
+        invoke(
+            &execute_ix,
+            &[stack_account.clone(), verifier_program_account.clone()],
+        )?;
 
-        msg!("Task executed successfully via CPI with program ID: {}", verifier_program_id);
+        msg!(
+            "Task executed successfully via CPI with program ID: {}",
+            verifier_program_id
+        );
 
         Ok(())
     }
 
     /// Process test CPI instruction
-    pub fn process_test_cpi(accounts: &[AccountInfo], verifier_program_id: Pubkey) -> ProgramResult {
-        msg!("Processing TestCPI instruction with verifier program: {}", verifier_program_id);
+    pub fn process_test_cpi(
+        accounts: &[AccountInfo],
+        verifier_program_id: Pubkey,
+    ) -> ProgramResult {
+        msg!(
+            "Processing TestCPI instruction with verifier program: {}",
+            verifier_program_id
+        );
 
         let accounts_iter = &mut accounts.iter();
         let stack_account = next_account_info(accounts_iter)?;
@@ -176,12 +198,18 @@ impl Processor {
         let test_execute_ix = Instruction::new_with_borsh(
             verifier_program_id,
             &VerifierInstruction::TestExecute,
-            vec![AccountMeta::new(*stack_account.key, stack_account.is_signer)],
+            vec![AccountMeta::new(
+                *stack_account.key,
+                stack_account.is_signer,
+            )],
         );
 
         // Invoke verifier1 via CPI
         msg!("Calling verifier1::TestExecute via CPI...");
-        invoke(&test_execute_ix, &[stack_account.clone(), verifier_program.clone()])?;
+        invoke(
+            &test_execute_ix,
+            &[stack_account.clone(), verifier_program.clone()],
+        )?;
 
         // Read front_index after CPI
         let front_index_after = {

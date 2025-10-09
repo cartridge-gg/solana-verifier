@@ -3,11 +3,11 @@ use swiftness_proof_parser::json_parser;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use types::funvec::FunVec;
 use types::swiftness::commitment::types::Decommitment;
+use universal_verifier::scheduler::UniversalStackExecute;
 use utils::universal_stack::{UniversalStackAccount, VerifierMode};
 use utils::BidirectionalStack;
-use utils::Scheduler;
 use utils::CacheStorage;
-use universal_verifier::scheduler::UniversalStackExecute;
+use utils::Scheduler;
 
 // UniversalStackAccount has its own execute method that automatically chooses the right verifier
 
@@ -19,14 +19,20 @@ pub fn test_universal_proof_verification() {
     println!("🚀 Starting Universal Verifier Test");
     println!("========================================\n");
 
-    println!("📦 UniversalStackAccount size: {} bytes", std::mem::size_of::<UniversalStackAccount>());
+    println!(
+        "📦 UniversalStackAccount size: {} bytes",
+        std::mem::size_of::<UniversalStackAccount>()
+    );
 
     // Verifier 1
     println!("\n🔵 STAGE 1: Verifier1 Mode");
     println!("────────────────────────────────────────");
     let mut stack = UniversalStackAccount::new(VerifierMode::Verifier1);
     println!("📍 Memory address: {:p}", &stack as *const _);
-    println!("✓ Created UniversalStackAccount with mode: {:?}", stack.mode());
+    println!(
+        "✓ Created UniversalStackAccount with mode: {:?}",
+        stack.mode()
+    );
 
     let proof_str = include_str!("../../../example_proof/saya.json");
     let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
@@ -100,7 +106,6 @@ pub fn test_universal_proof_verification() {
     }
     println!("✓ Verifier2 completed in {} steps\n", steps - stage2_start);
 
-
     let queries = stack.verify_variables.queries_indexes;
     println!("📊 Extracted queries from verify_variables");
 
@@ -156,7 +161,9 @@ pub fn test_universal_proof_verification() {
     }
     println!("✓ Verifier3 completed in {} steps\n", steps - stage3_start);
 
-    let stark_verify_data = stack.borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>().clone();
+    let stark_verify_data = stack
+        .borrow_from_cache::<types::swiftness::stark::types::FriVerifyData>()
+        .clone();
     println!("📊 Retrieved FriVerifyData from cache");
 
     // STAGE 4: Switch to Verifier4
@@ -200,7 +207,7 @@ pub fn test_universal_proof_verification() {
     println!("────────────────────────────────────────");
     println!("Program hash: {result_program_hash:?}");
     println!("Output hash:  {result_output_hash:?}");
-    
+
     assert_eq!(
         result_program_hash,
         Felt::from_hex("0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07").unwrap()
@@ -230,7 +237,10 @@ pub fn test_universal_proof_verification() {
     println!("   4. All 4 stages completed successfully");
     println!("   5. Final verification result is correct");
     println!("\n💡 Key insight:");
-    println!("   The memory address {:p} stayed the same", &stack as *const _);
+    println!(
+        "   The memory address {:p} stayed the same",
+        &stack as *const _
+    );
     println!("   throughout all 4 stages, proving they all");
     println!("   worked on shared memory!");
     println!("\n   Final mode: {}", stack.verifier_type());

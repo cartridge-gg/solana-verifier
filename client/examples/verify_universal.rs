@@ -2,7 +2,6 @@
 ///
 /// This example demonstrates the PING-PONG architecture with 2 accounts alternating
 /// ownership between 4 verifier programs. Data is copied between accounts as ownership transfers.
-
 use client::{
     initialize_client, send_and_confirm_transactions, setup_payer, setup_program, Config,
 };
@@ -75,20 +74,40 @@ async fn async_main() -> client::Result<()> {
     // Deploy ALL 4 verifier programs
     println!("Deploying programs...");
 
-    let verifier1_program_id = setup_program(&client, &payer, &config,
-        Path::new("target/deploy/verifier_1.so")).await?;
+    let verifier1_program_id = setup_program(
+        &client,
+        &payer,
+        &config,
+        Path::new("target/deploy/verifier_1.so"),
+    )
+    .await?;
     println!("✓ Verifier 1: {}", verifier1_program_id);
 
-    let verifier2_program_id = setup_program(&client, &payer, &config,
-        Path::new("target/deploy/verifier_2.so")).await?;
+    let verifier2_program_id = setup_program(
+        &client,
+        &payer,
+        &config,
+        Path::new("target/deploy/verifier_2.so"),
+    )
+    .await?;
     println!("✓ Verifier 2: {}", verifier2_program_id);
 
-    let verifier3_program_id = setup_program(&client, &payer, &config,
-        Path::new("target/deploy/verifier_3.so")).await?;
+    let verifier3_program_id = setup_program(
+        &client,
+        &payer,
+        &config,
+        Path::new("target/deploy/verifier_3.so"),
+    )
+    .await?;
     println!("✓ Verifier 3: {}", verifier3_program_id);
 
-    let verifier4_program_id = setup_program(&client, &payer, &config,
-        Path::new("target/deploy/verifier_4.so")).await?;
+    let verifier4_program_id = setup_program(
+        &client,
+        &payer,
+        &config,
+        Path::new("target/deploy/verifier_4.so"),
+    )
+    .await?;
     println!("✓ Verifier 4: {}", verifier4_program_id);
 
     // Create TWO accounts for ping-pong
@@ -96,11 +115,17 @@ async fn async_main() -> client::Result<()> {
     let account2 = Keypair::new();
 
     let space = size_of::<UniversalStackAccount>();
-    println!("\n✓ Creating account1: {} (owner: verifier1)", account1.pubkey());
+    println!(
+        "\n✓ Creating account1: {} (owner: verifier1)",
+        account1.pubkey()
+    );
     println!("  Account size: {} bytes", space);
     create_account_tx(&client, &payer, &account1, space, &verifier1_program_id).await?;
 
-    println!("\n✓ Creating account2: {} (owner: verifier2)", account2.pubkey());
+    println!(
+        "\n✓ Creating account2: {} (owner: verifier2)",
+        account2.pubkey()
+    );
     create_account_tx(&client, &payer, &account2, space, &verifier2_program_id).await?;
 
     // ========== STAGE 1: Verifier1 on Account1 ==========
@@ -108,11 +133,25 @@ async fn async_main() -> client::Result<()> {
 
     // Prepare account data for Verifier1
     let stack_bytes = prepare_input::get_bytes_stage1();
-    set_account_data_chunked(&client, &payer, &verifier1_program_id, &account1, &stack_bytes).await?;
+    set_account_data_chunked(
+        &client,
+        &payer,
+        &verifier1_program_id,
+        &account1,
+        &stack_bytes,
+    )
+    .await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_One::new();
-    push_task(&client, &payer, &verifier1_program_id, &account1, verify_task.to_vec_with_type_tag()).await?;
+    push_task(
+        &client,
+        &payer,
+        &verifier1_program_id,
+        &account1,
+        verify_task.to_vec_with_type_tag(),
+    )
+    .await?;
 
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account1.pubkey()).await?;
@@ -120,7 +159,14 @@ async fn async_main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_verifier(&client, &payer, &verifier1_program_id, &account1, simulation_steps as u32).await?;
+    execute_verifier(
+        &client,
+        &payer,
+        &verifier1_program_id,
+        &account1,
+        simulation_steps as u32,
+    )
+    .await?;
 
     println!("Transactions executed");
     // Read results
@@ -146,11 +192,25 @@ async fn async_main() -> client::Result<()> {
 
     // Prepare account data for Verifier2
     let stack_bytes = prepare_input::get_bytes_stage2(&commitment);
-    set_account_data_chunked(&client, &payer, &verifier2_program_id, &account2, &stack_bytes).await?;
+    set_account_data_chunked(
+        &client,
+        &payer,
+        &verifier2_program_id,
+        &account2,
+        &stack_bytes,
+    )
+    .await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Two::new(digest, counter);
-    push_task(&client, &payer, &verifier2_program_id, &account2, verify_task.to_vec_with_type_tag()).await?;
+    push_task(
+        &client,
+        &payer,
+        &verifier2_program_id,
+        &account2,
+        verify_task.to_vec_with_type_tag(),
+    )
+    .await?;
 
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
@@ -158,7 +218,14 @@ async fn async_main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_verifier(&client, &payer, &verifier2_program_id, &account2, simulation_steps as u32).await?;
+    execute_verifier(
+        &client,
+        &payer,
+        &verifier2_program_id,
+        &account2,
+        simulation_steps as u32,
+    )
+    .await?;
 
     // Read results
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
@@ -182,7 +249,14 @@ async fn async_main() -> client::Result<()> {
 
     // Transfer ownership of account1 from verifier1 to verifier3
     println!("  Transferring ownership account1: verifier1 → verifier3...");
-    transfer_ownership(&client, &payer, &verifier1_program_id, &account1, &verifier3_program_id).await?;
+    transfer_ownership(
+        &client,
+        &payer,
+        &verifier1_program_id,
+        &account1,
+        &verifier3_program_id,
+    )
+    .await?;
 
     // Debug: Verify ownership after transfer
     let account1_after = client.get_account(&account1.pubkey()).await?;
@@ -191,16 +265,33 @@ async fn async_main() -> client::Result<()> {
 
     // PING-PONG: Copy data from account2 back to account1
     println!("  Copying account2 → account1...");
-    println!("  DEBUG: Calling copy_from_account with dest_program={}", verifier3_program_id);
+    println!(
+        "  DEBUG: Calling copy_from_account with dest_program={}",
+        verifier3_program_id
+    );
     copy_from_account(&client, &payer, &verifier3_program_id, &account2, &account1).await?;
 
     // Prepare account data for Verifier3
     let stack_bytes = prepare_input::get_bytes_stage3(&commitment, &queries);
-    set_account_data_chunked(&client, &payer, &verifier3_program_id, &account1, &stack_bytes).await?;
+    set_account_data_chunked(
+        &client,
+        &payer,
+        &verifier3_program_id,
+        &account1,
+        &stack_bytes,
+    )
+    .await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Three::new();
-    push_task(&client, &payer, &verifier3_program_id, &account1, verify_task.to_vec_with_type_tag()).await?;
+    push_task(
+        &client,
+        &payer,
+        &verifier3_program_id,
+        &account1,
+        verify_task.to_vec_with_type_tag(),
+    )
+    .await?;
 
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account1.pubkey()).await?;
@@ -208,7 +299,14 @@ async fn async_main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_verifier(&client, &payer, &verifier3_program_id, &account1, simulation_steps as u32).await?;
+    execute_verifier(
+        &client,
+        &payer,
+        &verifier3_program_id,
+        &account1,
+        simulation_steps as u32,
+    )
+    .await?;
 
     // Read results from cache
     let mut account_data = client.get_account_data(&account1.pubkey()).await?;
@@ -221,7 +319,14 @@ async fn async_main() -> client::Result<()> {
 
     // Transfer ownership of account2 from verifier2 to verifier4
     println!("  Transferring ownership account2: verifier2 → verifier4...");
-    transfer_ownership(&client, &payer, &verifier2_program_id, &account2, &verifier4_program_id).await?;
+    transfer_ownership(
+        &client,
+        &payer,
+        &verifier2_program_id,
+        &account2,
+        &verifier4_program_id,
+    )
+    .await?;
 
     // PING-PONG: Copy data from account1 to account2
     println!("  Copying account1 → account2...");
@@ -229,11 +334,25 @@ async fn async_main() -> client::Result<()> {
 
     // Prepare account data for Verifier4
     let stack_bytes = prepare_input::get_bytes_stage4(&commitment, &stark_verify_data);
-    set_account_data_chunked(&client, &payer, &verifier4_program_id, &account2, &stack_bytes).await?;
+    set_account_data_chunked(
+        &client,
+        &payer,
+        &verifier4_program_id,
+        &account2,
+        &stack_bytes,
+    )
+    .await?;
 
     // Push Verify task
     let verify_task = Verify_Stage_Four::new();
-    push_task(&client, &payer, &verifier4_program_id, &account2, verify_task.to_vec_with_type_tag()).await?;
+    push_task(
+        &client,
+        &payer,
+        &verifier4_program_id,
+        &account2,
+        verify_task.to_vec_with_type_tag(),
+    )
+    .await?;
 
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
@@ -241,7 +360,14 @@ async fn async_main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("  Steps in simulation: {}", simulation_steps);
 
-    execute_verifier(&client, &payer, &verifier4_program_id, &account2, simulation_steps as u32).await?;
+    execute_verifier(
+        &client,
+        &payer,
+        &verifier4_program_id,
+        &account2,
+        simulation_steps as u32,
+    )
+    .await?;
 
     // Read final results
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
@@ -264,7 +390,8 @@ async fn async_main() -> client::Result<()> {
     );
     assert_eq!(
         result_output_hash,
-        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400").unwrap(),
+        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400")
+            .unwrap(),
         "Output hash mismatch"
     );
 
@@ -301,7 +428,9 @@ async fn create_account_tx(
         client.get_latest_blockhash().await?,
     );
 
-    client.send_and_confirm_transaction(&create_account_tx).await?;
+    client
+        .send_and_confirm_transaction(&create_account_tx)
+        .await?;
     println!("  Account created successfully");
     Ok(())
 }
@@ -457,7 +586,9 @@ async fn execute_verifier(
 
 mod prepare_input {
     use felt::Felt;
-    use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
+    use swiftness_proof_parser::{
+        json_parser, transform::TransformTo, StarkProof as StarkProofParser,
+    };
     use types::funvec::FunVec;
     use types::swiftness::commitment::types::Decommitment;
     use types::swiftness::global_values::InteractionElements;

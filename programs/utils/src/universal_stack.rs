@@ -1,15 +1,14 @@
-use types::swiftness::global_values::{GlobalValues, InteractionElements};
-use types::swiftness::stark::types::{
-    cast_struct_to_slice, cast_struct_to_slice_mut, cast_slice_to_struct,
-    cast_slice_to_struct_mut, StarkCommitment, StarkProof, VerifyVariables,
+use crate::{
+    AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData, ProofData,
+    ProofDataDecommitment, ProofDataVerification, Scheduler, StarkCommitmentTrait,
+    StarkVerifyTrait, BITS_SIZE, CACHE_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE,
+    LENGTH_SIZE, N_CONSTRAINTS, OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE,
 };
 use felt::Felt;
-use crate::{
-    AccountCast, BidirectionalStack, CacheStorage, ExtendedProofData, ProofData,
-    ProofDataDecommitment, ProofDataVerification, Scheduler, StarkCommitmentTrait,
-    StarkVerifyTrait, CachedProofData,
-    BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
-    OODS_VALUES_SIZE, POSEIDON_BITS_SIZE, POWS_SIZE, CACHE_SIZE,
+use types::swiftness::global_values::{GlobalValues, InteractionElements};
+use types::swiftness::stark::types::{
+    cast_slice_to_struct, cast_slice_to_struct_mut, cast_struct_to_slice, cast_struct_to_slice_mut,
+    StarkCommitment, StarkProof, VerifyVariables,
 };
 
 /// Simple error type for UniversalStackAccount to avoid cyclic dependencies

@@ -6,8 +6,8 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use utils::UniversalStackAccount;
 use universal_verifier::UniversalVerifierInstruction;
+use utils::UniversalStackAccount;
 
 #[tokio::main]
 async fn main() -> client::Result<()> {
@@ -24,12 +24,14 @@ async fn main() -> client::Result<()> {
 
     // Setup universal_verifier program
     let universal_program_path = Path::new("target/deploy/universal_verifier.so");
-    let universal_program_id = setup_program(&client, &payer, &config, universal_program_path).await?;
+    let universal_program_id =
+        setup_program(&client, &payer, &config, universal_program_path).await?;
     println!("Universal verifier program ID: {}", universal_program_id);
 
     // Setup verifier1 program
     let verifier1_program_path = Path::new("target/deploy/verifier_1.so");
-    let verifier1_program_id = setup_program(&client, &payer, &config, verifier1_program_path).await?;
+    let verifier1_program_id =
+        setup_program(&client, &payer, &config, verifier1_program_path).await?;
     println!("Verifier1 program ID: {}", verifier1_program_id);
 
     // Create stack account owned by universal_verifier
@@ -54,7 +56,9 @@ async fn main() -> client::Result<()> {
         client.get_latest_blockhash().await?,
     );
 
-    client.send_and_confirm_transaction(&create_account_tx).await?;
+    client
+        .send_and_confirm_transaction(&create_account_tx)
+        .await?;
     println!("✓ Stack account created (owner: universal_verifier)");
 
     // Initialize the account with front_index = 0
@@ -62,7 +66,7 @@ async fn main() -> client::Result<()> {
     let init_bytes = unsafe {
         std::slice::from_raw_parts(
             init_data.as_ptr() as *const u8,
-            std::mem::size_of_val(&init_data)
+            std::mem::size_of_val(&init_data),
         )
     };
 
@@ -93,7 +97,7 @@ async fn main() -> client::Result<()> {
         universal_program_id,
         &UniversalVerifierInstruction::TestCPI(verifier1_program_id.to_bytes()),
         vec![
-            AccountMeta::new(stack_account.pubkey(), true),  // Changed to TRUE - stack_account is signer!
+            AccountMeta::new(stack_account.pubkey(), true), // Changed to TRUE - stack_account is signer!
             AccountMeta::new_readonly(verifier1_program_id, false),
         ],
     );
@@ -101,7 +105,7 @@ async fn main() -> client::Result<()> {
     let test_tx = Transaction::new_signed_with_payer(
         &[test_cpi_ix],
         Some(&payer.pubkey()),
-        &[&payer, &stack_account],  // Added stack_account as signer!
+        &[&payer, &stack_account], // Added stack_account as signer!
         client.get_latest_blockhash().await?,
     );
 
@@ -115,7 +119,9 @@ async fn main() -> client::Result<()> {
         Err(e) => {
             println!("✗✗✗ CPI TEST FAILED ✗✗✗");
             println!("Error: {:?}", e);
-            println!("\nResult: verifier1 CANNOT modify account owned by universal_verifier via CPI");
+            println!(
+                "\nResult: verifier1 CANNOT modify account owned by universal_verifier via CPI"
+            );
             println!("This contradicts the Solana documentation.");
         }
     }

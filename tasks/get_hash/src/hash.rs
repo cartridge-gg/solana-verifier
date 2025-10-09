@@ -170,7 +170,7 @@ impl Executable for GetHash {
                 };
 
                 let mut total_elements = 5; // basic fields
-                // total_elements += dynamic_params_len;
+                                            // total_elements += dynamic_params_len;
                 total_elements += segments_len * 2;
                 total_elements += 5; // padding_addr, padding_value, headers_len+1, main_page_len, main_page_hash
                 total_elements += headers_len * 3;
