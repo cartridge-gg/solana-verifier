@@ -6,8 +6,7 @@ use types::swiftness::stark::types::{
 };
 use utils::{
     AccountCast, BidirectionalStack, CacheStorage, CachedProofData, ExtendedProofData, ProofData,
-    ProofDataDecommitment, ProofDataVerification, StarkCommitmentTrait, StarkVerifyTrait,
-    VerifierMode, CACHE_SIZE,
+    ProofDataDecommitment, ProofDataVerification, StarkCommitmentTrait, StarkVerifyTrait, CACHE_SIZE,
 };
 use utils::{
     BITS_SIZE, CAPACITY, COLUMN_VALUES_SIZE, DOMAINS_SIZE, LENGTH_SIZE, N_CONSTRAINTS,
@@ -18,7 +17,6 @@ use utils::{
 #[repr(C)]
 #[derive(Debug)]
 pub struct BidirectionalStackAccount {
-    pub mode: VerifierMode,
     pub front_index: usize,
     pub back_index: usize,
     pub buffer: [u8; CAPACITY],
@@ -38,7 +36,6 @@ pub struct BidirectionalStackAccount {
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
         Self {
-            mode: VerifierMode::Verifier1,
             front_index: 0,
             back_index: CAPACITY,
             buffer: [0; CAPACITY],

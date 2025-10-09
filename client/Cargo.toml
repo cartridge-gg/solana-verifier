@@ -30,7 +30,6 @@ verifier-1.workspace = true
 verifier-2.workspace = true
 verifier-3.workspace = true
 verifier-4.workspace = true
-universal-verifier.workspace = true
 validate-public-input.workspace = true
 poseidon.workspace = true
 pedersen.workspace = true

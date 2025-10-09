@@ -15,7 +15,7 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use utils::{AccountCast, BidirectionalStack, Executable, UniversalStackAccount};
+use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
@@ -295,7 +295,7 @@ async fn async_main() -> client::Result<()> {
 
     // Read final results
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    let stack = UniversalStackAccount::cast_mut(&mut account_data);
+    let stack = Verifier1StackAccount::cast_mut(&mut account_data);
 
     let result_program_hash = Felt::from_bytes_be_slice(stack.borrow_front());
     stack.pop_front();
@@ -513,7 +513,6 @@ mod prepare_input {
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use utils::UniversalStackAccount;
     use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 
     /// Prepare initial data for Stage 1

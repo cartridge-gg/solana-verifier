@@ -23,7 +23,6 @@ verifier-1 = { path = "./programs/verifier1" }
 verifier-2 = { path = "./programs/verifier2" }
 verifier-3 = { path = "./programs/verifier3" }
 verifier-4 = { path = "./programs/verifier4" }
-universal-verifier = { path = "./programs/universal_verifier" }
 
 utils = { path = "./programs/utils" }
 

@@ -8,7 +8,7 @@ use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof, VerifyVariables};
 use utils::ProofDataVerification;
-use utils::{AccountCast, BidirectionalStack, VerifierMode, CACHE_SIZE, N_CONSTRAINTS};
+use utils::{AccountCast, BidirectionalStack, CACHE_SIZE, N_CONSTRAINTS};
 use utils::{CacheStorage, CachedProofData, ExtendedProofData, ProofData, ProofDataDecommitment};
 use utils::{StarkCommitmentTrait, StarkVerifyTrait};
 use utils::{
@@ -19,7 +19,6 @@ use utils::{
 #[repr(C)]
 #[derive(Debug)]
 pub struct BidirectionalStackAccount {
-    pub mode: VerifierMode,
     pub front_index: usize,
     pub back_index: usize,
     pub buffer: [u8; CAPACITY],
@@ -39,7 +38,6 @@ pub struct BidirectionalStackAccount {
 impl Default for BidirectionalStackAccount {
     fn default() -> Self {
         Self {
-            mode: VerifierMode::Verifier2,
             front_index: 0,
             back_index: CAPACITY,
             buffer: [0; CAPACITY],

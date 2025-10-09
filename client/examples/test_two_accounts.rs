@@ -6,9 +6,10 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use utils::UniversalStackAccount;
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
+use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
+use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
 
 #[tokio::main]
 async fn main() -> client::Result<()> {
@@ -32,7 +33,7 @@ async fn main() -> client::Result<()> {
     let verifier2_program_id = setup_program(&client, &payer, &config, verifier2_path).await?;
     println!("Verifier2 program ID: {}", verifier2_program_id);
 
-    let space = size_of::<UniversalStackAccount>();
+    let space = size_of::<Verifier1StackAccount>();
     println!("\nAccount space: {} bytes", space);
 
     // Create account1 (owned by verifier1)

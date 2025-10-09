@@ -17,10 +17,6 @@ pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
 pub const CACHE_SIZE: usize = 147480;
-
-// Universal stack account module
-pub mod universal_stack;
-pub use universal_stack::{UniversalStackAccount, UniversalStackError, VerifierMode};
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
     /// Cast a slice to an immutable reference of Self
