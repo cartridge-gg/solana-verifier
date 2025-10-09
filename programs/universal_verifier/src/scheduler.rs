@@ -10,7 +10,6 @@ pub trait UniversalStackExecute {
     fn execute(&mut self);
 }
 // For tests: we need to actually execute tasks since CPI doesn't work locally
-#[cfg(not(target_os = "solana"))]
 impl UniversalStackExecute for utils::UniversalStackAccount {
     fn execute(&mut self) {
         use utils::BidirectionalStack;
@@ -55,13 +54,5 @@ impl UniversalStackExecute for utils::UniversalStackAccount {
                 }
             }
         }
-    }
-}
-// On Solana: this should never be called directly
-#[cfg(target_os = "solana")]
-impl UniversalStackExecute for utils::UniversalStackAccount {
-    fn execute(&mut self) {
-        // On-chain, this should never be called - use CPI instead
-        panic!("Universal verifier should not execute tasks directly on-chain");
     }
 }
