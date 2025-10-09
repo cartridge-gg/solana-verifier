@@ -6,7 +6,7 @@ use types::{
     swiftness::{
         air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
         global_values::InteractionElements,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
     },
 };
 use utils::{

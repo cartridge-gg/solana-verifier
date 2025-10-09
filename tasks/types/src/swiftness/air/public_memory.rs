@@ -2,7 +2,7 @@ use crate::funvec::{FunVec, FUNVEC_SEGMENTS};
 use felt::Felt;
 
 use super::{
-    dynamic::DynamicParams,
+    // dynamic::DynamicParams,
     types::{ContinuousPageHeader, Page, SegmentInfo},
 };
 use felt::NonZeroFelt;

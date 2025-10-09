@@ -1,5 +1,3 @@
-use utils::BidirectionalStack;
-
 // Include the minimal dispatch code from build.rs
 // On Solana: this is empty stub that panics
 // In tests: we need actual dispatch, so we'll override it
@@ -11,7 +9,6 @@ include!(concat!(
 pub trait UniversalStackExecute {
     fn execute(&mut self);
 }
-
 // For tests: we need to actually execute tasks since CPI doesn't work locally
 #[cfg(not(target_os = "solana"))]
 impl UniversalStackExecute for utils::UniversalStackAccount {
@@ -60,7 +57,6 @@ impl UniversalStackExecute for utils::UniversalStackAccount {
         }
     }
 }
-
 // On Solana: this should never be called directly
 #[cfg(target_os = "solana")]
 impl UniversalStackExecute for utils::UniversalStackAccount {

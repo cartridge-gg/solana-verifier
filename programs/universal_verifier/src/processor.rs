@@ -89,7 +89,7 @@ impl Processor {
         // Read the current mode to determine which verifier to call
         let mode = {
             let data = stack_account.try_borrow_data()?;
-            let stack = UniversalStackAccount::cast(&*data);
+            let stack = UniversalStackAccount::cast(*data);
             stack.mode()
         };
 
@@ -188,7 +188,7 @@ impl Processor {
         // Read front_index before CPI
         let front_index_before = {
             let data = stack_account.try_borrow_data()?;
-            let stack = UniversalStackAccount::cast(&*data);
+            let stack = UniversalStackAccount::cast(*data);
             stack.front_index
         };
         msg!("Before CPI: front_index = {}", front_index_before);
@@ -214,7 +214,7 @@ impl Processor {
         // Read front_index after CPI
         let front_index_after = {
             let data = stack_account.try_borrow_data()?;
-            let stack = UniversalStackAccount::cast(&*data);
+            let stack = UniversalStackAccount::cast(*data);
             stack.front_index
         };
         msg!("After CPI: front_index = {}", front_index_after);

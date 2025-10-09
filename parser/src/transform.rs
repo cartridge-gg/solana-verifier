@@ -1,7 +1,7 @@
 use crate::stark_proof;
 use felt::Felt;
 use types::funvec::FunVec;
-use types::swiftness::air::dynamic::DynamicParams;
+// use types::swiftness::air::dynamic::DynamicParams;
 use types::swiftness::air::public_memory::PublicInput as PublicInputVerifier;
 use types::swiftness::air::trace::config::Config as TraceConfigVerifier;
 use types::swiftness::air::trace::Decommitment as TraceDecommitmentVerifier;

@@ -4,7 +4,7 @@ use types::swiftness::air::consts::*;
 use types::swiftness::air::recursive_with_poseidon::consts::FELT_1;
 use types::swiftness::stark::types::StarkProof;
 use utils::ProofDataDecommitment;
-use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
+use utils::{impl_type_identifiable, BidirectionalStack, Executable, TypeIdentifiable};
 
 // Macro to maintain readability: column_row[col][row] -> mask_values[index]
 // Maps column_row notation to flat array indices based on the original pattern

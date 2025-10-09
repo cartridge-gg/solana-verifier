@@ -76,4 +76,4 @@ jobs:
         run: | 
           solana-test-validator --quiet &
           sleep 10 &
-          cargo run --example full_flow
+          cargo run --example verify_universal

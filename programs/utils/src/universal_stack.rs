@@ -102,9 +102,10 @@ impl Default for UniversalStackAccount {
 impl UniversalStackAccount {
     /// Create a new UniversalStackAccount for a specific verifier mode
     pub fn new(mode: VerifierMode) -> Self {
-        let mut account = Self::default();
-        account.mode = mode;
-        account
+        Self {
+            mode,
+            ..Self::default()
+        }
     }
 
     /// Switch to a different verifier mode
@@ -458,7 +459,7 @@ impl ProofDataVerification for UniversalStackAccount {
         let stark_commitment_bytes = cast_struct_to_slice(&self.stark_commitment);
         assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
-        (&*stark_commitment, &mut self.constraint_coefficients)
+        (stark_commitment, &mut self.constraint_coefficients)
     }
 }
 
