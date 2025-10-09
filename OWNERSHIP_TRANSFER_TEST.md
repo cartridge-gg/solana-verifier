@@ -1,76 +1,76 @@
-# Test Transferu Własności Konta (Ownership Transfer)
+# Account Ownership Transfer Test
 
-## Zmiany
+## Changes
 
-### 1. Nowa Instrukcja w Verifier1: `TransferOwnership`
+### 1. New Instruction in Verifier1: `TransferOwnership`
 
-Dodano instrukcję umożliwiającą zmianę właściciela konta:
+Added an instruction to enable account ownership transfer:
 
-**Pliki zmodyfikowane:**
-- `programs/verifier1/src/instruction.rs` - dodano `TransferOwnership`
-- `programs/verifier1/src/processor.rs` - implementacja `process_transfer_ownership()`
+**Modified Files:**
+- `programs/verifier1/src/instruction.rs` - added `TransferOwnership`
+- `programs/verifier1/src/processor.rs` - implementation of `process_transfer_ownership()`
 
-**Jak działa:**
+**How it works:**
 ```rust
-// Krok 1: Resize do 0 bajtów (wymagane przed transferem)
+// Step 1: Resize to 0 bytes (required before transfer)
 target_account.resize(0)?;
 
-// Krok 2: Przypisz do nowego właściciela
+// Step 2: Assign to new owner
 target_account.assign(new_owner_account.key);
 
-// Krok 3: Resize z powrotem do oryginalnego rozmiaru
+// Step 3: Resize back to original size
 target_account.resize(original_size)?;
 ```
 
-**Uwaga:** Po transferze dane w koncie są wyzerowane! Trzeba je skopiować z powrotem.
+**Note:** After transfer, the account data is zeroed! You need to copy it back.
 
-### 2. Dodano `TestExecute` do Verifier2
+### 2. Added `TestExecute` to Verifier2
 
-**Pliki zmodyfikowane:**
-- `programs/verifier2/src/instruction.rs` - dodano `TestExecute`
-- `programs/verifier2/src/processor.rs` - implementacja `process_test_execute()`
+**Modified Files:**
+- `programs/verifier2/src/instruction.rs` - added `TestExecute`
+- `programs/verifier2/src/processor.rs` - implementation of `process_test_execute()`
 
-Ta instrukcja po prostu inkrementuje `front_index` - służy do testowania czy program może modyfikować konto.
+This instruction simply increments `front_index` - used to test if the program can modify the account.
 
-### 3. Rozszerzony Test: `test_two_accounts.rs`
+### 3. Extended Test: `test_two_accounts.rs`
 
-Test teraz sprawdza pełny przepływ ping-pong z transferem własności:
+The test now validates the full ping-pong flow with ownership transfer:
 
-**Krok 1:** Verifier1 modyfikuje account1 (właściciel: verifier1)
-- Inkrementuje `front_index`
+**Step 1:** Verifier1 modifies account1 (owner: verifier1)
+- Increments `front_index`
 
-**Krok 2:** Verifier2 kopiuje z account1 → account2
-- Account1: readonly, właściciel verifier1
-- Account2: writable, właściciel verifier2
+**Step 2:** Verifier2 copies from account1 → account2
+- Account1: readonly, owner verifier1
+- Account2: writable, owner verifier2
 
-**Krok 3:** Transfer własności account1: verifier1 → verifier2 ✨ **NOWE**
-- Verifier1 wykonuje `TransferOwnership`
-- Dane są wyzerowane podczas transferu
-- Weryfikacja nowego właściciela
+**Step 3:** Transfer ownership account1: verifier1 → verifier2 ✨ **NEW**
+- Verifier1 executes `TransferOwnership`
+- Data is zeroed during transfer
+- Verify new owner
 
-**Krok 4:** Verifier2 modyfikuje account1 (nowy właściciel: verifier2) ✨ **NOWE**
-- Weryfikuje że verifier2 może teraz pisać do account1
-- Inkrementuje `front_index`
+**Step 4:** Verifier2 modifies account1 (new owner: verifier2) ✨ **NEW**
+- Verifies that verifier2 can now write to account1
+- Increments `front_index`
 
-## Jak Uruchomić Test
+## How to Run the Test
 
-### 1. Skompiluj programy
+### 1. Compile programs
 ```bash
 cargo build-sbf --manifest-path programs/verifier1/Cargo.toml
 cargo build-sbf --manifest-path programs/verifier2/Cargo.toml
 ```
 
-### 2. Uruchom lokalny validator (w osobnym terminalu)
+### 2. Start local validator (in separate terminal)
 ```bash
 solana-test-validator
 ```
 
-### 3. Uruchom test
+### 3. Run the test
 ```bash
 cargo run --example test_two_accounts
 ```
 
-## Oczekiwany Output
+## Expected Output
 
 ```
 === Two Accounts Test: Verifier1 → Verifier2 ===
@@ -115,35 +115,35 @@ Account1 new owner: <verifier2_id>
 ✓✓✓ ALL TESTS PASSED! ✓✓✓
 ```
 
-## Implikacje dla Architektury Ping-Pong
+## Implications for Ping-Pong Architecture
 
-Ten test potwierdza, że mechanizm transferu własności działa! Możemy teraz zaimplementować pełny przepływ dla 4 weryfikatorów:
+This test confirms that the ownership transfer mechanism works! We can now implement the full flow for 4 verifiers:
 
-1. **Verifier1** → modyfikuje account1
-2. **Verifier2** → kopiuje z account1, modyfikuje account2
+1. **Verifier1** → modifies account1
+2. **Verifier2** → copies from account1, modifies account2
 3. **Transfer** account1: verifier1 → verifier3
-4. **Verifier3** → kopiuje z account2, modyfikuje account1
+4. **Verifier3** → copies from account2, modifies account1
 5. **Transfer** account2: verifier2 → verifier4
-6. **Verifier4** → kopiuje z account1, modyfikuje account2 (wynik końcowy)
+6. **Verifier4** → copies from account1, modifies account2 (final result)
 
-## Uwagi Techniczne
+## Technical Notes
 
-### Wyzerowanie Danych
-Po `resize(0)` i `resize(original_size)` dane są wyzerowane! Dlatego po transferze trzeba:
-- Albo skopiować dane z powrotem z drugiego konta
-- Albo reinicjalizować strukturę danych
+### Data Zeroing
+After `resize(0)` and `resize(original_size)`, data is zeroed! Therefore, after transfer you need to:
+- Either copy data back from the second account
+- Or reinitialize the data structure
 
 ### Rent
-Transfer zachowuje lamports (rent), więc nie trzeba ponownie płacić za rent exemption.
+Transfer preserves lamports (rent), so you don't need to pay for rent exemption again.
 
-### Bezpieczeństwo
-- Tylko aktualny właściciel może wykonać transfer
-- Program weryfikuje ownership przed transferem
-- Po transferze stary właściciel traci dostęp do zapisu
+### Security
+- Only the current owner can execute transfer
+- Program verifies ownership before transfer
+- After transfer, the old owner loses write access
 
-## Status w PING_PONG_ARCHITECTURE.md
+## Status in PING_PONG_ARCHITECTURE.md
 
-Zaktualizuj checklist:
+Update checklist:
 - [x] CopyFromAccount instruction in all verifiers
 - [x] Test for verifier1 → verifier2 copy
 - [x] Ownership transfer mechanism ✅ **DONE**
