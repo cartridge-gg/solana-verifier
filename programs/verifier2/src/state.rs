@@ -2,6 +2,8 @@ use crate::error::VerifierError;
 use felt::Felt;
 use types::swiftness::global_values::GlobalValues;
 use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::cast_slice_to_struct;
+use types::swiftness::stark::types::cast_slice_to_struct_mut;
 use types::swiftness::stark::types::cast_struct_to_slice_mut;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::{cast_struct_to_slice, StarkProof, VerifyVariables};
@@ -179,16 +181,20 @@ impl BidirectionalStack for BidirectionalStackAccount {
 }
 
 impl CacheStorage for BidirectionalStackAccount {
-    fn store_in_cache<T>(&mut self, _data: &T) {
-        unreachable!("store_in_cache not supported in verifier2")
+    fn store_in_cache<T>(&mut self, data: &T) {
+        let bytes = cast_struct_to_slice(data);
+        assert!(bytes.len() <= CACHE_SIZE, "Data too large for cache");
+        self.cached_data[..bytes.len()].copy_from_slice(bytes);
     }
 
     fn borrow_from_cache<T>(&self) -> &T {
-        unreachable!("borrow_from_cache not supported in verifier2")
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct::<T>(&self.cached_data[..size])
     }
 
     fn borrow_from_cache_mut<T>(&mut self) -> &mut T {
-        unreachable!("borrow_from_cache_mut not supported in verifier2")
+        let size = std::mem::size_of::<T>();
+        cast_slice_to_struct_mut::<T>(&mut self.cached_data[..size])
     }
 }
 

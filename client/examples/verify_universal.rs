@@ -15,15 +15,12 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use types::swiftness::stark::types::FriVerifyData;
-use utils::{AccountCast, BidirectionalStack, CacheStorage, Executable, UniversalStackAccount};
+use utils::{AccountCast, BidirectionalStack, Executable, UniversalStackAccount};
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
 use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
-use verifier_3::instruction::VerifierInstruction as Verifier3Instruction;
 use verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount;
-use verifier_4::instruction::VerifierInstruction as Verifier4Instruction;
 use verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount;
 
 use verify_1::verify::Verify as Verify_Stage_One;
@@ -114,7 +111,7 @@ async fn async_main() -> client::Result<()> {
     let account1 = Keypair::new();
     let account2 = Keypair::new();
 
-    let space = size_of::<UniversalStackAccount>();
+    let space = size_of::<Verifier1StackAccount>();
     println!(
         "\n✓ Creating account1: {} (owner: verifier1)",
         account1.pubkey()
@@ -131,7 +128,7 @@ async fn async_main() -> client::Result<()> {
     // ========== STAGE 1: Verifier1 on Account1 ==========
     println!("\n========== STAGE 1: Verifier1 on Account1 ==========");
 
-    // Prepare account data for Verifier1
+    // Prepare initial data for Verifier1 (only needed for Stage 1)
     let stack_bytes = prepare_input::get_bytes_stage1();
     set_account_data_chunked(
         &client,
@@ -168,41 +165,18 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    println!("Transactions executed");
-    // Read results
-    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
-    let stack = UniversalStackAccount::cast_mut(&mut account_data);
-
-    let counter = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let digest = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let commitment = stack.stark_commitment.clone();
-
-    println!("  Counter: {:?}", counter);
-    println!("  Digest: {:?}", digest);
     println!("✓ Stage 1 completed on account1");
 
     // ========== STAGE 2: Verifier2 on Account2 (PING-PONG: copy account1 → account2) ==========
     println!("\n========== STAGE 2: Verifier2 on Account2 ==========");
 
-    // PING-PONG: Copy data from account1 to account2
+    // PING-PONG: Copy all data from account1 to account2
     println!("  Copying account1 → account2...");
     copy_from_account(&client, &payer, &verifier2_program_id, &account1, &account2).await?;
 
-    // Prepare account data for Verifier2
-    let stack_bytes = prepare_input::get_bytes_stage2(&commitment);
-    set_account_data_chunked(
-        &client,
-        &payer,
-        &verifier2_program_id,
-        &account2,
-        &stack_bytes,
-    )
-    .await?;
-
-    // Push Verify task
-    let verify_task = Verify_Stage_Two::new(digest, counter);
+    // Push Verify task (digest and counter are on stack, copied from account1)
+    // Verify_Stage_Two will read them from stack in execute()
+    let verify_task = Verify_Stage_Two::default();
     push_task(
         &client,
         &payer,
@@ -227,25 +201,10 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // Read results
-    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    let stack = UniversalStackAccount::cast_mut(&mut account_data);
-
-    let queries = stack.verify_variables.queries_indexes.to_vec();
-    println!("  Extracted {} queries", queries.len());
     println!("✓ Stage 2 completed on account2");
 
     // ========== STAGE 3: Verifier3 on Account1 (TRANSFER ownership account1: verifier1 → verifier3) ==========
     println!("\n========== STAGE 3: Verifier3 on Account1 ==========");
-
-    // Debug: Check current ownership
-    let account1_before = client.get_account(&account1.pubkey()).await?;
-    let account2_before = client.get_account(&account2.pubkey()).await?;
-    println!("  DEBUG: Before transfer:");
-    println!("    account1 owner: {}", account1_before.owner);
-    println!("    account2 owner: {}", account2_before.owner);
-    println!("    verifier1 program: {}", verifier1_program_id);
-    println!("    verifier3 program: {}", verifier3_program_id);
 
     // Transfer ownership of account1 from verifier1 to verifier3
     println!("  Transferring ownership account1: verifier1 → verifier3...");
@@ -258,31 +217,11 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // Debug: Verify ownership after transfer
-    let account1_after = client.get_account(&account1.pubkey()).await?;
-    println!("  DEBUG: After transfer:");
-    println!("    account1 owner: {}", account1_after.owner);
-
-    // PING-PONG: Copy data from account2 back to account1
+    // PING-PONG: Copy all data from account2 to account1
     println!("  Copying account2 → account1...");
-    println!(
-        "  DEBUG: Calling copy_from_account with dest_program={}",
-        verifier3_program_id
-    );
     copy_from_account(&client, &payer, &verifier3_program_id, &account2, &account1).await?;
 
-    // Prepare account data for Verifier3
-    let stack_bytes = prepare_input::get_bytes_stage3(&commitment, &queries);
-    set_account_data_chunked(
-        &client,
-        &payer,
-        &verifier3_program_id,
-        &account1,
-        &stack_bytes,
-    )
-    .await?;
-
-    // Push Verify task
+    // Push Verify task (Verifier3 uses copied data from account2)
     let verify_task = Verify_Stage_Three::new();
     push_task(
         &client,
@@ -308,10 +247,6 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // Read results from cache
-    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
-    let stack = UniversalStackAccount::cast_mut(&mut account_data);
-    let stark_verify_data = stack.borrow_from_cache::<FriVerifyData>().clone();
     println!("✓ Stage 3 completed on account1 (owner: verifier3)");
 
     // ========== STAGE 4: Verifier4 on Account2 (TRANSFER ownership account2: verifier2 → verifier4) ==========
@@ -328,22 +263,11 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // PING-PONG: Copy data from account1 to account2
+    // PING-PONG: Copy all data from account1 to account2
     println!("  Copying account1 → account2...");
     copy_from_account(&client, &payer, &verifier4_program_id, &account1, &account2).await?;
 
-    // Prepare account data for Verifier4
-    let stack_bytes = prepare_input::get_bytes_stage4(&commitment, &stark_verify_data);
-    set_account_data_chunked(
-        &client,
-        &payer,
-        &verifier4_program_id,
-        &account2,
-        &stack_bytes,
-    )
-    .await?;
-
-    // Push Verify task
+    // Push Verify task (Verifier4 uses copied data from account1)
     let verify_task = Verify_Stage_Four::new();
     push_task(
         &client,
@@ -585,23 +509,22 @@ async fn execute_verifier(
 }
 
 mod prepare_input {
-    use felt::Felt;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use types::funvec::FunVec;
-    use types::swiftness::commitment::types::Decommitment;
-    use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use utils::{CacheStorage, StarkCommitmentTrait, UniversalStackAccount};
+    use utils::UniversalStackAccount;
+    use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 
+    /// Prepare initial data for Stage 1
+    /// Only Stage 1 needs initial data setup - all other stages use ping-pong copying
     pub fn get_bytes_stage1() -> Vec<u8> {
         let proof_str = include_str!("../../example_proof/saya.json");
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = UniversalStackAccount::default();
+        let mut stack = Verifier1StackAccount::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
             .unsent_commitment
@@ -609,84 +532,6 @@ mod prepare_input {
             .as_slice()
             .try_into()
             .unwrap();
-
-        cast_struct_to_slice_mut(&mut stack).to_vec()
-    }
-
-    pub fn get_bytes_stage2(
-        stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
-    ) -> Vec<u8> {
-        let proof_str = include_str!("../../example_proof/saya.json");
-        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
-        let proof = StarkProofParser::try_from(proof_json).unwrap();
-        let proof_verifier = proof.transform_to();
-
-        let mut stack = UniversalStackAccount::default();
-        stack.proof = proof_verifier.clone();
-        stack.oods_values = proof_verifier
-            .unsent_commitment
-            .oods_values
-            .as_slice()
-            .try_into()
-            .unwrap();
-        stack.set_stark_commitment(stark_commitment);
-
-        cast_struct_to_slice_mut(&mut stack).to_vec()
-    }
-
-    pub fn get_bytes_stage3(
-        stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
-        queries: &[Felt],
-    ) -> Vec<u8> {
-        let proof_str = include_str!("../../example_proof/saya.json");
-        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
-        let proof = StarkProofParser::try_from(proof_json).unwrap();
-        let proof_verifier = proof.transform_to();
-
-        let mut stack = UniversalStackAccount::default();
-        stack.proof = proof_verifier.clone();
-        stack.oods_values = proof_verifier
-            .unsent_commitment
-            .oods_values
-            .as_slice()
-            .try_into()
-            .unwrap();
-        stack.set_stark_commitment(stark_commitment);
-
-        let stark_verify_data = types::swiftness::stark::types::FriVerifyData {
-            queries: FunVec::from_vec(queries.to_vec()),
-            fri_decommitment: Decommitment::default(),
-            current_layer: 0,
-            layer_queries: FunVec::default(),
-            active_query_count: 0,
-            working_elements: FunVec::default(),
-            working_indices: FunVec::default(),
-            working_y_values: FunVec::default(),
-            coset_size: Felt::ZERO,
-            eval_point: Felt::ZERO,
-            sibling_witness: FunVec::default(),
-            next_x_inv_value: Felt::ZERO,
-            coset_x_inv: Felt::ZERO,
-            current_coset_index: 0,
-        };
-        stack.store_in_cache(&stark_verify_data);
-
-        cast_struct_to_slice_mut(&mut stack).to_vec()
-    }
-
-    pub fn get_bytes_stage4(
-        stark_commitment: &types::swiftness::stark::types::StarkCommitment<InteractionElements>,
-        stark_verify_data: &types::swiftness::stark::types::FriVerifyData,
-    ) -> Vec<u8> {
-        let proof_str = include_str!("../../example_proof/saya.json");
-        let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
-        let proof = StarkProofParser::try_from(proof_json).unwrap();
-        let proof_verifier = proof.transform_to();
-
-        let mut stack = UniversalStackAccount::default();
-        stack.proof = proof_verifier;
-        stack.set_stark_commitment(stark_commitment);
-        stack.store_in_cache(stark_verify_data);
 
         cast_struct_to_slice_mut(&mut stack).to_vec()
     }

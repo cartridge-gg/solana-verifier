@@ -58,6 +58,12 @@ impl Executable for Verify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             VerifyStep::GenerateQueries => {
+                // Read digest and counter from stack (left by Stage 1, copied via ping-pong)
+                self.counter = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+                self.digest = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
+
                 let proof = stack.get_proof_reference::<StarkProof>();
                 self.total_queries = proof.config.n_queries.to_biguint().try_into().unwrap();
 

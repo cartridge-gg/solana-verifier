@@ -6,7 +6,7 @@ use types::{
     swiftness::{
         air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
         global_values::InteractionElements,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
     },
 };
 use utils::{
@@ -18,6 +18,7 @@ use crate::eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBound
 use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum StarkVerifyStep {
     ComputeQueryPoints,
     EvalOodsBoundaryPoly,
@@ -60,8 +61,13 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
+                // let queries_indexes = {
+                //     let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                //     verify_variables.queries_indexes.to_vec()
+                // };
                 let queries_len = {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
+                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                    // fri_verify_data.queries = FunVec::from_vec(queries_indexes.to_vec());
                     fri_verify_data.queries.len()
                 };
                 assert!(queries_len != 0, "Queries length is equal to 0");

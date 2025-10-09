@@ -6,7 +6,7 @@ use types::{
     swiftness::{
         commitment::table::types::Commitment as TableCommitment,
         global_values::InteractionElements,
-        stark::types::{cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables},
+        stark::types::{cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
     },
 };
 use utils::{
@@ -70,8 +70,16 @@ impl Executable for StarkVerify {
                 }
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    verify_variables.queries_indexes = self.queries;
+                    verify_variables.queries_indexes = self.queries.as_slice().try_into().unwrap();
                 }
+                {
+                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                    fri_verify_data.queries.flush();
+                    let queries = self.queries.as_slice();
+                    for query in queries {
+                        fri_verify_data.queries.push(*query);
+                    }
+                };
 
                 for query in self.queries.as_slice().iter().rev() {
                     stack.push_front(&query.to_bytes_be()).unwrap();

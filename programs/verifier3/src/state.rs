@@ -281,18 +281,28 @@ impl StarkCommitmentTrait for BidirectionalStackAccount {
         };
     }
 }
-
 impl StarkVerifyTrait for BidirectionalStackAccount {
     fn get_verify_variables<T: Sized>(&self) -> &T {
-        unreachable!("StarkVerifyTrait not supported in verifier3")
+        let bytes = cast_struct_to_slice(&self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &*(bytes.as_ptr() as *const T) }
     }
 
     fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T {
-        unreachable!("StarkVerifyTrait not supported in verifier3")
+        let bytes = cast_struct_to_slice_mut(&mut self.verify_variables);
+        assert_eq!(bytes.len(), std::mem::size_of::<T>());
+        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
     }
 
-    fn set_verify_variables<T: Sized>(&mut self, _verify_variables: &T) {
-        unreachable!("StarkVerifyTrait not supported in verifier3")
+    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T) {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                (verify_variables as *const T) as *const u8,
+                std::mem::size_of::<T>(),
+            )
+        };
+        assert_eq!(bytes.len(), std::mem::size_of::<VerifyVariables>());
+        self.verify_variables = unsafe { std::ptr::read(bytes.as_ptr() as *const VerifyVariables) };
     }
 }
 

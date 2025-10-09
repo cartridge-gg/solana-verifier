@@ -3,6 +3,7 @@ use utils::{impl_type_identifiable, BidirectionalStack};
 use utils::{Executable, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum HadesPhase {
     FirstHalfFullRounds,
     SecondHalfFullRounds,

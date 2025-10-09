@@ -8,6 +8,7 @@ use transcript::transcript::TranscriptReadFelt;
 pub const MAGIC: u64 = 0x0123456789abcded;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum ProofOfWorkStep {
     PrepareInitialHash,
     ComputeInitialHash,

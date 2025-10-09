@@ -45,6 +45,7 @@ pub struct EvalCompositionPolynomial {
     memory_multi_column_perm_perm_interaction_elm: Felt,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum EvalCompositionStep {
     CollectMaskValues,
     ComputePeriodicColumns,
