@@ -7,7 +7,7 @@ use types::{
         commitment::table::types::Commitment as TableCommitment,
         global_values::InteractionElements,
         stark::types::{
-            cast_struct_to_slice, FriVerifyData, StarkCommitment, StarkProof, VerifyVariables,
+            cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
         },
     },
 };

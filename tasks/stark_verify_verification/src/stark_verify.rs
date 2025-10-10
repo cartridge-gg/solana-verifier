@@ -69,9 +69,7 @@ impl Executable for StarkVerify {
                 assert!(queries_len != 0, "Queries length is equal to 0");
 
                 for i in (0..queries_len).rev() {
-                    stack
-                        .push_front(&queries_indexes[i].to_bytes_be())
-                        .unwrap();
+                    stack.push_front(&queries_indexes[i].to_bytes_be()).unwrap();
                 }
                 stack
                     .push_front(&Felt::from(queries_len).to_bytes_be())
