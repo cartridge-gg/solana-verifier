@@ -6,7 +6,7 @@ use types::{
     swiftness::{
         air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
         global_values::InteractionElements,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
     },
 };
 use utils::{
@@ -22,7 +22,6 @@ use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 pub enum StarkVerifyStep {
     ComputeQueryPoints,
     EvalOodsBoundaryPoly,
-    // FriVerify,
     Done,
 }
 
@@ -61,21 +60,17 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
-                // let queries_indexes = {
-                //     let verify_variables: &VerifyVariables = stack.get_verify_variables();
-                //     verify_variables.queries_indexes.to_vec()
-                // };
-                let queries_len = {
-                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
-                    // fri_verify_data.queries = FunVec::from_vec(queries_indexes.to_vec());
-                    fri_verify_data.queries.len()
+                // Use queries_indexes from VerifyVariables instead of cache to avoid access violations
+                let queries_indexes = {
+                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                    verify_variables.queries_indexes
                 };
+                let queries_len = queries_indexes.len();
                 assert!(queries_len != 0, "Queries length is equal to 0");
 
                 for i in (0..queries_len).rev() {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
                     stack
-                        .push_front(&fri_verify_data.queries.at(i).to_bytes_be())
+                        .push_front(&queries_indexes[i].to_bytes_be())
                         .unwrap();
                 }
                 stack
@@ -102,7 +97,6 @@ impl Executable for StarkVerify {
                     .unwrap();
 
                 self.step = StarkVerifyStep::EvalOodsBoundaryPoly;
-                println!("Pushing ComputeQueryPoints task");
                 vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
             }
 
@@ -146,16 +140,8 @@ impl Executable for StarkVerify {
                 }
 
                 self.step = StarkVerifyStep::Done;
-                println!("Pushing EvalOodsBoundaryPoly task");
                 vec![EvalOodsBoundaryPolyAtPoints::new().to_vec_with_type_tag()]
             }
-
-            // StarkVerifyStep::FriVerify => {
-            //     self.step = StarkVerifyStep::Done;
-            //     println!("Pushing FriVerify task");
-            //     // vec![FriVerify::new().to_vec_with_type_tag()]
-            //     vec![]
-            // }
             StarkVerifyStep::Done => {
                 vec![]
             }

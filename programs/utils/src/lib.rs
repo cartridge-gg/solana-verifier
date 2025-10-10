@@ -78,7 +78,6 @@ pub trait StarkCommitmentTrait {
 pub trait StarkVerifyTrait {
     fn get_verify_variables<T: Sized>(&self) -> &T;
     fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T;
-    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T);
 }
 
 /// Basic proof data access - minimal required interface
@@ -132,7 +131,6 @@ pub trait ProofDataDecommitment: ExtendedProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
 }
 
 pub trait ProofDataVerification: ExtendedProofData {
@@ -151,7 +149,6 @@ pub trait ProofDataVerification: ExtendedProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
     fn get_stark_commitment_and_coefficients_mut<T: Sized>(
         &mut self,
     ) -> (&T, &mut [Felt; N_CONSTRAINTS]);

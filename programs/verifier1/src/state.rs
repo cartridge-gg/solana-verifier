@@ -250,10 +250,6 @@ impl StarkVerifyTrait for BidirectionalStackAccount {
     fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T {
         unreachable!("StarkVerifyTrait not supported in verifier1")
     }
-
-    fn set_verify_variables<T: Sized>(&mut self, _verify_variables: &T) {
-        unreachable!("StarkVerifyTrait not supported in verifier1")
-    }
 }
 
 // Dummy implementation of FullProofData for verifier1 (not actually used)
@@ -317,11 +313,6 @@ impl ProofDataDecommitment for BidirectionalStackAccount {
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         &mut self.constraint_coefficients
     }
-
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
-        assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        self.constraint_coefficients.copy_from_slice(coefficients);
-    }
 }
 
 impl ProofDataVerification for BidirectionalStackAccount {
@@ -347,10 +338,6 @@ impl ProofDataVerification for BidirectionalStackAccount {
 
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         &mut self.constraint_coefficients
-    }
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
-        assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        self.constraint_coefficients.copy_from_slice(coefficients);
     }
     fn get_stark_commitment_and_coefficients_mut<T: Sized>(
         &mut self,

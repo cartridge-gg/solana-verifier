@@ -10,6 +10,7 @@ use utils::{
 const DIVISOR: Felt = Felt::from_hex_unchecked("0x100000000000000000000000000000000");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum VerifyStep {
     GenerateQueries,
     GenerateQueriesLoop,

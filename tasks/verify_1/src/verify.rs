@@ -6,6 +6,7 @@ use types::swiftness::air::domains::StarkDomains;
 use validate_public_input::validate::ValidatePublicInput;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum VerifyStep {
     ValidatePublicInput,
     GetHash,

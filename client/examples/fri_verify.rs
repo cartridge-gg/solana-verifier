@@ -11,7 +11,6 @@ use solana_sdk::{
 use solana_system_interface::instruction::create_account;
 use stark_verify_fri::fri_verify::FriVerify;
 use std::{mem::size_of, path::Path};
-use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier_4::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 

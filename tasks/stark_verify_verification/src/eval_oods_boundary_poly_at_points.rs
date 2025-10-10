@@ -74,7 +74,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 stack.pop_front();
                 self.points_count = queries_len.to_biguint().try_into().unwrap();
                 assert!(self.points_count != 0, "Points count is 0");
-                println!("points_count: {}", self.points_count);
                 assert!(
                     self.points_count <= FUNVEC_QUERY_INDICES,
                     "Too many query points: {} > {}",
@@ -205,12 +204,10 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
             EvalOodsBoundaryStep::CollectResult => {
                 let evaluation = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("evaluation: {:?}", evaluation);
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                 fri_verify_data.fri_decommitment.values.push(evaluation);
 
                 self.current_point_index += 1;
-                println!("current_point_index: {}", self.current_point_index);
                 self.step = EvalOodsBoundaryStep::PreparePoint;
                 vec![]
             }

@@ -57,13 +57,6 @@ pub struct Decommitment {
 }
 
 #[repr(C)]
-pub struct FriLayerComputationParams {
-    pub coset_size: Felt,
-    pub fri_group: Vec<Felt>,
-    pub eval_point: Felt,
-}
-
-#[repr(C)]
 #[derive(PartialEq, Eq, Debug, Clone, Default, Copy)]
 pub struct FriLayerQuery {
     pub index: Felt,

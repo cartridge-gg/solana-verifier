@@ -290,17 +290,6 @@ impl StarkVerifyTrait for BidirectionalStackAccount {
         assert_eq!(bytes.len(), std::mem::size_of::<T>());
         unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
     }
-
-    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T) {
-        let bytes = unsafe {
-            std::slice::from_raw_parts(
-                (verify_variables as *const T) as *const u8,
-                std::mem::size_of::<T>(),
-            )
-        };
-        assert_eq!(bytes.len(), std::mem::size_of::<VerifyVariables>());
-        self.verify_variables = unsafe { std::ptr::read(bytes.as_ptr() as *const VerifyVariables) };
-    }
 }
 
 impl ProofDataDecommitment for BidirectionalStackAccount {
@@ -327,10 +316,6 @@ impl ProofDataDecommitment for BidirectionalStackAccount {
     }
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         unreachable!("get_constraint_coefficients_mut not supported in verifier2")
-    }
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
-        assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        self.constraint_coefficients.copy_from_slice(coefficients);
     }
 }
 
@@ -387,11 +372,6 @@ impl ProofDataVerification for BidirectionalStackAccount {
 
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS] {
         &mut self.constraint_coefficients
-    }
-
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]) {
-        assert_eq!(coefficients.len(), N_CONSTRAINTS);
-        self.constraint_coefficients.copy_from_slice(coefficients);
     }
 
     fn get_stark_commitment_and_coefficients_mut<T: Sized>(

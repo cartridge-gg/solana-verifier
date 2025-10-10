@@ -2,6 +2,7 @@ use stark_verify_verification::stark_verify::StarkVerify;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum VerifyStep {
     StarkVerify,
     Done,
