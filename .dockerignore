@@ -1,0 +1,18 @@
+# Build artifacts
+target/
+**/*.so
+**/*.d
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Cargo
+
+# Other
+*.log
+.DS_Store

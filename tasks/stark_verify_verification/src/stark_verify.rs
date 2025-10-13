@@ -104,15 +104,34 @@ impl Executable for StarkVerify {
                 stack.pop_front();
                 let mut points_vec = FunVec::<Felt, FUNVEC_QUERY_INDICES>::default();
 
-                //we need to store points for FriVerify task
+                // Collect all points first to avoid repeated cache access in loop
                 for _ in 0..points_len.to_biguint().try_into().unwrap() {
                     let point = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
+                    points_vec.push(point);
+                }
+
+                // Store points and queries in cache once after collecting all points
+                let queries_indexes = {
+                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                    verify_variables.queries_indexes
+                };
+                {
                     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+
+                    // Store queries from verify_variables
+                    fri_verify_data.queries.flush();
+                    for query in queries_indexes.iter() {
+                        fri_verify_data.queries.push(*query);
+                    }
+
+                    // Store points
                     let fri_decommitment: &mut FriDecommitment =
                         &mut fri_verify_data.fri_decommitment;
-                    fri_decommitment.points.push(point);
-                    points_vec.push(point);
+                    fri_decommitment.points.flush();
+                    for point in points_vec.as_slice() {
+                        fri_decommitment.points.push(*point);
+                    }
                 }
 
                 for point in points_vec.as_slice().iter().rev() {

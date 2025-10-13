@@ -5,6 +5,7 @@ use solana_sdk::{
     signer::Signer,
     transaction::Transaction,
 };
+use solana_system_interface::instruction;
 use verifier_2::state::BidirectionalStackAccount;
 
 use crate::{initialize_client, setup_payer, setup_program, Config, Result};
@@ -34,7 +35,7 @@ pub async fn deploy(config: &Config) -> Result<()> {
     let space = size_of::<BidirectionalStackAccount>();
     info!(size_in_bytes:% = space; "Account space");
 
-    let create_account_ix = solana_system_interface::instruction::create_account(
+    let create_account_ix = instruction::create_account(
         &payer.pubkey(),
         &stack_account.pubkey(),
         client.get_minimum_balance_for_rent_exemption(space).await?,

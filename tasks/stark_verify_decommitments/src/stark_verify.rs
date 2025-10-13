@@ -6,9 +6,7 @@ use types::{
     swiftness::{
         commitment::table::types::Commitment as TableCommitment,
         global_values::InteractionElements,
-        stark::types::{
-            cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables,
-        },
+        stark::types::{cast_struct_to_slice, StarkCommitment, StarkProof, VerifyVariables},
     },
 };
 use utils::{
