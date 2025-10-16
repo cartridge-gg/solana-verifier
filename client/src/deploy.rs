@@ -11,8 +11,6 @@ use solana_sdk::{
 
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
-use verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount;
-use verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount;
 
 pub async fn deploy(config: &Config) -> Result<()> {
     let client = initialize_client(config).await?;
@@ -69,28 +67,6 @@ pub async fn deploy(config: &Config) -> Result<()> {
         "verifier-2",
     )
     .await?;
-
-    // let space = size_of::<Verifier3StackAccount>();
-    // deploy_verifier(
-    //     config,
-    //     &client,
-    //     &payer,
-    //     verifier_3_program_id,
-    //     space,
-    //     "verifier-3",
-    // )
-    // .await?;
-
-    // let space = size_of::<Verifier4StackAccount>();
-    // deploy_verifier(
-    //     config,
-    //     &client,
-    //     &payer,
-    //     verifier_4_program_id,
-    //     space,
-    //     "verifier-4",
-    // )
-    // .await?;
 
     let balance = client.get_balance(&payer.pubkey()).await?;
     let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;

@@ -20,7 +20,113 @@ warning: use of deprecated method `sha3::digest::generic_array::GenericArray::<T
 
 warning: `stark-verify-decommitments` (lib) generated 3 warnings
 warning: verifier-2@0.1.0: Auto-generated code for 19 Executable types across workspace
-warning: verifier-1@0.1.0: Auto-generated code for 26 Executable types across workspace
 warning: verifier-3@0.1.0: Auto-generated code for 15 Executable types across workspace
+warning: verifier-1@0.1.0: Auto-generated code for 26 Executable types across workspace
 warning: verifier-4@0.1.0: Auto-generated code for 24 Executable types across workspace
    Compiling client v0.1.0 (/home/michal/Documents/solana-verifier/client)
+warning: unused import: `verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount`
+  --> client/src/deploy.rs:13:5
+   |
+13 | use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount`
+  --> client/src/deploy.rs:14:5
+   |
+14 | use verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount`
+  --> client/src/deploy.rs:15:5
+   |
+15 | use verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::interact_with_program_instructions`
+ --> client/src/verify.rs:1:5
+  |
+1 | use crate::interact_with_program_instructions;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ClientError`
+ --> client/src/verify.rs:3:74
+  |
+3 | use crate::{initialize_client, send_and_confirm_with_limit, setup_payer, ClientError};
+  |                                                                          ^^^^^^^^^^^
+
+warning: unused import: `solana_sdk::transaction::Transaction`
+ --> client/src/verify.rs:9:5
+  |
+9 | use solana_sdk::transaction::Transaction;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `solana_system_interface::instruction::create_account`
+  --> client/src/verify.rs:15:5
+   |
+15 | use solana_system_interface::instruction::create_account;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `types::swiftness::global_values::InteractionElements`
+  --> client/src/verify.rs:17:5
+   |
+17 | use types::swiftness::global_values::InteractionElements;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `utils::CacheStorage`
+  --> client/src/verify.rs:21:5
+   |
+21 | use utils::CacheStorage;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `verifier_2_program_path`
+  --> client/src/deploy.rs:31:9
+   |
+31 |     let verifier_2_program_path = Path::new("target/deploy/verifier_2.so");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verifier_2_program_path`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `verifier_3_program_path`
+  --> client/src/deploy.rs:32:9
+   |
+32 |     let verifier_3_program_path = Path::new("target/deploy/verifier_3.so");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verifier_3_program_path`
+
+warning: unused variable: `verifier_4_program_path`
+  --> client/src/deploy.rs:33:9
+   |
+33 |     let verifier_4_program_path = Path::new("target/deploy/verifier_4.so");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verifier_4_program_path`
+
+warning: unused variable: `time`
+  --> client/src/verify.rs:55:9
+   |
+55 |     let time = std::time::Instant::now();
+   |         ^^^^ help: if this is intentional, prefix it with an underscore: `_time`
+
+warning: unused variable: `proof_size`
+  --> client/src/verify.rs:63:9
+   |
+63 |     let proof_size = proof_bytes.len();
+   |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proof_size`
+
+warning: unused variable: `limit_instructions`
+   --> client/src/verify.rs:353:9
+    |
+353 |     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
+    |         ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_limit_instructions`
+
+warning: `client` (lib) generated 15 warnings (run `cargo fix --lib -p client` to apply 9 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.07s
+     Running `target/debug/client deploy --rpc-url 'https://api.testnet.solana.com/' --payer-keypair A5XDxHaR9xnrZHfmfzvRKR4KYs2wrkHDBqNRroZKyhKB`
+[2025-10-16T14:40:23Z INFO  client::utils] Using RPC URL rpc_url=https://api.testnet.solana.com/
+[2025-10-16T14:40:23Z INFO  client::utils] Connected to Solana solana_version=3.0.6
+
+thread '<unnamed>' panicked at /home/michal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-keypair-2.2.3/src/lib.rs:74:39:
+called `Result::unwrap()` on an `Err` value: TooShort
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'main' panicked at client/src/main.rs:39:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }

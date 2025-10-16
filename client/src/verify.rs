@@ -1,24 +1,16 @@
-use crate::interact_with_program_instructions;
 use crate::write_keypair_file;
-use crate::{initialize_client, send_and_confirm_with_limit, setup_payer, ClientError};
+use crate::{initialize_client, send_and_confirm_with_limit, setup_payer};
 use crate::{read_keypair_file, Config, Result};
 use felt::Felt;
 use log::info;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
-use solana_sdk::transaction::Transaction;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     signature::Keypair,
     signer::Signer,
 };
-use solana_system_interface::instruction::create_account;
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::global_values::InteractionElements;
-use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::AccountCast;
 use utils::BidirectionalStack;
-use utils::CacheStorage;
 use utils::Executable;
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
@@ -45,29 +37,22 @@ pub async fn verify(config: &Config) -> Result<()> {
     info!(public_key:% = payer.pubkey(); "Using payer");
 
     write_keypair_file(&payer, "keypairs/payer-keypair.json").unwrap();
-    // let program_keypair = read_keypair_file("keypairs/verifier_1-keypair.json").unwrap();
-    // let program_id = program_keypair.pubkey();
-    // info!(program_id:% = program_id; "Using program");
 
-    // let stack_account = read_keypair_file("keypairs/verifier-1-account-keypair.json").unwrap();
-    // info!(public_key:% = stack_account.pubkey(); "Using stack account");
+    // let time = std::time::Instant::now();
 
-    let time = std::time::Instant::now();
-
-    let input = include_str!("../../example_proof/saya.json");
-    let proof_json = serde_json::from_str::<json_parser::StarkProof>(input).unwrap();
-    let proof = StarkProofParser::try_from(proof_json).unwrap();
-
-    let proof_verifier = proof.transform_to();
-    let proof_bytes = cast_struct_to_slice(&proof_verifier);
-    let proof_size = proof_bytes.len();
     info!("\n========== STAGE 1: Verifier1 on Account1 ==========");
 
     let program_keypair = read_keypair_file("keypairs/verifier_1-keypair.json").unwrap();
     let verifier1_program_id = program_keypair.pubkey();
-    let verifier2_program_id = read_keypair_file("keypairs/verifier_2-keypair.json").unwrap().pubkey();
-    let verifier3_program_id = read_keypair_file("keypairs/verifier_3-keypair.json").unwrap().pubkey();
-    let verifier4_program_id = read_keypair_file("keypairs/verifier_4-keypair.json").unwrap().pubkey();
+    let verifier2_program_id = read_keypair_file("keypairs/verifier_2-keypair.json")
+        .unwrap()
+        .pubkey();
+    let verifier3_program_id = read_keypair_file("keypairs/verifier_3-keypair.json")
+        .unwrap()
+        .pubkey();
+    let verifier4_program_id = read_keypair_file("keypairs/verifier_4-keypair.json")
+        .unwrap()
+        .pubkey();
     let account1 = read_keypair_file("keypairs/verifier-1-account-keypair.json").unwrap();
     let account2 = read_keypair_file("keypairs/verifier-2-account-keypair.json").unwrap();
 
@@ -261,7 +246,6 @@ pub async fn verify(config: &Config) -> Result<()> {
     Ok(())
 }
 
-
 async fn copy_from_account(
     client: &RpcClient,
     payer: &Keypair,
@@ -350,7 +334,6 @@ async fn execute_verifier(
     account: &Keypair,
     simulation_steps: u32,
 ) -> Result<()> {
-    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
     let simulation_steps_usize = simulation_steps as usize;
 
     let mut step = 0;
@@ -378,7 +361,6 @@ async fn execute_verifier(
     Ok(())
 }
 
-
 mod prepare_input {
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
@@ -386,8 +368,6 @@ mod prepare_input {
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
 
-    /// Prepare initial data for Stage 1
-    /// Only Stage 1 needs initial data setup - all other stages use ping-pong copying
     pub fn get_bytes_stage1() -> Vec<u8> {
         let proof_str = include_str!("../../example_proof/saya.json");
         let proof_json = serde_json::from_str::<json_parser::StarkProof>(proof_str).unwrap();
