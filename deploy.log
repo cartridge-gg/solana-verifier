@@ -1,0 +1,26 @@
+warning: use of deprecated method `sha3::digest::generic_array::GenericArray::<T, N>::as_slice`: please upgrade to generic-array 1.x
+  --> tasks/stark_verify_decommitments/src/hash_computation.rs:95:50
+   |
+95 |     Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+   |                                                  ^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `sha3::digest::generic_array::GenericArray::<T, N>::as_slice`: please upgrade to generic-array 1.x
+   --> tasks/stark_verify_decommitments/src/table_decommit.rs:323:62
+    |
+323 |                 Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+    |                                                              ^^^^^^^^
+
+warning: use of deprecated method `sha3::digest::generic_array::GenericArray::<T, N>::as_slice`: please upgrade to generic-array 1.x
+   --> tasks/stark_verify_decommitments/src/table_decommit.rs:409:70
+    |
+409 |                         Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+    |                                                                      ^^^^^^^^
+
+warning: `stark-verify-decommitments` (lib) generated 3 warnings
+warning: verifier-2@0.1.0: Auto-generated code for 19 Executable types across workspace
+warning: verifier-1@0.1.0: Auto-generated code for 26 Executable types across workspace
+warning: verifier-3@0.1.0: Auto-generated code for 15 Executable types across workspace
+warning: verifier-4@0.1.0: Auto-generated code for 24 Executable types across workspace
+   Compiling client v0.1.0 (/home/michal/Documents/solana-verifier/client)
