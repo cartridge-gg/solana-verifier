@@ -333,13 +333,47 @@ impl Executable for StarkCommit {
                 // Update transcript state from TranscriptRandomFelt result
                 self.current_transcript_counter = updated_counter;
 
-                let proof: &StarkProof = stack.get_proof_reference();
-                let oods_values = proof.unsent_commitment.oods_values.as_slice();
-                let oods_values_len = oods_values.len();
+                let (oods_values_len, chunk_size) = {
+                    let proof: &StarkProof = stack.get_proof_reference();
+                    let len = proof.unsent_commitment.oods_values.len();
+                    (len, 10.min(len))
+                };
 
-                let mut inputs = vec![self.current_transcript_digest + Felt::ONE];
-                inputs.extend_from_slice(oods_values);
-                PoseidonHashMany::push_input(&inputs, stack);
+                // Push padding and initial state
+                let inputs_len = oods_values_len;
+                let zero_count = inputs_len.div_ceil(2) * 2 - inputs_len;
+                for _ in 0..zero_count {
+                    stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                }
+                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
+
+                // Push oods_values in chunks
+                let total_chunks = oods_values_len.div_ceil(chunk_size);
+                for chunk_idx in (0..total_chunks).rev() {
+                    let start = chunk_idx * chunk_size;
+                    let end = ((chunk_idx + 1) * chunk_size).min(oods_values_len);
+                    
+                    let chunk_bytes: Vec<[u8; 32]> = {
+                        let proof: &StarkProof = stack.get_proof_reference();
+                        proof.unsent_commitment.oods_values.as_slice()[start..end]
+                            .iter()
+                            .map(|f| f.to_bytes_be())
+                            .collect()
+                    };
+                    
+                    for byte_arr in chunk_bytes.iter().rev() {
+                        stack.push_front(byte_arr).unwrap();
+                    }
+                }
+
+                // Push digest + 1
+                let digest_plus_one = self.current_transcript_digest + Felt::ONE;
+                stack.push_front(&digest_plus_one.to_bytes_be()).unwrap();
+                
+                // Push initial state
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
 
                 self.step = StarkCommitStep::VerifyOods;
                 vec![TranscriptReadFeltVector::new(oods_values_len).to_vec_with_type_tag()]

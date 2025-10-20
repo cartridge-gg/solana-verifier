@@ -44,7 +44,7 @@ impl Executable for Verify {
             }
             VerifyStep::GetHash => {
                 let proof =
-                    stack.get_proof_reference::<types::swiftness::stark::types::StarkProof>();
+                    stack.get_proof_reference();
                 let n_verifier_friendly_commitment_layers =
                     proof.config.n_verifier_friendly_commitment_layers;
                 assert!(
@@ -64,7 +64,7 @@ impl Executable for Verify {
                 );
 
                 let proof =
-                    stack.get_proof_reference::<types::swiftness::stark::types::StarkProof>();
+                    stack.get_proof_reference();
 
                 let stark_domain = StarkDomains::new(
                     proof.config.log_trace_domain_size,

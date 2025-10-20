@@ -179,16 +179,12 @@ impl BidirectionalStack for BidirectionalStackAccount {
 }
 
 impl ProofData for BidirectionalStackAccount {
-    fn get_proof_bytes(&self) -> &[u8] {
-        cast_struct_to_slice(&self.proof)
-    }
-
-    fn get_proof(&self) -> &StarkProof {
+    fn get_proof_reference(&self) -> &StarkProof {
         &self.proof
     }
 
-    fn get_proof_bytes_mut(&mut self) -> &mut [u8] {
-        cast_struct_to_slice_mut(&mut self.proof)
+    fn get_proof_reference_mut(&mut self) -> &mut StarkProof {
+        &mut self.proof
     }
 }
 

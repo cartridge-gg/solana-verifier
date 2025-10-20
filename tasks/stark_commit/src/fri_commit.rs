@@ -54,7 +54,7 @@ impl Executable for FriCommit {
     ) -> Vec<Vec<u8>> {
         match &self.step {
             FriCommitStep::Init => {
-                let proof: &StarkProof = stack.get_proof();
+                let proof: &StarkProof = stack.get_proof_reference();
                 let fri_config = &proof.config.fri;
 
                 self.n_layers = fri_config.n_layers.to_biguint().try_into().unwrap();
@@ -98,7 +98,7 @@ impl Executable for FriCommit {
                     let target_layer = &mut stark_commitment.fri.inner_layers.at_mut(layer_idx);
                     target_layer.vector_commitment.commitment_hash = *inner_layer;
 
-                    let proof: &StarkProof = stack.get_proof();
+                    let proof: &StarkProof = stack.get_proof_reference();
                     stack
                         .push_front(
                             &proof
@@ -157,42 +157,72 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::ReadLastLayerCoefficients => {
-                let proof: &StarkProof = stack.get_proof();
-                let last_layer_coefficients = proof.unsent_commitment.fri.last_layer_coefficients;
+                let (coef_len, chunk_size) = {
+                    let (stark_commitment, proof) = stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
+                    let last_layer_coefficients = &proof.unsent_commitment.fri.last_layer_coefficients;
+                    
+                    let expected_len = Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);
+                    msg!(
+                        "FriCommit: log_last_layer_degree_bound={}, expected_len={}, actual_len={}",
+                        proof.config.fri.log_last_layer_degree_bound,
+                        expected_len,
+                        last_layer_coefficients.len()
+                    );
+                    assert!(
+                        expected_len == last_layer_coefficients.len().into(),
+                        "Invalid last layer coefficients length: expected {}, got {}",
+                        expected_len,
+                        last_layer_coefficients.len()
+                    );
+                    
+                    stark_commitment
+                        .fri
+                        .last_layer_coefficients
+                        .extend(last_layer_coefficients.as_slice());
+                    
+                    (last_layer_coefficients.len(), 10.min(last_layer_coefficients.len()))
+                };
+                
+                // Manually push inputs to avoid Vec allocation
+                // Push zeros for padding
+                let inputs_len = coef_len; // +1 for digest
+                let zero_count = inputs_len.div_ceil(2) * 2 - inputs_len;
+                for _ in 0..zero_count {
+                    stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                }
+                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
 
-                let expected_len =
-                    Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);
-                msg!(
-                    "FriCommit: log_last_layer_degree_bound={}, expected_len={}, actual_len={}",
-                    proof.config.fri.log_last_layer_degree_bound,
-                    expected_len,
-                    last_layer_coefficients.len()
-                );
-                assert!(
-                    expected_len == last_layer_coefficients.len().into(),
-                    "Invalid last layer coefficients length: expected {}, got {}",
-                    expected_len,
-                    last_layer_coefficients.len()
-                );
-
-                let stark_commitment =
-                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
-
-                stark_commitment
-                    .fri
-                    .last_layer_coefficients
-                    .extend(last_layer_coefficients.as_slice());
-
-                TranscriptReadFeltVector::push_input(
-                    self.current_transcript_digest,
-                    last_layer_coefficients.as_slice(),
-                    stack,
-                );
-
+                // Push coefficients in chunks to limit stack allocation
+                let total_chunks = coef_len.div_ceil(chunk_size);
+                for chunk_idx in (0..total_chunks).rev() {
+                    let start = chunk_idx * chunk_size;
+                    let end = ((chunk_idx + 1) * chunk_size).min(coef_len);
+                    
+                    let chunk_bytes: Vec<[u8; 32]> = {
+                        let stark_commitment = stack.get_stark_commitment::<StarkCommitment<InteractionElements>>();
+                        stark_commitment.fri.last_layer_coefficients.as_slice()[start..end]
+                            .iter()
+                            .map(|f| f.to_bytes_be())
+                            .collect()
+                    };
+                    
+                    for byte_arr in chunk_bytes.iter().rev() {
+                        stack.push_front(byte_arr).unwrap();
+                    }
+                }
+                
+                // Push digest + 1
+                let digest_plus_one = self.current_transcript_digest + Felt::ONE;
+                stack.push_front(&digest_plus_one.to_bytes_be()).unwrap();
+                
+                // Push initial state
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+            
                 self.step = FriCommitStep::Done;
-
                 vec![
-                    TranscriptReadFeltVector::new(last_layer_coefficients.as_slice().len())
+                    TranscriptReadFeltVector::new(coef_len)
                         .to_vec_with_type_tag(),
                 ]
             }

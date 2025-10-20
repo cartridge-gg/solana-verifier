@@ -65,7 +65,7 @@ impl Executable for Verify {
                 self.digest = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let proof = stack.get_proof_reference::<StarkProof>();
+                let proof = stack.get_proof_reference();
                 self.total_queries = proof.config.n_queries.to_biguint().try_into().unwrap();
 
                 let (log_trace_domain_size, log_n_cosets) = {

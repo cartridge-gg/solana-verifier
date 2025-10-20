@@ -84,23 +84,9 @@ pub trait StarkVerifyTrait {
 /// Basic proof data access - minimal required interface
 pub trait ProofData {
     /// Get a reference to the proof data as any type T
-    fn get_proof_reference<T: Sized>(&self) -> &T {
-        let bytes = self.get_proof_bytes();
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &*(bytes.as_ptr() as *const T) }
-    }
-
-    fn get_proof(&self) -> &StarkProof;
-
+    fn get_proof_reference(&self) -> &StarkProof;
     /// Get a mutable reference to the proof data as any type T
-    fn get_proof_reference_mut<T: Sized>(&mut self) -> &mut T {
-        let bytes = self.get_proof_bytes_mut();
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
-    }
-    /// Get raw proof bytes - to be implemented by concrete types
-    fn get_proof_bytes(&self) -> &[u8];
-    fn get_proof_bytes_mut(&mut self) -> &mut [u8];
+    fn get_proof_reference_mut(&mut self) -> &mut StarkProof;
 }
 
 /// Extended proof data with computational arrays - for verifiers that need them
