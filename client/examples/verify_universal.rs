@@ -7,9 +7,9 @@ use client::{
 };
 use felt::Felt;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
@@ -479,7 +479,9 @@ async fn execute_verifier(
 
     let mut step = 0;
     while step < simulation_steps_usize {
-        let chunk_size = if step >= 24500 { 1 } else { MAX_CHUNK_SIZE };
+        let mut chunk_size = MAX_CHUNK_SIZE;
+            if step >= 24000 { chunk_size = 100; }
+            if step >= 25900 { chunk_size = 1; }
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
 
         println!("Processing steps {}-{}", step, chunk_end - 1);
@@ -523,6 +525,9 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
+        println!("DEBUG: last_layer_coefficients.len() = {}", proof_verifier.unsent_commitment.fri.last_layer_coefficients.len());
+        println!("DEBUG: log_last_layer_degree_bound = {}", proof_verifier.config.fri.log_last_layer_degree_bound);
+
         let mut stack = Verifier1StackAccount::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
@@ -531,6 +536,9 @@ mod prepare_input {
             .as_slice()
             .try_into()
             .unwrap();
+
+        println!("DEBUG: After assignment - stack.proof.unsent_commitment.fri.last_layer_coefficients.len() = {}",
+            stack.proof.unsent_commitment.fri.last_layer_coefficients.len());
 
         cast_struct_to_slice_mut(&mut stack).to_vec()
     }

@@ -4,9 +4,9 @@ use client::{
 };
 use felt::Felt;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };

@@ -45,9 +45,9 @@ pub fn test_proof_verification() {
     while !stack1.is_empty_back() {
         stack1.execute();
         println!("Step: {}", steps);
-        if steps == 20 {
-            break;
-        }
+        // if steps == 26010 {
+        //     break;
+        // }
         steps += 1;
     }
 

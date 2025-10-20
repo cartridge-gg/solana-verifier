@@ -64,11 +64,14 @@ fn main() {
     dispatch_code.push_str("        + utils::CachedProofData\n");
     dispatch_code.push_str("        + utils::ProofDataVerification,\n");
     dispatch_code.push_str("{\n");
+    dispatch_code.push_str("    solana_program::msg!(\"[DISP] Start execute\");\n");
     dispatch_code.push_str("    // Create a raw pointer to avoid multiple mutable borrow issues\n");
     dispatch_code.push_str("    let stack_ptr = stack as *mut S;\n");
+    dispatch_code.push_str("    solana_program::msg!(\"[DISP] Created stack_ptr\");\n");
     dispatch_code.push_str("    \n");
     dispatch_code.push_str("    // Get the data from the back of the stack using unsafe\n");
     dispatch_code.push_str("    let data = unsafe { (*stack_ptr).borrow_mut_back() };\n");
+    dispatch_code.push_str("    solana_program::msg!(\"[DISP] Got data from stack\");\n");
     dispatch_code.push_str("    let mut tasks = Vec::new();\n");
     dispatch_code.push_str("    let is_finished;\n");
 
@@ -80,6 +83,7 @@ fn main() {
     // Read the 32-bit type tag from the first 4 bytes
     dispatch_code
         .push_str("    let type_tag = u32::from_be_bytes(data[0..4].try_into().unwrap());\n");
+    dispatch_code.push_str("    solana_program::msg!(\"[DISP] Type tag: {}\", type_tag);\n");
 
     dispatch_code.push_str("    match type_tag {\n");
 
@@ -89,12 +93,15 @@ fn main() {
         dispatch_code.push_str(&format!(
             "        {crate_name}::{type_name}::TYPE_TAG => {{\n"
         ));
+        dispatch_code.push_str(&format!(
+            "            solana_program::msg!(\"[DISP] Matched {crate_name}::{type_name}\");\n"
+        ));
 
         dispatch_code.push_str(
             "            // Execute the task using unsafe to get around borrow checker\n",
         );
         dispatch_code.push_str(&format!(
-                "            unsafe {{\n                let obj = {crate_name}::{type_name}::cast_mut(&mut data[4..(4 + std::mem::size_of::<{crate_name}::{type_name}>())]);\n                let returned_tasks = obj.execute(&mut *stack_ptr);\n                tasks.extend(returned_tasks);\n                is_finished = obj.is_finished();\n            }}\n"
+                "            unsafe {{\n                solana_program::msg!(\"[DISP] Before cast_mut\");\n                let obj = {crate_name}::{type_name}::cast_mut(&mut data[4..(4 + std::mem::size_of::<{crate_name}::{type_name}>())]);\n                solana_program::msg!(\"[DISP] Before obj.execute()\");\n                let returned_tasks = obj.execute(&mut *stack_ptr);\n                solana_program::msg!(\"[DISP] After obj.execute()\");\n                tasks.extend(returned_tasks);\n                is_finished = obj.is_finished();\n            }}\n"
             ));
         dispatch_code.push_str("        },\n");
     }
@@ -104,6 +111,7 @@ fn main() {
     dispatch_code.push_str("            panic!(\"Unknown type tag: {type_tag}\");\n");
     dispatch_code.push_str("        }\n");
     dispatch_code.push_str("    }\n");
+    dispatch_code.push_str("    solana_program::msg!(\"[DISP] Match completed\");\n");
     dispatch_code.push_str("    (tasks, is_finished)\n");
     dispatch_code.push_str("}\n");
 

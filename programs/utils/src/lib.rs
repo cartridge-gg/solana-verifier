@@ -1,6 +1,7 @@
 use felt::Felt;
 use std::fmt::Debug;
 use types::swiftness::global_values::GlobalValues;
+use types::swiftness::stark::types::StarkProof;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
@@ -88,6 +89,9 @@ pub trait ProofData {
         assert_eq!(bytes.len(), std::mem::size_of::<T>());
         unsafe { &*(bytes.as_ptr() as *const T) }
     }
+
+    fn get_proof(&self) -> &StarkProof;
+
     /// Get a mutable reference to the proof data as any type T
     fn get_proof_reference_mut<T: Sized>(&mut self) -> &mut T {
         let bytes = self.get_proof_bytes_mut();
@@ -108,8 +112,12 @@ pub trait ExtendedProofData: ProofData {
 
     /// Get global values - to be implemented by concrete types that have access to GlobalValues
     fn get_global_values(&self) -> &GlobalValues;
+    /// Get mutable reference to global values - to be implemented by concrete types that have access to GlobalValues
+    fn get_global_values_mut(&mut self) -> &mut GlobalValues;
     /// Set global values - to be implemented by concrete types that have access to GlobalValues
     fn set_global_values(&mut self, global_values: GlobalValues);
+    /// Get both proof reference and mutable global values reference to avoid borrowing conflicts
+    fn get_proof_and_global_values_mut(&mut self) -> (&StarkProof, &mut GlobalValues);
 }
 
 /// Full proof data with all arrays and complex operations - for verifiers that need everything

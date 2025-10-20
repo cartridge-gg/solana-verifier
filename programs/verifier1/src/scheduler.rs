@@ -11,7 +11,11 @@ impl Scheduler for BidirectionalStackAccount {}
 
 impl BidirectionalStackAccount {
     pub fn execute(&mut self) {
+        solana_program::msg!("Before execute() call");
         let (tasks, is_finished) = execute(self);
+        solana_program::msg!("After execute() call");
+
+        println!("tasks: {:?}", tasks);
 
         if is_finished {
             self.pop_back();

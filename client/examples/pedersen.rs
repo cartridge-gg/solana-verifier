@@ -4,9 +4,9 @@ use client::{
 };
 use felt::Felt;
 use pedersen::pedersen::PedersenHash;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
@@ -20,6 +20,10 @@ use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAcco
 #[tokio::main]
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
+    env_logger::Builder::from_default_env()
+    .filter_level(log::LevelFilter::Info)
+    .filter_module("client", log::LevelFilter::Info)
+    .init();
     // Parse command-line arguments
     let config = Config::parse_args();
 
@@ -176,24 +180,41 @@ async fn main() -> client::Result<()> {
 
     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
 
-    // Execute until task is complete
-    let mut transactions = Vec::new();
-    for i in 0..simulation_steps {
-        let execute_ix = Instruction::new_with_borsh(
-            program_id,
-            &VerifierInstruction::Execute(i as u32),
-            vec![AccountMeta::new(stack_account.pubkey(), false)],
+    // Execute all steps until task is complete - split into chunks
+    const MAX_CHUNK_SIZE: usize = 1;
+
+    let simulation_steps_usize = simulation_steps as usize;
+
+    for chunk_start in (0..simulation_steps_usize).step_by(MAX_CHUNK_SIZE) {
+        let chunk_end = std::cmp::min(chunk_start + MAX_CHUNK_SIZE, simulation_steps_usize);
+        let chunk_size = chunk_end - chunk_start;
+
+        println!(
+            "Processing steps {}-{} ({} steps)",
+            chunk_start,
+            chunk_end - 1,
+            chunk_size
         );
-        let execute_tx = Transaction::new_signed_with_payer(
-            &[limit_instructions.clone(), execute_ix],
-            Some(&payer.pubkey()),
-            &[&payer],
-            client.get_latest_blockhash().await?,
-        );
-        transactions.push(execute_tx.clone());
-        println!("transactions: {:?}", transactions.len());
+
+        let mut transactions = Vec::new();
+        for i in chunk_start..chunk_end {
+            let execute_ix = Instruction::new_with_borsh(
+                program_id,
+                &VerifierInstruction::Execute(i as u32),
+                vec![AccountMeta::new(stack_account.pubkey(), false)],
+            );
+            let execute_tx = Transaction::new_signed_with_payer(
+                &[limit_instructions.clone(), execute_ix],
+                Some(&payer.pubkey()),
+                &[&payer],
+                client.get_latest_blockhash().await?,
+            );
+            transactions.push(execute_tx.clone());
+        }
+
+        send_and_confirm_transactions(&client, &transactions).await?;
+        println!("Chunk {}-{} completed", chunk_start, chunk_end - 1);
     }
-    send_and_confirm_transactions(&client, &transactions).await?;
 
     // Read and display the result
     let mut account_data = client

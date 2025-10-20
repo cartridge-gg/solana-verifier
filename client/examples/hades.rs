@@ -4,9 +4,9 @@ use client::{
 };
 use felt::Felt;
 use poseidon::hades::HadesPermutation;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };

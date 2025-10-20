@@ -30,7 +30,7 @@ pub fn test_proof_verification() {
     while !stack.is_empty_back() {
         stack.execute();
         println!("steps: {}", steps);
-        // if steps == 20 {
+        // if steps == 25560 {
         //     break;
         // }
         steps += 1;

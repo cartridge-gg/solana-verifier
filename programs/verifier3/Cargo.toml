@@ -30,7 +30,7 @@ verifier-2.workspace = true
 [dev-dependencies]
 swiftness_proof_parser = { path = "../../parser" }
 serde_json = "1.0"
-starknet-crypto = "0.7.1"
+starknet-crypto = "0.8.1"
 
 [build-dependencies]
 pathdiff = "0.2.1"

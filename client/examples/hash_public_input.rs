@@ -3,9 +3,9 @@ use client::{
     setup_payer, setup_program, ClientError, Config,
 };
 use felt::Felt;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    instruction::{AccountMeta, Instruction},
     signature::Keypair,
     signer::Signer,
     transaction::Transaction,

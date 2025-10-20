@@ -1,19 +1,18 @@
 #![allow(deprecated)]
 
 use futures::future::join_all;
-use solana_program::{
-    bpf_loader_upgradeable,
-    instruction::{AccountMeta, Instruction},
-    system_instruction,
-};
+use solana_instruction::{AccountMeta, Instruction};
+use solana_loader_v3_interface::{instruction, state::UpgradeableLoaderState};
+use solana_system_interface::instruction as system_instruction;
+use solana_commitment_config::CommitmentConfig;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    bpf_loader_upgradeable::UpgradeableLoaderState,
-    commitment_config::CommitmentConfig,
-    compute_budget::ComputeBudgetInstruction,
-    signature::{Keypair, Signature, Signer},
+    signature::{Signature, Signer},
     transaction::Transaction,
 };
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
 
 use std::{fs, path::Path, thread::sleep};
 
@@ -398,10 +397,12 @@ pub async fn deploy_program(
         .map_err(ClientError::SolanaClientError)?;
 
     // Create buffer account
-    let create_buffer_ix = bpf_loader_upgradeable::create_buffer(
-        &payer.pubkey(),
-        &buffer_keypair.pubkey(),
-        &payer.pubkey(),
+    let payer_pubkey = Pubkey::from(payer.pubkey().to_bytes());
+    let buffer_pubkey = Pubkey::from(buffer_keypair.pubkey().to_bytes());
+    let create_buffer_ix = instruction::create_buffer(
+        &payer_pubkey,
+        &buffer_pubkey,
+        &payer_pubkey,
         buffer_balance,
         buffer_data_len,
     )
@@ -415,7 +416,7 @@ pub async fn deploy_program(
 
     // Create and send transaction
     let create_buffer_tx = Transaction::new_signed_with_payer(
-        &create_buffer_ix,
+        &create_buffer_ix[..],
         Some(&payer.pubkey()),
         &[payer, &buffer_keypair],
         blockhash,
@@ -442,11 +443,14 @@ pub async fn deploy_program(
         .map_err(ClientError::SolanaClientError)?;
 
     // Create deploy instruction
-    let deploy_ix = bpf_loader_upgradeable::deploy_with_max_program_len(
-        &payer.pubkey(),
-        &program_keypair.pubkey(),
-        &buffer_keypair.pubkey(),
-        &payer.pubkey(),
+    let payer_pubkey = Pubkey::from(payer.pubkey().to_bytes());
+    let program_pubkey = Pubkey::from(program_keypair.pubkey().to_bytes());
+    let buffer_pubkey = Pubkey::from(buffer_keypair.pubkey().to_bytes());
+    let deploy_ix = instruction::deploy_with_max_program_len(
+        &payer_pubkey,
+        &program_pubkey,
+        &buffer_pubkey,
+        &payer_pubkey,
         programdata_balance,
         programdata_len,
     )
@@ -460,7 +464,7 @@ pub async fn deploy_program(
 
     // Create and send transaction
     let deploy_tx = Transaction::new_signed_with_payer(
-        &deploy_ix,
+        &deploy_ix[..],
         Some(&payer.pubkey()),
         &[payer, program_keypair],
         blockhash,
@@ -483,14 +487,16 @@ pub async fn write_program_to_buffer(
     config: &Config,
 ) -> Result<()> {
     let mut offset = 0;
+    let buffer_pubkey = Pubkey::from(buffer_keypair.pubkey().to_bytes());
+    let payer_pubkey = Pubkey::from(payer.pubkey().to_bytes());
 
     while offset < program_data.len() {
         let chunk_end = std::cmp::min(offset + config.buffer_chunk_size, program_data.len());
         let chunk = &program_data[offset..chunk_end];
 
-        let write_ix = bpf_loader_upgradeable::write(
-            &buffer_keypair.pubkey(),
-            &payer.pubkey(),
+        let write_ix = instruction::write(
+            &buffer_pubkey,
+            &payer_pubkey,
             offset as u32,
             chunk.to_vec(),
         );
@@ -598,7 +604,7 @@ pub fn read_keypair_file<P: AsRef<Path>>(path: P) -> Result<Keypair> {
 
     let bytes: Vec<u8> = serde_json::from_str(&file_content).map_err(ClientError::SerdeError)?;
 
-    Keypair::from_bytes(&bytes)
+    Keypair::try_from(&bytes[..])
         .map_err(|e| ClientError::KeypairError(format!("Failed to create keypair from bytes: {e}")))
 }
 

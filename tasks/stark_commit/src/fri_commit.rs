@@ -1,5 +1,6 @@
 use crate::table_commit::TableCommit;
 use felt::Felt;
+use solana_program::msg;
 use transcript::transcript::TranscriptRandomFelt;
 use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::global_values::InteractionElements;
@@ -53,7 +54,7 @@ impl Executable for FriCommit {
     ) -> Vec<Vec<u8>> {
         match &self.step {
             FriCommitStep::Init => {
-                let proof: &StarkProof = stack.get_proof_reference();
+                let proof: &StarkProof = stack.get_proof();
                 let fri_config = &proof.config.fri;
 
                 self.n_layers = fri_config.n_layers.to_biguint().try_into().unwrap();
@@ -97,7 +98,7 @@ impl Executable for FriCommit {
                     let target_layer = &mut stark_commitment.fri.inner_layers.at_mut(layer_idx);
                     target_layer.vector_commitment.commitment_hash = *inner_layer;
 
-                    let proof: &StarkProof = stack.get_proof_reference();
+                    let proof: &StarkProof = stack.get_proof();
                     stack
                         .push_front(
                             &proof
@@ -156,14 +157,22 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::ReadLastLayerCoefficients => {
-                let proof: &StarkProof = stack.get_proof_reference();
+                let proof: &StarkProof = stack.get_proof();
                 let last_layer_coefficients = proof.unsent_commitment.fri.last_layer_coefficients;
 
                 let expected_len =
                     Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);
+                msg!(
+                    "FriCommit: log_last_layer_degree_bound={}, expected_len={}, actual_len={}",
+                    proof.config.fri.log_last_layer_degree_bound,
+                    expected_len,
+                    last_layer_coefficients.len()
+                );
                 assert!(
                     expected_len == last_layer_coefficients.len().into(),
-                    "Invalid last layer coefficients length"
+                    "Invalid last layer coefficients length: expected {}, got {}",
+                    expected_len,
+                    last_layer_coefficients.len()
                 );
 
                 let stark_commitment =

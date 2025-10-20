@@ -183,6 +183,10 @@ impl ProofData for BidirectionalStackAccount {
         cast_struct_to_slice(&self.proof)
     }
 
+    fn get_proof(&self) -> &StarkProof {
+        &self.proof
+    }
+
     fn get_proof_bytes_mut(&mut self) -> &mut [u8] {
         cast_struct_to_slice_mut(&mut self.proof)
     }
@@ -246,8 +250,16 @@ impl ExtendedProofData for BidirectionalStackAccount {
         unreachable!("get_global_values not supported in verifier4")
     }
 
+    fn get_global_values_mut(&mut self) -> &mut GlobalValues {
+        unreachable!("get_global_values_mut not supported in verifier4")
+    }
+
     fn set_global_values(&mut self, _global_values: GlobalValues) {
         unreachable!("set_global_values not supported in verifier4")
+    }
+
+    fn get_proof_and_global_values_mut(&mut self) -> (&StarkProof, &mut GlobalValues) {
+        unreachable!("get_proof_and_global_values_mut not supported in verifier4")
     }
 }
 

@@ -211,6 +211,9 @@ impl ProofData for BidirectionalStackAccount {
     fn get_proof_bytes(&self) -> &[u8] {
         cast_struct_to_slice(&self.proof)
     }
+    fn get_proof(&self) -> &StarkProof {
+        &self.proof
+    }
 
     fn get_proof_bytes_mut(&mut self) -> &mut [u8] {
         cast_struct_to_slice_mut(&mut self.proof)
@@ -236,8 +239,18 @@ impl ExtendedProofData for BidirectionalStackAccount {
         &self.global_values
     }
 
+    fn get_global_values_mut(&mut self) -> &mut GlobalValues {
+        &mut self.global_values
+    }
+
     fn set_global_values(&mut self, global_values: GlobalValues) {
         self.global_values = global_values;
+    }
+
+    fn get_proof_and_global_values_mut(&mut self) -> (&StarkProof, &mut GlobalValues) {
+        let proof_ref = &self.proof;
+        let global_values_ref = &mut self.global_values;
+        (proof_ref, global_values_ref)
     }
 }
 
