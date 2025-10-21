@@ -113,11 +113,8 @@ pub fn test_proof_verification() {
     let task = verify_4::verify::Verify::new();
     stack4.push_task(task);
 
-    let mut steps_stage_4 = 0;
     while !stack4.is_empty_back() {
         stack4.execute();
-        // steps_stage_4 += 1;
-        // println!("Step stage 4: {}", steps_stage_4);
         steps += 1;
     }
 

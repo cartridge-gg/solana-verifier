@@ -107,7 +107,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     return vec![];
                 }
 
-                // Read only the current point (not all points)
                 let current_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
@@ -117,10 +116,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                         StarkProof,
                     >(stack);
 
-                // Extract OODS evaluation info from commitment and proof
                 let oods_point = stark_commitment.interaction_after_composition;
-
-                // Get trace generator from global values
                 let log_trace_domain_size = &proof.config.log_trace_domain_size;
                 let trace_domain_size = Felt::TWO.pow_felt(log_trace_domain_size);
                 let trace_generator = FIELD_GENERATOR.pow_felt(
@@ -128,12 +124,8 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                         .field_div(&NonZeroFelt::try_from(trace_domain_size).unwrap()),
                 );
 
-                // Get decommitment data
                 let traces_decommitment = &proof.witness.traces_decommitment;
                 let composition_decommitment = &proof.witness.composition_decommitment;
-
-                // Collect column values for this point (following the original algorithm)
-                // Use fixed-size array instead of Vec for Solana BPF
                 let max_columns = self.n_original_columns as usize
                     + self.n_interaction_columns as usize
                     + CONSTRAINT_DEGREE;

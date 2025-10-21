@@ -58,9 +58,6 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
-                solana_program::msg!("StarkVerifyStep::ComputeQueryPoints");
-                // Use queries_indexes from VerifyVariables instead of cache to avoid access violations
-                // Get length first to avoid borrowing conflicts
                 let queries_len = {
                     let verify_variables: &VerifyVariables = stack.get_verify_variables();
                     verify_variables.queries_indexes.len()
@@ -106,9 +103,7 @@ impl Executable for StarkVerify {
                 let points_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 assert!(points_len != Felt::ZERO, "Points length is equal to 0");
                 stack.pop_front();
-                // let mut points_vec = FunVec::<Felt, FUNVEC_QUERY_INDICES>::default();
 
-                // Collect all points first to avoid repeated cache access in loop
                 for i in 0..points_len.to_biguint().try_into().unwrap() {
                     let point = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
@@ -116,12 +111,9 @@ impl Executable for StarkVerify {
                     verify_variables.points[i] = point;
                 }
 
-                // Store points and queries in cache once after collecting all points
                 {
-                    // let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                     let (fri_verify_data, verify_variables) = stack.get_fri_verify_data_and_verify_variables_mut::<FriVerifyData, VerifyVariables>();
 
-                    // Store queries from verify_variables - element by element to avoid stack allocation
                     fri_verify_data.queries.flush();
                     for i in 0..verify_variables.queries_indexes.len() {
                         fri_verify_data
@@ -129,7 +121,6 @@ impl Executable for StarkVerify {
                             .push(verify_variables.queries_indexes[i]);
                     }
 
-                    // Store points
                     let fri_decommitment: &mut FriDecommitment =
                         &mut fri_verify_data.fri_decommitment;
                     fri_decommitment.points.flush();

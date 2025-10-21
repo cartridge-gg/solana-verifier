@@ -3,12 +3,13 @@ use swiftness_proof_parser::json_parser;
 use swiftness_proof_parser::{transform::TransformTo, StarkProof as StarkProofParser};
 use types::funvec::FunVec;
 use types::swiftness::commitment::types::Decommitment as FriDecommitment;
-use types::swiftness::stark::types::FriVerifyData;
+use types::swiftness::global_values::InteractionElements;
+use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, VerifyVariables};
 use utils::BidirectionalStack;
 use utils::Scheduler;
 use verifier_3::state::BidirectionalStackAccount;
 mod fixtures;
-use crate::fixtures::stark_commitment;
+use crate::fixtures::constraint_coefficients;
 use utils::CacheStorage;
 
 #[test]
@@ -27,8 +28,29 @@ pub fn test_proof_verification() {
         .as_slice()
         .try_into()
         .unwrap();
-    stack.stark_commitment = stark_commitment::get();
+    let mut stark_commitment: StarkCommitment<InteractionElements> = StarkCommitment::default();
+    let oods_point =
+        Felt::from_hex("0x49185430497be4bd990699e70b3b91b25c0dd22d5cd436dbf23f364136368bc")
+            .unwrap();
+    stark_commitment.interaction_after_composition = oods_point;
+    let constraint_coeffs =
+        constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods();
+    stark_commitment.interaction_after_oods = FunVec::from_vec(constraint_coeffs.to_vec());
+    stack.stark_commitment = stark_commitment;
+    stack.constraint_coefficients =
+        constraint_coefficients::get_constraint_coefficients_for_interaction_after_oods()
+            .as_slice()
+            .try_into()
+            .unwrap();
     let queries = fixtures::queries::get();
+    let mut verify_variables = types::swiftness::stark::types::VerifyVariables::default();
+    for (i, &query) in queries.iter().enumerate() {
+        if i < verify_variables.queries_indexes.len() {
+            verify_variables.queries_indexes[i] = query;
+        }
+    }
+    stack.verify_variables = verify_variables;
+
     let stark_verify_data = types::swiftness::stark::types::FriVerifyData {
         queries: FunVec::from_vec(queries.clone()),
         fri_decommitment: FriDecommitment::default(),

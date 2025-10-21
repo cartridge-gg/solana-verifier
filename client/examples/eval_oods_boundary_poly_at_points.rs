@@ -190,7 +190,7 @@ async fn main() -> client::Result<()> {
     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_200_000);
 
     // Execute all steps until task is complete - split into chunks of max 5000
-    const MAX_CHUNK_SIZE: usize = 1;
+    const MAX_CHUNK_SIZE: usize = 1000;
 
     let simulation_steps_usize = simulation_steps as usize;
 
