@@ -102,6 +102,7 @@ pub struct VerifyVariables {
     pub montgomery_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub temp_queries: [Felt; FUNVEC_QUERIES],
     pub queries_indexes: [Felt; 16],
+    pub points: [Felt; FUNVEC_QUERY_INDICES],
 }
 
 impl Default for VerifyVariables {
@@ -113,6 +114,7 @@ impl Default for VerifyVariables {
             montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
             queries_indexes: [Felt::ZERO; 16],
+            points: [Felt::ZERO; FUNVEC_QUERY_INDICES],
         }
     }
 }

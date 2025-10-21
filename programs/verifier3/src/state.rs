@@ -225,6 +225,15 @@ impl CachedProofData for BidirectionalStackAccount {
 
         (stark_commitment, proof, cache)
     }
+    fn get_fri_verify_data_and_verify_variables_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
+        let fri_verify_data_bytes = &mut self.cached_data[..std::mem::size_of::<T>()];
+        let verify_variables_bytes = cast_struct_to_slice_mut(&mut self.verify_variables);
+        assert_eq!(fri_verify_data_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(verify_variables_bytes.len(), std::mem::size_of::<P>());
+        let fri_verify_data = unsafe { &mut *(fri_verify_data_bytes.as_mut_ptr() as *mut T) };
+        let verify_variables = unsafe { &mut *(verify_variables_bytes.as_mut_ptr() as *mut P) };
+        (fri_verify_data, verify_variables)
+    }
 }
 
 impl ExtendedProofData for BidirectionalStackAccount {
@@ -389,6 +398,18 @@ impl ProofDataVerification for BidirectionalStackAccount {
         assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
         (stark_commitment, &mut self.constraint_coefficients)
+    }
+    fn get_sc_proof_cv<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P, &mut [Felt; COLUMN_VALUES_SIZE]) {
+        let stark_commitment_bytes = cast_struct_to_slice_mut(&mut self.stark_commitment);
+        let proof_bytes = cast_struct_to_slice_mut(&mut self.proof);
+
+        assert_eq!(stark_commitment_bytes.len(), std::mem::size_of::<T>());
+        assert_eq!(proof_bytes.len(), std::mem::size_of::<P>());
+
+        let stark_commitment = unsafe { &mut *(stark_commitment_bytes.as_mut_ptr() as *mut T) };
+        let proof = unsafe { &mut *(proof_bytes.as_mut_ptr() as *mut P) };
+        let column_values = &mut self.column_values;
+        (stark_commitment, proof, column_values)
     }
 }
 

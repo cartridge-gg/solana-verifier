@@ -436,7 +436,7 @@ async fn main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_200_000);
 
     // Execute all steps until task is complete - split into chunks of max 5000
     const MAX_CHUNK_SIZE: usize = 1;

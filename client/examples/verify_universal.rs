@@ -488,10 +488,10 @@ async fn execute_verifier(
     while step < simulation_steps_usize {
         let mut chunk_size = MAX_CHUNK_SIZE;
         // Stage 2 has stack overflow issues around step 389
-        if stage_number == 3 {
-            if step >= 0{ chunk_size = 1; }
-            if step >= 2500 { chunk_size = 1; }
-        }
+        // if stage_number == 3 {
+        //     if step >= 0{ chunk_size = 1; }
+        //     if step >= 2500 { chunk_size = 1; }
+        // }
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
 
         println!("Processing steps {}-{}", step, chunk_end - 1);

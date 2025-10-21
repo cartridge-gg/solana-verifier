@@ -4,7 +4,7 @@ use types::funvec::FUNVEC_QUERY_INDICES;
 use types::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
 use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
-use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
+use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
     ProofData, ProofDataVerification, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
@@ -111,8 +111,8 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let current_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let (stark_commitment, proof) =
-                    ProofDataVerification::get_stark_commitment_and_proof::<
+                let (stark_commitment, proof, column_values) =
+                    ProofDataVerification::get_sc_proof_cv::<
                         StarkCommitment<InteractionElements>,
                         StarkProof,
                     >(stack);
@@ -121,7 +121,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 let oods_point = stark_commitment.interaction_after_composition;
 
                 // Get trace generator from global values
-                let log_trace_domain_size = proof.config.log_trace_domain_size;
+                let log_trace_domain_size = &proof.config.log_trace_domain_size;
                 let trace_domain_size = Felt::TWO.pow_felt(&log_trace_domain_size);
                 let trace_generator = FIELD_GENERATOR.pow_felt(
                     &STARK_PRIME_MINUS_ONE
@@ -139,8 +139,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     + CONSTRAINT_DEGREE;
 
                 assert!(max_columns <= COLUMN_VALUES_SIZE);
-
-                let mut column_values = [Felt::ZERO; COLUMN_VALUES_SIZE]; // Fixed size, adjust as needed
 
                 let i = self.current_point_index;
 
@@ -183,15 +181,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     }
                 }
 
-                // Store column values in the preallocated column_values array
-                let column_values_array =
-                    ProofDataVerification::get_proof_data_references::<StarkProof>(stack).3;
-                for (j, &value) in column_values.iter().enumerate() {
-                    if j < column_values_array.len() {
-                        column_values_array[j] = value;
-                    }
-                }
-
                 // Push evaluation parameters for EvalOodsPolynomial
                 stack.push_front(&trace_generator.to_bytes_be()).unwrap();
                 stack.push_front(&oods_point.to_bytes_be()).unwrap();
@@ -224,7 +213,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
 }
 
 // ComputeQueryPoints task
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct ComputeQueryPoints {
     processed: bool,
@@ -257,7 +246,7 @@ impl Default for ComputeQueryPoints {
 // └──────────────────────────────┘  <- front (stack front)
 
 impl Executable for ComputeQueryPoints {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         let log_eval_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
 
@@ -272,20 +261,26 @@ impl Executable for ComputeQueryPoints {
 
         let shift = Felt::TWO.pow_felt(&(MAX_DOMAIN_SIZE - log_eval_domain_size));
 
-        // Use fixed-size array instead of Vec for Solana BPF
-        let mut points = [Felt::ZERO; FUNVEC_QUERY_INDICES];
-
         let queries_count = queries_len.to_biguint().try_into().unwrap();
 
-        for point_slot in points.iter_mut().take(queries_count) {
+        // Process points and store in account storage - avoid borrowing conflicts
+        for i in 0..queries_count {
             let query = Felt::from_bytes_be_slice(stack.borrow_front());
             let index: u64 = (query * shift).to_biguint().try_into().unwrap();
-            *point_slot = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
+            let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
+            
+            // Store point in account storage
+            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+            verify_variables.points[i] = point;
             stack.pop_front();
         }
 
         for i in (0..queries_count).rev() {
-            stack.push_front(&points[i].to_bytes_be()).unwrap();
+            let point = {
+                let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                verify_variables.points[i]
+            };
+            stack.push_front(&point.to_bytes_be()).unwrap();
         }
         stack.push_front(&queries_len.to_bytes_be()).unwrap();
 

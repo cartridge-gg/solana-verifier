@@ -106,7 +106,7 @@ fn operate_with_affine_inline_never(
 
     // Compute final coordinates
     let x = &v * &a;
-    let y = &(&u * &(&r - &a)) - &(&vvv * py);
+    let y = &(u * (&r - &a)) - &(&vvv * py);
     let z = &vvv * pz;
 
     (x, y, z)

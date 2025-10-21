@@ -379,6 +379,9 @@ impl ProofDataVerification for BidirectionalStackAccount {
         let stark_commitment = unsafe { &*(stark_commitment_bytes.as_ptr() as *const T) };
         (stark_commitment, &mut self.constraint_coefficients)
     }
+    fn get_sc_proof_cv<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P, &mut [Felt; COLUMN_VALUES_SIZE]) {
+        unreachable!("get_sc_proof_cv not supported in verifier2")
+    }
 }
 
 impl CachedProofData for BidirectionalStackAccount {
@@ -390,6 +393,9 @@ impl CachedProofData for BidirectionalStackAccount {
         &mut self,
     ) -> (&mut T, &mut P, &mut C) {
         unreachable!("get_stark_commitment_proof_and_cache_mut not supported in verifier2")
+    }
+    fn get_fri_verify_data_and_verify_variables_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
+        unreachable!("get_fri_verify_data_and_verify_variables_mut not supported in verifier2")
     }
 }
 

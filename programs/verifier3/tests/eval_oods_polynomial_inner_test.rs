@@ -157,6 +157,7 @@ fn test_eval_oods_polynomial_inner() {
     while !stack.is_empty_back() {
         stack.execute();
         steps += 1;
+        println!("Step {}", steps);
     }
 
     println!("Executed {} steps", steps);
