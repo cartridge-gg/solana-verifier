@@ -1,6 +1,7 @@
 use felt::Felt;
 use std::fmt::Debug;
 use types::swiftness::global_values::GlobalValues;
+use types::swiftness::stark::types::StarkProof;
 
 pub const CAPACITY: usize = 65536;
 pub const LENGTH_SIZE: usize = 2;
@@ -16,9 +17,7 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
-// pub const CACHE_SIZE: usize = 1048576;
 pub const CACHE_SIZE: usize = 147480;
-
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
     /// Cast a slice to an immutable reference of Self
@@ -80,26 +79,14 @@ pub trait StarkCommitmentTrait {
 pub trait StarkVerifyTrait {
     fn get_verify_variables<T: Sized>(&self) -> &T;
     fn get_verify_variables_mut<T: Sized>(&mut self) -> &mut T;
-    fn set_verify_variables<T: Sized>(&mut self, verify_variables: &T);
 }
 
 /// Basic proof data access - minimal required interface
 pub trait ProofData {
     /// Get a reference to the proof data as any type T
-    fn get_proof_reference<T: Sized>(&self) -> &T {
-        let bytes = self.get_proof_bytes();
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &*(bytes.as_ptr() as *const T) }
-    }
+    fn get_proof_reference(&self) -> &StarkProof;
     /// Get a mutable reference to the proof data as any type T
-    fn get_proof_reference_mut<T: Sized>(&mut self) -> &mut T {
-        let bytes = self.get_proof_bytes_mut();
-        assert_eq!(bytes.len(), std::mem::size_of::<T>());
-        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
-    }
-    /// Get raw proof bytes - to be implemented by concrete types
-    fn get_proof_bytes(&self) -> &[u8];
-    fn get_proof_bytes_mut(&mut self) -> &mut [u8];
+    fn get_proof_reference_mut(&mut self) -> &mut StarkProof;
 }
 
 /// Extended proof data with computational arrays - for verifiers that need them
@@ -111,24 +98,25 @@ pub trait ExtendedProofData: ProofData {
 
     /// Get global values - to be implemented by concrete types that have access to GlobalValues
     fn get_global_values(&self) -> &GlobalValues;
+    /// Get mutable reference to global values - to be implemented by concrete types that have access to GlobalValues
+    fn get_global_values_mut(&mut self) -> &mut GlobalValues;
     /// Set global values - to be implemented by concrete types that have access to GlobalValues
     fn set_global_values(&mut self, global_values: GlobalValues);
+    /// Get both proof reference and mutable global values reference to avoid borrowing conflicts
+    fn get_proof_and_global_values_mut(&mut self) -> (&StarkProof, &mut GlobalValues);
 }
 
 /// Full proof data with all arrays and complex operations - for verifiers that need everything
-pub trait FullProofDataVerifier2: ExtendedProofData {
+pub trait ProofDataDecommitment: ExtendedProofData {
     /// Get both domains and mask_column_row references to avoid borrowing conflicts
     #[allow(clippy::type_complexity)]
     fn get_proof_data_references<T: Sized>(
         &mut self,
     ) -> (
-        &T,
-        &[Felt; POWS_SIZE],
         &[Felt; DOMAINS_SIZE],
-        &mut [Felt; OODS_VALUES_SIZE],
-        &mut GlobalValues,
-        &mut [Felt; N_CONSTRAINTS],
-        &mut [Felt; COLUMN_VALUES_SIZE],
+        &[Felt; OODS_VALUES_SIZE],
+        &GlobalValues,
+        &[Felt; N_CONSTRAINTS],
         &mut [Felt; BITS_SIZE],
         &mut [Felt; POSEIDON_BITS_SIZE],
     );
@@ -137,40 +125,41 @@ pub trait FullProofDataVerifier2: ExtendedProofData {
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
 }
 
-pub trait FullProofDataVerifier3: ExtendedProofData {
+pub trait ProofDataVerification: ExtendedProofData {
     /// Get both domains and mask_column_row references to avoid borrowing conflicts
     #[allow(clippy::type_complexity)]
     fn get_proof_data_references<T: Sized>(
         &mut self,
     ) -> (
-        &T,
         &[Felt; POWS_SIZE],
-        &[Felt; DOMAINS_SIZE],
         &mut [Felt; OODS_VALUES_SIZE],
-        &mut GlobalValues,
         &mut [Felt; N_CONSTRAINTS],
         &mut [Felt; COLUMN_VALUES_SIZE],
     );
 
     fn get_stark_commitment_and_proof<T: Sized, P: Sized>(&self) -> (&T, &P);
     fn get_stark_commitment_and_proof_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P);
+    fn get_sc_proof_cv<T: Sized, P: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut [Felt; COLUMN_VALUES_SIZE]);
     fn get_constraint_coefficients(&self) -> &[Felt; N_CONSTRAINTS];
     fn get_constraint_coefficients_mut(&mut self) -> &mut [Felt; N_CONSTRAINTS];
-    fn set_constraint_coefficients(&mut self, coefficients: &[Felt]);
     fn get_stark_commitment_and_coefficients_mut<T: Sized>(
         &mut self,
     ) -> (&T, &mut [Felt; N_CONSTRAINTS]);
 }
 
 /// Cache-related proof data methods - only for verifiers that use cache
-pub trait CachedProofData: FullProofDataVerifier2 {
+pub trait CachedProofData: ProofDataDecommitment {
     fn get_stark_commitment_proof_and_cache<T: Sized, P: Sized, C: Sized>(&self) -> (&T, &P, &C);
     fn get_stark_commitment_proof_and_cache_mut<T: Sized, P: Sized, C: Sized>(
         &mut self,
     ) -> (&mut T, &mut P, &mut C);
+    fn get_fri_verify_data_and_verify_variables_mut<T: Sized, P: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P);
 }
 /// Trait for providing automatic type identification with cryptographic hashing
 pub trait TypeIdentifiable {
@@ -221,10 +210,10 @@ pub trait Executable: Sized + TypeIdentifiable {
             + StarkCommitmentTrait
             + StarkVerifyTrait
             + ExtendedProofData
-            + FullProofDataVerifier2
+            + ProofDataDecommitment
             + CacheStorage
             + CachedProofData
-            + FullProofDataVerifier3;
+            + ProofDataVerification;
     fn is_finished(&mut self) -> bool {
         false
     }

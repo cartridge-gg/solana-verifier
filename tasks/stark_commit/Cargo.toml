@@ -11,3 +11,4 @@ poseidon.workspace = true
 pedersen.workspace = true
 sha3.workspace = true
 transcript.workspace = true
+solana-program.workspace = true

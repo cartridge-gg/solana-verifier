@@ -2,7 +2,7 @@ use crate::funvec::{FunVec, FUNVEC_SEGMENTS};
 use felt::Felt;
 
 use super::{
-    dynamic::DynamicParams,
+    // dynamic::DynamicParams,
     types::{ContinuousPageHeader, Page, SegmentInfo},
 };
 use felt::NonZeroFelt;
@@ -14,7 +14,7 @@ pub struct PublicInput {
     pub range_check_min: Felt,
     pub range_check_max: Felt,
     pub layout: Felt,
-    pub dynamic_params: Option<DynamicParams>,
+    // pub dynamic_params: DynamicParams,
     pub segments: FunVec<SegmentInfo, FUNVEC_SEGMENTS>,
     pub padding_addr: Felt,
     pub padding_value: Felt,

@@ -24,17 +24,26 @@ pub fn test_proof_verification() {
         .unwrap();
     stack.stark_commitment = stark_commitment::get();
 
-    let task = verify_2::verify::Verify::new(
-        Felt::from_hex_unchecked(
-            "0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e",
-        ),
-        Felt::from_hex_unchecked("0x0"),
-    );
+    let task = verify_2::verify::Verify::default();
     stack.push_task(task);
+    stack
+        .push_front(
+            &Felt::from_hex_unchecked(
+                "0x781658415a62f749fdd7abb778c210fac73bd47ce05470d227cb455aec6055e",
+            )
+            .to_bytes_be(),
+        )
+        .unwrap();
+    stack
+        .push_front(&Felt::from_hex_unchecked("0x0").to_bytes_be())
+        .unwrap();
 
+    let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        steps += 1;
     }
+    println!("steps: {}", steps);
     assert!(
         stack.is_empty_front(),
         " Stack front should be empty after verification"

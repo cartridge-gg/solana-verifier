@@ -28,8 +28,11 @@ fn pedersen_hash() {
         &mut stack,
     );
     stack.push_task(PedersenHash::new());
+    let mut step = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("step: {}", step);
+        step += 1;
     }
     let result = Felt::from_bytes_be_slice(stack.borrow_front().try_into().unwrap());
     println!("result: {:?}", result);

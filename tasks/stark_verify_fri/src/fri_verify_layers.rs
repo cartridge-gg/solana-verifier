@@ -58,72 +58,65 @@ impl Executable for FriVerifyLayers {
                 StarkProof,
                 FriVerifyData
             >();
-                let fri_commitment = &stark_commitment.fri;
                 fri_verify_data.current_layer = 0;
-                let n_layers_usize: usize = fri_commitment
+                self.stage = if stark_commitment
+                    .fri
                     .config
                     .n_layers
                     .to_biguint()
                     .try_into()
-                    .unwrap();
-                if n_layers_usize == 0 {
-                    self.stage = FriVerifyLayersStep::Done;
+                    .ok()
+                    == Some(0usize)
+                {
+                    FriVerifyLayersStep::Done
                 } else {
-                    self.stage = FriVerifyLayersStep::ProcessLayer;
-                }
+                    FriVerifyLayersStep::ProcessLayer
+                };
                 vec![]
             }
 
             FriVerifyLayersStep::ProcessLayer => {
-                println!("DEBUG: FriVerifyLayersStep::ProcessLayer step");
-                // Use the new extended API to get all data in one call, avoiding borrowing conflicts
-                let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache_mut::<
+                let (stark_commitment, proof, fri_verify_data) = stack
+                .get_stark_commitment_proof_and_cache_mut::<
                     StarkCommitment<InteractionElements>,
                     StarkProof,
-                    FriVerifyData
+                    FriVerifyData,
                 >();
 
-                let fri_commitment = &stark_commitment.fri;
-                let fri_witness = &proof.witness.fri_witness;
-
-                let n_layers_usize: usize = fri_commitment
+                let n_layers: usize = stark_commitment
+                    .fri
                     .config
                     .n_layers
                     .to_biguint()
                     .try_into()
                     .unwrap();
 
-                // FriVerifyLayers processes n_layers - 1 layers (like original fri_verify_layers)
-                // Last layer is handled by VerifyLastLayer
-                if fri_verify_data.current_layer < n_layers_usize - 1 {
-                    // Get current layer witness
-                    let target_layer_witness = fri_witness
-                        .layers
-                        .get(fri_verify_data.current_layer)
-                        .unwrap();
-                    // println!("DEBUG: target_layer_witness = {:?}", target_layer_witness);
+                if fri_verify_data.current_layer < n_layers - 1 {
+                    let current = fri_verify_data.current_layer;
 
-                    // Prepare parameters for compute_next_layer
-                    let step_size = fri_commitment
+                    let step_size = *stark_commitment
+                        .fri
                         .config
                         .fri_step_sizes
-                        .get(fri_verify_data.current_layer + 1)
+                        .get(current + 1)
                         .unwrap();
-                    println!("\nDEBUG: step_size = {:?}", step_size);
 
-                    fri_verify_data.coset_size = Felt::TWO.pow_felt(step_size);
-                    fri_verify_data.eval_point = *fri_commitment
-                        .eval_points
-                        .get(fri_verify_data.current_layer)
-                        .unwrap();
-                    println!("\nDEBUG: eval_point = {:?}", fri_verify_data.eval_point);
+                    fri_verify_data.coset_size = Felt::TWO.pow_felt(&step_size);
+                    fri_verify_data.eval_point =
+                        *stark_commitment.fri.eval_points.get(current).unwrap();
 
-                    for i in 0..target_layer_witness.leaves.len() {
-                        if let Some(value) = target_layer_witness.leaves.get(i) {
+                    let leaves = &proof
+                        .witness
+                        .fri_witness
+                        .layers
+                        .get(current)
+                        .unwrap()
+                        .leaves;
+                    for i in 0..leaves.len() {
+                        if let Some(value) = leaves.get(i) {
                             fri_verify_data.sibling_witness.push(*value);
                         }
                     }
-                    // println!("\nDEBUG: sibling_witness = {:?}", fri_verify_data.sibling_witness);
                     self.stage = FriVerifyLayersStep::PushTableData;
                     vec![ComputeNextLayer::new().to_vec_with_type_tag()]
                 } else {
@@ -134,72 +127,122 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::PushTableData => {
-                println!("DEBUG: FriVerifyLayersStep::PushTableData step");
-                let (y_values, indices, table_witness, target_commitment) = {
-                    // Use the new extended API to get all data in one call
-                    let (stark_commitment, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
-                        StarkCommitment<InteractionElements>,
-                        StarkProof,
-                        FriVerifyData
-                    >();
-                    let fri_commitment = &stark_commitment.fri;
-                    let fri_witness = &proof.witness.fri_witness;
-                    let current_layer = fri_verify_data.current_layer;
-
-                    let mut y_values = Vec::new();
-                    for i in 0..fri_verify_data.working_y_values.len() {
-                        if let Some(value) = fri_verify_data.working_y_values.get(i) {
-                            y_values.push(*value);
-                        }
-                    }
-
-                    let mut indices = Vec::new();
-                    for i in 0..fri_verify_data.working_indices.len() {
-                        if let Some(index) = fri_verify_data.working_indices.get(i) {
-                            indices.push(*index);
-                        }
-                    }
-
-                    let table_witness =
-                        fri_witness.layers.get(current_layer).unwrap().table_witness;
-                    let target_commitment = fri_commitment.inner_layers.get(current_layer).unwrap();
-
-                    (y_values, indices, table_witness, *target_commitment)
-                };
-
-                for i in (0..table_witness.vector.authentications.len()).rev() {
-                    stack
-                        .push_front(
-                            &table_witness.vector.authentications.as_slice()[i].to_bytes_be(),
+                {
+                    let (auth_len, current_layer) = {
+                        let (_, proof, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                            StarkCommitment<InteractionElements>,
+                            StarkProof,
+                            FriVerifyData,
+                        >();
+                        (
+                            proof
+                                .witness
+                                .fri_witness
+                                .layers
+                                .get(fri_verify_data.current_layer)
+                                .unwrap()
+                                .table_witness
+                                .vector
+                                .authentications
+                                .len(),
+                            fri_verify_data.current_layer,
                         )
+                    };
+
+                    const CHUNK_SIZE: usize = 16;
+                    let num_chunks = auth_len.div_ceil(CHUNK_SIZE);
+
+                    for chunk_idx in (0..num_chunks).rev() {
+                        let start = chunk_idx * CHUNK_SIZE;
+                        let end = (start + CHUNK_SIZE).min(auth_len);
+                        let chunk_len = end - start;
+
+                        let auth_chunk = {
+                            let (_, proof, _) = stack.get_stark_commitment_proof_and_cache::<
+                                StarkCommitment<InteractionElements>,
+                                StarkProof,
+                                FriVerifyData,
+                            >();
+                            let auth_slice = proof
+                                .witness
+                                .fri_witness
+                                .layers
+                                .get(current_layer)
+                                .unwrap()
+                                .table_witness
+                                .vector
+                                .authentications
+                                .as_slice();
+
+                            let mut buffer = [[0u8; 32]; CHUNK_SIZE];
+                            for i in 0..chunk_len {
+                                buffer[i] = auth_slice[start + i].to_bytes_be();
+                            }
+                            buffer
+                        };
+
+                        for i in (0..chunk_len).rev() {
+                            stack.push_front(&auth_chunk[i]).unwrap();
+                        }
+                    }
+
+                    stack
+                        .push_front(&Felt::from(auth_len).to_bytes_be())
                         .unwrap();
                 }
-                stack
-                    .push_front(
-                        &Felt::from(table_witness.vector.authentications.len()).to_bytes_be(),
+
+                let (y_len, indices_len, commitment) = {
+                    let (stark_commitment, _, fri_verify_data) = stack
+                        .get_stark_commitment_proof_and_cache::<
+                            StarkCommitment<InteractionElements>,
+                            StarkProof,
+                            FriVerifyData,
+                        >();
+
+                    let current = fri_verify_data.current_layer;
+
+                    (
+                        fri_verify_data.working_y_values.len(),
+                        fri_verify_data.working_indices.len(),
+                        *stark_commitment.fri.inner_layers.get(current).unwrap(),
                     )
-                    .unwrap();
+                };
 
-                for value in y_values.iter().rev() {
-                    stack.push_front(&value.to_bytes_be()).unwrap();
+                for i in (0..y_len).rev() {
+                    let y_bytes = {
+                        let (_, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                            StarkCommitment<InteractionElements>,
+                            StarkProof,
+                            FriVerifyData,
+                        >();
+                        fri_verify_data
+                            .working_y_values
+                            .get(i)
+                            .unwrap()
+                            .to_bytes_be()
+                    };
+                    stack.push_front(&y_bytes).unwrap();
+                }
+                stack.push_front(&Felt::from(y_len).to_bytes_be()).unwrap();
+
+                // Aktualizacja temp_queries
+                for i in (0..indices_len).rev() {
+                    let index_value = {
+                        let (_, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
+                            StarkCommitment<InteractionElements>,
+                            StarkProof,
+                            FriVerifyData,
+                        >();
+                        *fri_verify_data.working_indices.get(i).unwrap()
+                    };
+                    let verify_vars: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    verify_vars.temp_queries[i * 2] = index_value;
                 }
                 stack
-                    .push_front(&Felt::from(y_values.len()).to_bytes_be())
+                    .push_front(&Felt::from(indices_len).to_bytes_be())
                     .unwrap();
-                // println!("y_values: {:?}", y_values);
 
-                for i in (0..indices.len()).rev() {
-                    let index = indices[i];
-                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    let queries_slice = &mut verify_variables.temp_queries;
-                    queries_slice[i * 2] = index;
-                }
-                stack
-                    .push_front(&Felt::from(indices.len()).to_bytes_be())
-                    .unwrap();
-                println!("indices.len(): {}", indices.len());
-
-                commitment_push_to_stack(&target_commitment, stack);
+                stack.push_front(cast_struct_to_slice(&commitment)).unwrap();
 
                 self.stage = FriVerifyLayersStep::WaitForTableDecommit;
                 vec![TableDecommit::new().to_vec_with_type_tag()]
@@ -208,7 +251,6 @@ impl Executable for FriVerifyLayers {
             FriVerifyLayersStep::WaitForTableDecommit => {
                 let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
                 fri_verify_data.current_layer += 1;
-
                 fri_verify_data.advance_layer();
 
                 self.stage = FriVerifyLayersStep::ProcessLayer;
@@ -224,13 +266,4 @@ impl Executable for FriVerifyLayers {
     fn is_finished(&mut self) -> bool {
         self.stage == FriVerifyLayersStep::Done
     }
-}
-
-#[inline(always)]
-fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-    commitment: &types::swiftness::commitment::table::types::Commitment,
-    stack: &mut T,
-) {
-    let commitment_bytes = cast_struct_to_slice(commitment);
-    stack.push_front(commitment_bytes).unwrap();
 }

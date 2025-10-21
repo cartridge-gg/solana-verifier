@@ -128,11 +128,6 @@ impl Executable for VectorDecommit {
                     FUNVEC_AUTHENTICATIONS
                 );
 
-                println!(
-                    "DEBUG VectorWitness::from_stack: n_auth_usize = {}",
-                    self.n_authentications
-                );
-
                 self.current_auth_index = 0;
                 self.step = VectorDecommitStep::ProcessWitnessBatch;
                 vec![]
@@ -200,7 +195,6 @@ impl Executable for VectorDecommit {
                 stack
                     .push_front(&Felt::from(self.queries_count).to_bytes_be())
                     .unwrap();
-                println!("DEBUG: queries_count = {}", self.queries_count);
 
                 let computed_hash = Felt::ZERO;
                 stack.push_front(&computed_hash.to_bytes_be()).unwrap();
@@ -212,7 +206,6 @@ impl Executable for VectorDecommit {
             VectorDecommitStep::VerifyCommitmentHash => {
                 let commitment_hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("commitment_hash: {:?}", commitment_hash);
 
                 assert!(
                     commitment_hash == self.reference_commitment_hash,

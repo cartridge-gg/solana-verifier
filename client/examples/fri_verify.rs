@@ -2,16 +2,15 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
 use stark_verify_fri::fri_verify::FriVerify;
 use std::{mem::size_of, path::Path};
-use types::swiftness::stark::types::cast_struct_to_slice;
 use utils::{AccountCast, BidirectionalStack, Executable};
 use verifier_4::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
@@ -204,7 +203,7 @@ mod prepare_input {
         stark_commitment.fri = get();
         stack.stark_commitment = stark_commitment;
 
-        // Użyj nowej metody do przechowania FriVerifyData w cache
+        // Use new method to store FriVerifyData in cache
         let mut fri_verify_data = FriVerifyData::default();
         let fri_decommitment = get_decommitment();
         fri_verify_data.fri_decommitment = fri_decommitment;

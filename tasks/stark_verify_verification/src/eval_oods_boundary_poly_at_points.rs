@@ -4,16 +4,15 @@ use types::funvec::FUNVEC_QUERY_INDICES;
 use types::swiftness::air::domains::STARK_PRIME_MINUS_ONE;
 use types::swiftness::air::recursive_with_poseidon::{Layout, StaticLayoutTrait};
 use types::swiftness::global_values::InteractionElements;
-use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof};
+use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables};
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
-    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
+    ProofData, ProofDataVerification, StarkVerifyTrait, TypeIdentifiable, COLUMN_VALUES_SIZE,
     CONSTRAINT_DEGREE,
 };
 const MAX_DOMAIN_SIZE: Felt = Felt::from_hex_unchecked("0x40");
 const FIELD_GENERATOR: Felt = Felt::from_hex_unchecked("0x3");
 
-// EvalOodsBoundaryPolyAtPoints task - using fixed-size arrays for Solana BPF
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct EvalOodsBoundaryPolyAtPoints {
@@ -25,6 +24,7 @@ pub struct EvalOodsBoundaryPolyAtPoints {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum EvalOodsBoundaryStep {
     ReadPoints,
     PreparePoint,
@@ -57,7 +57,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
         T: BidirectionalStack
             + ProofData
             + StarkVerifyTrait
-            + FullProofDataVerifier3
+            + ProofDataVerification
             + CacheStorage
             + CachedProofData,
     >(
@@ -74,7 +74,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                 stack.pop_front();
                 self.points_count = queries_len.to_biguint().try_into().unwrap();
                 assert!(self.points_count != 0, "Points count is 0");
-                println!("points_count: {}", self.points_count);
                 assert!(
                     self.points_count <= FUNVEC_QUERY_INDICES,
                     "Too many query points: {} > {}",
@@ -108,40 +107,30 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     return vec![];
                 }
 
-                // Read only the current point (not all points)
                 let current_point = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
-                let (stark_commitment, proof) =
-                    FullProofDataVerifier3::get_stark_commitment_and_proof::<
+                let (stark_commitment, proof, column_values) =
+                    ProofDataVerification::get_sc_proof_cv::<
                         StarkCommitment<InteractionElements>,
                         StarkProof,
                     >(stack);
 
-                // Extract OODS evaluation info from commitment and proof
                 let oods_point = stark_commitment.interaction_after_composition;
-
-                // Get trace generator from global values
-                let log_trace_domain_size = proof.config.log_trace_domain_size;
-                let trace_domain_size = Felt::TWO.pow_felt(&log_trace_domain_size);
+                let log_trace_domain_size = &proof.config.log_trace_domain_size;
+                let trace_domain_size = Felt::TWO.pow_felt(log_trace_domain_size);
                 let trace_generator = FIELD_GENERATOR.pow_felt(
                     &STARK_PRIME_MINUS_ONE
                         .field_div(&NonZeroFelt::try_from(trace_domain_size).unwrap()),
                 );
 
-                // Get decommitment data
                 let traces_decommitment = &proof.witness.traces_decommitment;
                 let composition_decommitment = &proof.witness.composition_decommitment;
-
-                // Collect column values for this point (following the original algorithm)
-                // Use fixed-size array instead of Vec for Solana BPF
                 let max_columns = self.n_original_columns as usize
                     + self.n_interaction_columns as usize
                     + CONSTRAINT_DEGREE;
 
                 assert!(max_columns <= COLUMN_VALUES_SIZE);
-
-                let mut column_values = [Felt::ZERO; COLUMN_VALUES_SIZE]; // Fixed size, adjust as needed
 
                 let i = self.current_point_index;
 
@@ -184,15 +173,6 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
                     }
                 }
 
-                // Store column values in the preallocated column_values array
-                let column_values_array =
-                    FullProofDataVerifier3::get_proof_data_references::<StarkProof>(stack).6;
-                for (j, &value) in column_values.iter().enumerate() {
-                    if j < column_values_array.len() {
-                        column_values_array[j] = value;
-                    }
-                }
-
                 // Push evaluation parameters for EvalOodsPolynomial
                 stack.push_front(&trace_generator.to_bytes_be()).unwrap();
                 stack.push_front(&oods_point.to_bytes_be()).unwrap();
@@ -205,12 +185,10 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
             EvalOodsBoundaryStep::CollectResult => {
                 let evaluation = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
-                println!("evaluation: {:?}", evaluation);
                 let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
                 fri_verify_data.fri_decommitment.values.push(evaluation);
 
                 self.current_point_index += 1;
-                println!("current_point_index: {}", self.current_point_index);
                 self.step = EvalOodsBoundaryStep::PreparePoint;
                 vec![]
             }
@@ -227,7 +205,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
 }
 
 // ComputeQueryPoints task
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct ComputeQueryPoints {
     processed: bool,
@@ -260,7 +238,10 @@ impl Default for ComputeQueryPoints {
 // └──────────────────────────────┘  <- front (stack front)
 
 impl Executable for ComputeQueryPoints {
-    fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         let log_eval_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
 
@@ -275,20 +256,26 @@ impl Executable for ComputeQueryPoints {
 
         let shift = Felt::TWO.pow_felt(&(MAX_DOMAIN_SIZE - log_eval_domain_size));
 
-        // Use fixed-size array instead of Vec for Solana BPF
-        let mut points = [Felt::ZERO; FUNVEC_QUERY_INDICES];
-
         let queries_count = queries_len.to_biguint().try_into().unwrap();
 
-        for point_slot in points.iter_mut().take(queries_count) {
+        // Process points and store in account storage - avoid borrowing conflicts
+        for i in 0..queries_count {
             let query = Felt::from_bytes_be_slice(stack.borrow_front());
             let index: u64 = (query * shift).to_biguint().try_into().unwrap();
-            *point_slot = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
+            let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
+
+            // Store point in account storage
+            let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+            verify_variables.points[i] = point;
             stack.pop_front();
         }
 
         for i in (0..queries_count).rev() {
-            stack.push_front(&points[i].to_bytes_be()).unwrap();
+            let point = {
+                let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                verify_variables.points[i]
+            };
+            stack.push_front(&point.to_bytes_be()).unwrap();
         }
         stack.push_front(&queries_len.to_bytes_be()).unwrap();
 

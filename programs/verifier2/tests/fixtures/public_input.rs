@@ -9,7 +9,7 @@ pub fn get() -> PublicInput {
         range_check_min: Felt::from_hex_unchecked("0x0"),
         range_check_max: Felt::from_hex_unchecked("0xffff"),
         layout: Felt::from_hex_unchecked("0x7265637572736976655f776974685f706f736569646f6e"),
-        dynamic_params: None,
+        // dynamic_params: None,
         segments: FunVec::from_vec(vec![
             SegmentInfo {
                 begin_addr: Felt::from_hex_unchecked("0x1"),

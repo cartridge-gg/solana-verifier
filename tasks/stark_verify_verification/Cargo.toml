@@ -10,3 +10,4 @@ types.workspace = true
 sha3.workspace = true
 poseidon.workspace = true
 transcript.workspace = true
+solana-program.workspace = true

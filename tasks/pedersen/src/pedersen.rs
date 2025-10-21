@@ -59,6 +59,60 @@ fn bools_to_usize_le(bools: &[bool]) -> usize {
     result
 }
 
+// Helper function to perform point addition with fresh stack frame
+#[inline(never)]
+fn operate_with_affine_inline_never(
+    px: &Felt,
+    py: &Felt,
+    pz: &Felt,
+    qx: &Felt,
+    qy: &Felt,
+) -> (Felt, Felt, Felt) {
+    // Compute u = qy * pz and v = qx * pz
+    let u = qy * pz;
+    let v = qx * pz;
+
+    // Check edge cases
+    if u == *py {
+        if v != *px || *py == Felt::ZERO {
+            // Return point at infinity (0, 1, 0)
+            return (Felt::ZERO, Felt::ONE, Felt::ZERO);
+        } else {
+            // Point doubling case - use lambdaworks double() directly
+            let p = ShortWeierstrassProjectivePoint::<StarkCurve>::new([
+                *px.inner(),
+                *py.inner(),
+                *pz.inner(),
+            ])
+            .unwrap();
+            let result = p.double();
+            return (
+                Felt::from_bytes_be_slice(&result.x().to_bytes_be()),
+                Felt::from_bytes_be_slice(&result.y().to_bytes_be()),
+                Felt::from_bytes_be_slice(&result.z().to_bytes_be()),
+            );
+        }
+    }
+
+    // Compute differences
+    let u = u - py;
+    let v = v - px;
+
+    // Compute intermediate values
+    let vv = v * v;
+    let uu = u * u;
+    let vvv = v * vv;
+    let r = vv * px;
+    let a = (uu * pz - vvv) - (r + r);
+
+    // Compute final coordinates
+    let x = v * a;
+    let y = u * (r - a) - vvv * py;
+    let z = vvv * pz;
+
+    (x, y, z)
+}
+
 impl Executable for PedersenHash {
     fn execute<T: BidirectionalStack>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
@@ -126,7 +180,6 @@ impl Executable for PedersenHash {
 #[repr(C)]
 pub struct LookupAndAccumulate {
     phase: LookupAndAccumulatePhase,
-    acc: ShortWeierstrassProjectivePoint<StarkCurve>,
     bits: [bool; 248],
     bits_len: usize,
     table_index: u8,
@@ -134,6 +187,7 @@ pub struct LookupAndAccumulate {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum LookupAndAccumulatePhase {
     Lookup,
     Accumulate,
@@ -149,8 +203,7 @@ impl LookupAndAccumulate {
         bits_array[..len].copy_from_slice(&bits[..len]);
 
         Self {
-            phase: LookupAndAccumulatePhase::Lookup,
-            acc: SHIFT_POINT,
+            phase: LookupAndAccumulatePhase::Accumulate,
             bits: bits_array,
             bits_len: len,
             table_index,
@@ -163,65 +216,81 @@ impl Executable for LookupAndAccumulate {
     fn execute<T: BidirectionalStack + ProofData>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
         match self.phase {
             LookupAndAccumulatePhase::Lookup => {
-                let z = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
-                stack.pop_front();
-                let y = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
-                stack.pop_front();
-                let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
-                stack.pop_front();
-
-                self.acc = ShortWeierstrassProjectivePoint::<StarkCurve>::new([
-                    *x.inner(),
-                    *y.inner(),
-                    *z.inner(),
-                ])
-                .unwrap();
+                // Stack already has accumulator point (x, y, z) from previous task
+                // Just transition to Accumulate phase
                 self.phase = LookupAndAccumulatePhase::Accumulate;
+                self.chunk_index = 0;
                 vec![]
             }
             LookupAndAccumulatePhase::Accumulate => {
                 const CHUNK_SIZE: usize = 10;
 
-                let prep: &[ShortWeierstrassProjectivePoint<StarkCurve>] = match self.table_index {
-                    1 => &POINTS_P1,
-                    2 => &POINTS_P2,
-                    3 => &POINTS_P3,
-                    4 => &POINTS_P4,
-                    _ => panic!("Invalid table index"),
-                };
-
                 let bits = &self.bits[..self.bits_len];
-                let start_chunk = self.chunk_index;
-
-                #[allow(clippy::double_ended_iterator_last)]
-                let processed = bits
-                    .chunks(PedersenHash::CURVE_CONST_BITS)
-                    .enumerate()
-                    .skip(start_chunk)
-                    .take(CHUNK_SIZE)
-                    .map(|(i, chunk)| {
-                        let offset = bools_to_usize_le(chunk);
-                        if offset > 0 {
-                            self.acc = self.acc.operate_with_affine(
-                                &prep[i * PedersenHash::TABLE_SIZE + offset - 1],
-                            );
-                        }
-                        i + 1
-                    })
-                    .last()
-                    .unwrap_or(start_chunk);
-
-                self.chunk_index = processed;
-
                 let total_chunks = bits.len().div_ceil(PedersenHash::CURVE_CONST_BITS);
-                if self.chunk_index >= total_chunks {
-                    stack.push_front(&self.acc.x().to_bytes_be()).unwrap();
-                    stack.push_front(&self.acc.y().to_bytes_be()).unwrap();
-                    stack.push_front(&self.acc.z().to_bytes_be()).unwrap();
-                    self.phase = LookupAndAccumulatePhase::Finished;
-                }
 
-                vec![]
+                if self.chunk_index >= total_chunks {
+                    // Done - accumulator is on stack, mark as finished
+                    self.phase = LookupAndAccumulatePhase::Finished;
+                    vec![]
+                } else {
+                    // Read current accumulator from stack
+                    let z = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+                    stack.pop_front();
+                    let y = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+                    stack.pop_front();
+                    let x = Felt::from_bytes_be(stack.borrow_front().try_into().unwrap());
+                    stack.pop_front();
+
+                    let mut acc_x = x;
+                    let mut acc_y = y;
+                    let mut acc_z = z;
+
+                    // Process multiple chunks (up to CHUNK_SIZE)
+                    let start_chunk = self.chunk_index;
+                    let end_chunk = (start_chunk + CHUNK_SIZE).min(total_chunks);
+
+                    for i in start_chunk..end_chunk {
+                        let chunk_start = i * PedersenHash::CURVE_CONST_BITS;
+                        let chunk_end =
+                            (chunk_start + PedersenHash::CURVE_CONST_BITS).min(bits.len());
+                        let chunk = &bits[chunk_start..chunk_end];
+                        let offset = bools_to_usize_le(chunk);
+
+                        if offset > 0 {
+                            let point_index = i * PedersenHash::TABLE_SIZE + offset - 1;
+
+                            // Get the point from the table
+                            let point = match self.table_index {
+                                1 => &POINTS_P1[point_index],
+                                2 => &POINTS_P2[point_index],
+                                3 => &POINTS_P3[point_index],
+                                4 => &POINTS_P4[point_index],
+                                _ => panic!("Invalid table index"),
+                            };
+
+                            // Perform point addition with fresh stack frame
+                            let (new_x, new_y, new_z) = operate_with_affine_inline_never(
+                                &acc_x,
+                                &acc_y,
+                                &acc_z,
+                                &Felt::from_bytes_be_slice(&point.x().to_bytes_be()),
+                                &Felt::from_bytes_be_slice(&point.y().to_bytes_be()),
+                            );
+
+                            acc_x = new_x;
+                            acc_y = new_y;
+                            acc_z = new_z;
+                        }
+                    }
+
+                    // Push updated accumulator back to stack
+                    stack.push_front(&acc_x.to_bytes_be()).unwrap();
+                    stack.push_front(&acc_y.to_bytes_be()).unwrap();
+                    stack.push_front(&acc_z.to_bytes_be()).unwrap();
+
+                    self.chunk_index = end_chunk;
+                    vec![]
+                }
             }
             LookupAndAccumulatePhase::Finished => {
                 vec![]

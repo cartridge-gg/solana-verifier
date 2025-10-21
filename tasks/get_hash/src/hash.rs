@@ -6,6 +6,7 @@ use felt::Felt;
 use utils::{impl_type_identifiable, BidirectionalStack, Executable, ProofData, TypeIdentifiable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum GetHashStep {
     Init,
     WaitForPedersenAddress,
@@ -135,8 +136,8 @@ impl Executable for GetHash {
                     range_check_min,
                     range_check_max,
                     layout,
-                    has_dynamic_params,
-                    dynamic_params_len,
+                    // has_dynamic_params,
+                    // dynamic_params_len,
                     segments_len,
                     padding_addr,
                     padding_value,
@@ -146,12 +147,12 @@ impl Executable for GetHash {
                     let proof: &StarkProof = stack.get_proof_reference();
                     let public_input = &proof.public_input;
 
-                    let dynamic_params_len = if let Some(ref dp) = public_input.dynamic_params {
-                        let dynamic_params_vec: Vec<u32> = (*dp).into();
-                        dynamic_params_vec.len()
-                    } else {
-                        0
-                    };
+                    // let dynamic_params_len = if let Some(ref dp) = public_input.dynamic_params {
+                    //     let dynamic_params_vec: Vec<u32> = (*dp).into();
+                    //     dynamic_params_vec.len()
+                    // } else {
+                    //     0
+                    // };
 
                     (
                         self.n_verifier_friendly_commitment_layers,
@@ -159,8 +160,8 @@ impl Executable for GetHash {
                         public_input.range_check_min,
                         public_input.range_check_max,
                         public_input.layout,
-                        public_input.dynamic_params.is_some(),
-                        dynamic_params_len,
+                        // public_input.dynamic_params.is_some(),
+                        // dynamic_params_len,
                         public_input.segments.len(),
                         public_input.padding_addr,
                         public_input.padding_value,
@@ -170,7 +171,7 @@ impl Executable for GetHash {
                 };
 
                 let mut total_elements = 5; // basic fields
-                total_elements += dynamic_params_len;
+                                            // total_elements += dynamic_params_len;
                 total_elements += segments_len * 2;
                 total_elements += 5; // padding_addr, padding_value, headers_len+1, main_page_len, main_page_hash
                 total_elements += headers_len * 3;
@@ -220,17 +221,17 @@ impl Executable for GetHash {
                     stack.push_front(&begin_addr.to_bytes_be()).unwrap();
                 }
 
-                if has_dynamic_params {
-                    let proof: &StarkProof = stack.get_proof_reference();
-                    let public_input = &proof.public_input;
-                    if let Some(dynamic_params) = &public_input.dynamic_params {
-                        let dynamic_params_vec: Vec<u32> = (*dynamic_params).into();
-                        for value in dynamic_params_vec.iter().rev() {
-                            let felt = Felt::from(*value);
-                            stack.push_front(&felt.to_bytes_be()).unwrap();
-                        }
-                    }
-                }
+                // if has_dynamic_params {
+                //     let proof: &StarkProof = stack.get_proof_reference();
+                //     let public_input = &proof.public_input;
+                //     if let Some(dynamic_params) = &public_input.dynamic_params {
+                //         let dynamic_params_vec: Vec<u32> = (*dynamic_params).into();
+                //         for value in dynamic_params_vec.iter().rev() {
+                //             let felt = Felt::from(*value);
+                //             stack.push_front(&felt.to_bytes_be()).unwrap();
+                //         }
+                //     }
+                // }
 
                 stack.push_front(&layout.to_bytes_be()).unwrap();
                 stack.push_front(&range_check_max.to_bytes_be()).unwrap();

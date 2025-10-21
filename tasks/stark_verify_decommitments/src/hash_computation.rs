@@ -92,7 +92,7 @@ fn keccak_hash(x: Felt, y: Felt) -> Felt {
 
     let mut hasher = Keccak256::new();
     hasher.update(hash_data.as_slice());
-    Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+    Felt::from_bytes_be_slice(&hasher.finalize()[12..32])
 }
 
 // New tasks to replace method calls

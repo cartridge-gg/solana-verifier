@@ -1,4 +1,5 @@
 use crate::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
+use crate::get_public_memory_product_ratio::GetPublicMemoryProductRatio;
 use crate::helpers::{
     DILUTED_N_BITS, DILUTED_SPACING, FELT_2, PEDERSEN_BUILTIN_RATIO, PEDERSEN_BUILTIN_REPETITIONS,
     POSEIDON_RATIO,
@@ -16,7 +17,7 @@ use types::swiftness::air::periodic_columns::{
 use types::swiftness::air::recursive_with_poseidon::segments;
 use types::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
 use types::swiftness::air::recursive_with_poseidon::{SHIFT_POINT_X, SHIFT_POINT_Y};
-use types::swiftness::global_values::{GlobalValues, InteractionElements};
+use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
 use utils::{
@@ -45,6 +46,7 @@ pub struct EvalCompositionPolynomial {
     memory_multi_column_perm_perm_interaction_elm: Felt,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum EvalCompositionStep {
     CollectMaskValues,
     ComputePeriodicColumns,
@@ -143,28 +145,27 @@ impl Executable for EvalCompositionPolynomial {
                 vec![]
             }
             EvalCompositionStep::ComputePublicMemoryProductRatio => {
-                let _public_memory_column_size = self
+                let public_memory_column_size = self
                     .trace_domain_size
                     .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
 
+                let z = self.memory_multi_column_perm_perm_interaction_elm;
+                let alpha = self.memory_multi_column_perm_hash_interaction_elm0;
+
+                stack
+                    .push_front(&public_memory_column_size.to_bytes_be())
+                    .unwrap();
+                stack.push_front(&alpha.to_bytes_be()).unwrap();
+                stack.push_front(&z.to_bytes_be()).unwrap();
+
                 self.step = EvalCompositionStep::ComputePeriodicColumns;
-                // vec![PublicMemoryRatio::new(
-                //     self.memory_multi_column_perm_perm_interaction_elm,
-                //     self.memory_multi_column_perm_hash_interaction_elm0,
-                //     public_memory_column_size,
-                // )
-                // .to_vec_with_type_tag()]
-                vec![]
+                vec![GetPublicMemoryProductRatio::new().to_vec_with_type_tag()]
             }
 
             EvalCompositionStep::ComputePeriodicColumns => {
-                // self.public_memory_prod_ratio = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
+                self.public_memory_prod_ratio = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                self.public_memory_prod_ratio = Felt::from_hex_unchecked(
-                    "0x5593c3e7c28433d4bed879adb1cb8081b0a46decda462e76da45b0d7244cbf0",
-                ); // Placeholder until PublicMemoryRatio is implemented
-                   // Calculate n_steps
                 let proof: &StarkProof = stack.get_proof_reference();
                 let public_input = &proof.public_input;
                 let n_steps = FELT_2.pow_felt(&public_input.log_n_steps);
@@ -196,7 +197,6 @@ impl Executable for EvalCompositionPolynomial {
             }
 
             EvalCompositionStep::ComputePoseidonPoints => {
-                // Calculate poseidon points
                 let n_steps = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let n_poseidon_copies =
@@ -226,11 +226,6 @@ impl Executable for EvalCompositionPolynomial {
             }
 
             EvalCompositionStep::EvalPolynomial => {
-                // Get proof data to access interaction elements and public input
-                let proof: &StarkProof = stack.get_proof_reference();
-                let public_input = &proof.public_input;
-
-                // Get all the computed values
                 let (
                     poseidon_key0,
                     poseidon_key1,
@@ -239,84 +234,80 @@ impl Executable for EvalCompositionPolynomial {
                     poseidon_partial_key1,
                 ) = self.poseidon_keys;
 
-                // Create GlobalValues structure
-                let global_values = GlobalValues {
-                    trace_length: self.trace_domain_size,
-                    initial_pc: public_input
-                        .segments
-                        .get(segments::PROGRAM)
-                        .unwrap()
-                        .begin_addr,
-                    final_pc: public_input
-                        .segments
-                        .get(segments::PROGRAM)
-                        .unwrap()
-                        .stop_ptr,
-                    initial_ap: public_input
-                        .segments
-                        .get(segments::EXECUTION)
-                        .unwrap()
-                        .begin_addr,
-                    final_ap: public_input
-                        .segments
-                        .get(segments::EXECUTION)
-                        .unwrap()
-                        .stop_ptr,
-                    initial_pedersen_addr: public_input
-                        .segments
-                        .get(segments::PEDERSEN)
-                        .unwrap()
-                        .begin_addr,
-                    initial_range_check_addr: public_input
-                        .segments
-                        .get(segments::RANGE_CHECK)
-                        .unwrap()
-                        .begin_addr,
-                    initial_bitwise_addr: public_input
-                        .segments
-                        .get(segments::BITWISE)
-                        .unwrap()
-                        .begin_addr,
-                    initial_poseidon_addr: public_input
-                        .segments
-                        .get(segments::POSEIDON)
-                        .unwrap()
-                        .begin_addr,
-                    range_check_min: public_input.range_check_min,
-                    range_check_max: public_input.range_check_max,
-                    offset_size: FELT_65536,
-                    half_offset_size: FELT_32768,
-                    pedersen_shift_point: types::swiftness::global_values::EcPoint {
-                        x: SHIFT_POINT_X,
-                        y: SHIFT_POINT_Y,
-                    },
-                    pedersen_points_x: self.pedersen_points_x,
-                    pedersen_points_y: self.pedersen_points_y,
-                    poseidon_poseidon_full_round_key0: poseidon_key0,
-                    poseidon_poseidon_full_round_key1: poseidon_key1,
-                    poseidon_poseidon_full_round_key2: poseidon_key2,
-                    poseidon_poseidon_partial_round_key0: poseidon_partial_key0,
-                    poseidon_poseidon_partial_round_key1: poseidon_partial_key1,
-                    memory_multi_column_perm_perm_interaction_elm: self
-                        .memory_multi_column_perm_perm_interaction_elm,
-                    memory_multi_column_perm_hash_interaction_elm0: self
-                        .memory_multi_column_perm_hash_interaction_elm0,
-                    range_check16_perm_interaction_elm: self.range_check16_perm_interaction_elm,
-                    diluted_check_permutation_interaction_elm: self
-                        .diluted_check_permutation_interaction_elm,
-                    diluted_check_interaction_z: self.diluted_check_interaction_z,
-                    diluted_check_interaction_alpha: self.diluted_check_interaction_alpha,
-                    memory_multi_column_perm_perm_public_memory_prod: self.public_memory_prod_ratio,
-                    range_check16_perm_public_memory_prod: FELT_1,
-                    diluted_check_first_elm: FELT_0,
-                    diluted_check_permutation_public_memory_prod: FELT_1,
-                    diluted_check_final_cum_val: self.diluted_prod,
+                let (proof, gv) = stack.get_proof_and_global_values_mut();
+                let public_input = &proof.public_input;
+
+                gv.trace_length = self.trace_domain_size;
+                gv.initial_pc = public_input
+                    .segments
+                    .get(segments::PROGRAM)
+                    .unwrap()
+                    .begin_addr;
+                gv.final_pc = public_input
+                    .segments
+                    .get(segments::PROGRAM)
+                    .unwrap()
+                    .stop_ptr;
+                gv.initial_ap = public_input
+                    .segments
+                    .get(segments::EXECUTION)
+                    .unwrap()
+                    .begin_addr;
+                gv.final_ap = public_input
+                    .segments
+                    .get(segments::EXECUTION)
+                    .unwrap()
+                    .stop_ptr;
+                gv.initial_pedersen_addr = public_input
+                    .segments
+                    .get(segments::PEDERSEN)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_range_check_addr = public_input
+                    .segments
+                    .get(segments::RANGE_CHECK)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_bitwise_addr = public_input
+                    .segments
+                    .get(segments::BITWISE)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_poseidon_addr = public_input
+                    .segments
+                    .get(segments::POSEIDON)
+                    .unwrap()
+                    .begin_addr;
+                gv.range_check_min = public_input.range_check_min;
+                gv.range_check_max = public_input.range_check_max;
+                gv.offset_size = FELT_65536;
+                gv.half_offset_size = FELT_32768;
+                gv.pedersen_shift_point = types::swiftness::global_values::EcPoint {
+                    x: SHIFT_POINT_X,
+                    y: SHIFT_POINT_Y,
                 };
+                gv.pedersen_points_x = self.pedersen_points_x;
+                gv.pedersen_points_y = self.pedersen_points_y;
+                gv.poseidon_poseidon_full_round_key0 = poseidon_key0;
+                gv.poseidon_poseidon_full_round_key1 = poseidon_key1;
+                gv.poseidon_poseidon_full_round_key2 = poseidon_key2;
+                gv.poseidon_poseidon_partial_round_key0 = poseidon_partial_key0;
+                gv.poseidon_poseidon_partial_round_key1 = poseidon_partial_key1;
+                gv.memory_multi_column_perm_perm_interaction_elm =
+                    self.memory_multi_column_perm_perm_interaction_elm;
+                gv.memory_multi_column_perm_hash_interaction_elm0 =
+                    self.memory_multi_column_perm_hash_interaction_elm0;
+                gv.range_check16_perm_interaction_elm = self.range_check16_perm_interaction_elm;
+                gv.diluted_check_permutation_interaction_elm =
+                    self.diluted_check_permutation_interaction_elm;
+                gv.diluted_check_interaction_z = self.diluted_check_interaction_z;
+                gv.diluted_check_interaction_alpha = self.diluted_check_interaction_alpha;
+                gv.memory_multi_column_perm_perm_public_memory_prod = self.public_memory_prod_ratio;
+                gv.range_check16_perm_public_memory_prod = FELT_1;
+                gv.diluted_check_first_elm = FELT_0;
+                gv.diluted_check_permutation_public_memory_prod = FELT_1;
+                gv.diluted_check_final_cum_val = self.diluted_prod;
 
-                // Set global values in the preallocated location in BidirectionalStackAccount
-                stack.set_global_values(global_values);
-
-                // Push parameters for EvalCompositionPolynomialInner
                 stack
                     .push_front(&self.trace_generator.to_bytes_be())
                     .unwrap();

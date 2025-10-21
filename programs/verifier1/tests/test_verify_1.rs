@@ -29,6 +29,7 @@ pub fn test_proof_verification() {
     let mut steps = 0;
     while !stack.is_empty_back() {
         stack.execute();
+        println!("steps: {}", steps);
         steps += 1;
     }
     let counter = Felt::from_bytes_be_slice(stack.borrow_front());

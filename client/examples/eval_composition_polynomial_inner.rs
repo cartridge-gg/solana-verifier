@@ -2,9 +2,9 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
@@ -18,13 +18,14 @@ use felt::Felt;
 use utils::BidirectionalStack;
 
 pub const CHUNK_SIZE: usize = 1000;
+pub const MAX_CHUNK_SIZE: usize = 1;
 
 #[tokio::main]
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
-        .filter_module("client", log::LevelFilter::Trace)
+        .filter_module("client", log::LevelFilter::Info)
         .init();
 
     let config = Config::parse_args();
@@ -94,6 +95,11 @@ async fn main() -> client::Result<()> {
 
     // Push the EvalCompositionPolynomialInner task to the stack
     let validate_task = EvalCompositionPolynomialInner::new();
+
+    println!(
+        "validate task len {:?}",
+        validate_task.to_vec_with_type_tag().len()
+    );
 
     println!(
         "Using EvalCompositionPolynomialInner with TYPE_TAG: {}",
@@ -166,20 +172,36 @@ async fn main() -> client::Result<()> {
     let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(900_000);
     let simulation_steps_usize = simulation_steps as usize;
 
-    for i in 0..simulation_steps_usize {
-        let execute_ix = Instruction::new_with_borsh(
-            program_id,
-            &VerifierInstruction::Execute(i as u32),
-            vec![AccountMeta::new(stack_account.pubkey(), false)],
-        );
-        let execute_tx = Transaction::new_signed_with_payer(
-            &[limit_instructions.clone(), execute_ix],
-            Some(&payer.pubkey()),
-            &[&payer],
-            client.get_latest_blockhash().await?,
-        );
-        let sig = client.send_and_confirm_transaction(&execute_tx).await?;
-        println!("Step {} completed, sig {}", i, sig);
+    let mut step = 0;
+    while step < simulation_steps_usize {
+        let mut chunk_size = MAX_CHUNK_SIZE;
+        if step >= 10 {
+            chunk_size = 1;
+        } // For debugging - small chunks from the beginning
+
+        let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
+        println!("Processing steps {}-{}", step, chunk_end - 1);
+
+        let mut transactions = Vec::new();
+        for i in step..chunk_end {
+            let execute_ix = Instruction::new_with_borsh(
+                program_id,
+                &VerifierInstruction::Execute(i as u32),
+                vec![AccountMeta::new(stack_account.pubkey(), false)],
+            );
+            let tx = Transaction::new_signed_with_payer(
+                &[limit_instructions.clone(), execute_ix],
+                Some(&payer.pubkey()),
+                &[&payer],
+                client.get_latest_blockhash().await?,
+            );
+            transactions.push(tx);
+        }
+
+        send_and_confirm_transactions(&client, &transactions).await?;
+        println!("Chunk {}-{} completed", step, chunk_end - 1);
+
+        step = chunk_end;
     }
 
     let mut account_data = client

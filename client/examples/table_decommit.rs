@@ -3,26 +3,21 @@ use client::{
     setup_payer, setup_program, ClientError, Config,
 };
 use felt::Felt;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
 use stark_verify_decommitments::{table_decommit::TableDecommit, vector_decommit::VectorDecommit};
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
 use types::swiftness::commitment::table::config::Config as TableConfig;
 use types::swiftness::commitment::table::types::Commitment as TableCommitment;
+use types::swiftness::commitment::vector::config::Config as VectorConfig;
 use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
-use types::swiftness::stark::types::StarkCommitment;
-use types::swiftness::stark::types::{cast_struct_to_slice, VerifyVariables};
-use types::swiftness::{
-    commitment::vector::config::Config as VectorConfig,
-    global_values::{GlobalValues, InteractionElements},
-};
-use utils::{AccountCast, Executable, COLUMN_VALUES_SIZE};
+use types::swiftness::stark::types::cast_struct_to_slice;
+use utils::{AccountCast, Executable};
 use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAccount};
 
 pub const CHUNK_SIZE: usize = 1000;

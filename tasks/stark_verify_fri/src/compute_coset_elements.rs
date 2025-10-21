@@ -27,16 +27,7 @@ pub enum ComputeCosetElementsStep {
 impl_type_identifiable!(ComputeCosetElements);
 
 impl ComputeCosetElements {
-    pub fn new() -> Self {
-        Self {
-            stage: ComputeCosetElementsStep::Init,
-            current_index: 0,
-            coset_x_inv: Felt::ZERO,
-            coset_start_index: Felt::ZERO,
-        }
-    }
-
-    pub fn with_coset_start_index(coset_start_index: Felt) -> Self {
+    pub fn new(coset_start_index: Felt) -> Self {
         Self {
             stage: ComputeCosetElementsStep::Init,
             current_index: 0,
@@ -48,7 +39,7 @@ impl ComputeCosetElements {
 
 impl Default for ComputeCosetElements {
     fn default() -> Self {
-        Self::new()
+        Self::new(Felt::ZERO)
     }
 }
 
@@ -76,19 +67,24 @@ impl Executable for ComputeCosetElements {
                     let target_index =
                         self.coset_start_index + Felt::from(self.current_index as u64);
 
-                    // ZMIANA: używamy get_first_active_query()
-                    let q = fri_verify_data.get_first_active_query();
-                    if q.is_some() && q.unwrap().index == target_index {
-                        let query = *q.unwrap();
-                        fri_verify_data.remove_first_active_query();
+                    if let Some(query) = fri_verify_data.get_first_active_query() {
+                        if query.index == target_index {
+                            let y_value = query.y_value;
+                            let x_inv_value = query.x_inv_value;
 
-                        fri_verify_data.working_elements.push(query.y_value);
-                        fri_verify_data.working_y_values.push(query.y_value);
+                            fri_verify_data.remove_first_active_query();
+                            fri_verify_data.working_elements.push(y_value);
+                            fri_verify_data.working_y_values.push(y_value);
 
-                        let fri_group = get_fri_group();
-                        let fri_group_element = *fri_group.get(self.current_index).unwrap();
-                        self.coset_x_inv = query.x_inv_value * fri_group_element;
-                    } else if !fri_verify_data.sibling_witness.is_empty() {
+                            self.coset_x_inv =
+                                x_inv_value * get_fri_group().get(self.current_index).unwrap();
+
+                            self.current_index += 1;
+                            return vec![];
+                        }
+                    }
+
+                    if !fri_verify_data.sibling_witness.is_empty() {
                         let witness_value = *fri_verify_data.sibling_witness.get(0).unwrap();
                         fri_verify_data.sibling_witness.shift(1);
                         fri_verify_data.working_elements.push(witness_value);

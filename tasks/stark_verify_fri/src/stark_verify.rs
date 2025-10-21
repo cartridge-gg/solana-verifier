@@ -1,7 +1,7 @@
 use std::vec;
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
-    ProofData, StarkVerifyTrait, TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    ProofDataVerification, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::fri_verify::FriVerify;
@@ -35,7 +35,7 @@ impl Default for StarkVerify {
 
 impl Executable for StarkVerify {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + ProofDataVerification + CacheStorage,
     >(
         &mut self,
         _stack: &mut T,
@@ -57,12 +57,3 @@ impl Executable for StarkVerify {
         self.step == StarkVerifyStep::Done
     }
 }
-
-// #[inline(always)]
-// fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-//     commitment: &TableCommitment,
-//     stack: &mut T,
-// ) {
-//     let commitment_bytes = cast_struct_to_slice(commitment);
-//     stack.push_front(commitment_bytes).unwrap();
-// }

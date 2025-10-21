@@ -1,10 +1,11 @@
 use crate::table_commit::TableCommit;
 use felt::Felt;
+use solana_program::msg;
 use transcript::transcript::TranscriptRandomFelt;
 use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::{StarkCommitment, StarkProof};
-use utils::FullProofDataVerifier2;
+use utils::ProofDataDecommitment;
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkCommitmentTrait,
     TypeIdentifiable,
@@ -47,9 +48,7 @@ impl Default for FriCommit {
 }
 
 impl Executable for FriCommit {
-    fn execute<
-        T: BidirectionalStack + ProofData + StarkCommitmentTrait + FullProofDataVerifier2,
-    >(
+    fn execute<T: BidirectionalStack + ProofData + StarkCommitmentTrait + ProofDataDecommitment>(
         &mut self,
         stack: &mut T,
     ) -> Vec<Vec<u8>> {
@@ -158,36 +157,77 @@ impl Executable for FriCommit {
             }
 
             FriCommitStep::ReadLastLayerCoefficients => {
-                let proof: &StarkProof = stack.get_proof_reference();
-                let last_layer_coefficients = proof.unsent_commitment.fri.last_layer_coefficients;
+                let (coef_len, chunk_size) = {
+                    let (stark_commitment, proof) = stack.get_stark_commitment_and_proof_mut::<StarkCommitment<InteractionElements>, StarkProof>();
+                    let last_layer_coefficients =
+                        &proof.unsent_commitment.fri.last_layer_coefficients;
 
-                let expected_len =
-                    Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);
-                assert!(
-                    expected_len == last_layer_coefficients.len().into(),
-                    "Invalid last layer coefficients length"
-                );
+                    let expected_len =
+                        Felt::TWO.pow_felt(&proof.config.fri.log_last_layer_degree_bound);
+                    msg!(
+                        "FriCommit: log_last_layer_degree_bound={}, expected_len={}, actual_len={}",
+                        proof.config.fri.log_last_layer_degree_bound,
+                        expected_len,
+                        last_layer_coefficients.len()
+                    );
+                    assert!(
+                        expected_len == last_layer_coefficients.len().into(),
+                        "Invalid last layer coefficients length: expected {}, got {}",
+                        expected_len,
+                        last_layer_coefficients.len()
+                    );
 
-                let stark_commitment =
-                    stack.get_stark_commitment_mut::<StarkCommitment<InteractionElements>>();
+                    stark_commitment
+                        .fri
+                        .last_layer_coefficients
+                        .extend(last_layer_coefficients.as_slice());
 
-                stark_commitment
-                    .fri
-                    .last_layer_coefficients
-                    .extend(last_layer_coefficients.as_slice());
+                    (
+                        last_layer_coefficients.len(),
+                        10.min(last_layer_coefficients.len()),
+                    )
+                };
 
-                TranscriptReadFeltVector::push_input(
-                    self.current_transcript_digest,
-                    last_layer_coefficients.as_slice(),
-                    stack,
-                );
+                // Manually push inputs to avoid Vec allocation
+                // Push zeros for padding
+                let inputs_len = coef_len; // +1 for digest
+                let zero_count = inputs_len.div_ceil(2) * 2 - inputs_len;
+                for _ in 0..zero_count {
+                    stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                }
+                stack.push_front(&Felt::ONE.to_bytes_be()).unwrap();
+
+                // Push coefficients in chunks to limit stack allocation
+                let total_chunks = coef_len.div_ceil(chunk_size);
+                for chunk_idx in (0..total_chunks).rev() {
+                    let start = chunk_idx * chunk_size;
+                    let end = ((chunk_idx + 1) * chunk_size).min(coef_len);
+
+                    let chunk_bytes: Vec<[u8; 32]> = {
+                        let stark_commitment =
+                            stack.get_stark_commitment::<StarkCommitment<InteractionElements>>();
+                        stark_commitment.fri.last_layer_coefficients.as_slice()[start..end]
+                            .iter()
+                            .map(|f| f.to_bytes_be())
+                            .collect()
+                    };
+
+                    for byte_arr in chunk_bytes.iter().rev() {
+                        stack.push_front(byte_arr).unwrap();
+                    }
+                }
+
+                // Push digest + 1
+                let digest_plus_one = self.current_transcript_digest + Felt::ONE;
+                stack.push_front(&digest_plus_one.to_bytes_be()).unwrap();
+
+                // Push initial state
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
+                stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
 
                 self.step = FriCommitStep::Done;
-
-                vec![
-                    TranscriptReadFeltVector::new(last_layer_coefficients.as_slice().len())
-                        .to_vec_with_type_tag(),
-                ]
+                vec![TranscriptReadFeltVector::new(coef_len).to_vec_with_type_tag()]
             }
 
             FriCommitStep::Done => {

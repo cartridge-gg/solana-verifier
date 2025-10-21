@@ -9,3 +9,4 @@ thiserror.workspace = true
 typetag.workspace = true
 felt.workspace = true
 types.workspace = true
+borsh.workspace = true

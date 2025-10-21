@@ -3,12 +3,14 @@ pub mod config;
 use crate::swiftness::commitment::table;
 use felt::Felt;
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[repr(C)]
 pub struct UnsentCommitment {
     pub original: Felt,
     pub interaction: Felt,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[repr(C)]
 pub struct Decommitment {
     // Responses for queries to the original trace.
     pub original: table::types::Decommitment,
@@ -17,6 +19,7 @@ pub struct Decommitment {
 }
 // A witness for a decommitment of the AIR traces over queries.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[repr(C)]
 pub struct Witness {
     pub original: table::types::Witness,
     pub interaction: table::types::Witness,
@@ -24,6 +27,7 @@ pub struct Witness {
 
 // Commitment for the Traces component.
 #[derive(Debug, Clone, PartialEq, Default)]
+#[repr(C)]
 pub struct Commitment<InteractionElements> {
     // Commitment to the first trace.
     pub original: table::types::Commitment,
@@ -50,6 +54,7 @@ impl<InteractionElements> Commitment<InteractionElements> {
 
 // Bytes representation for stack operations
 #[derive(Debug, Clone, PartialEq, Default)]
+#[repr(C)]
 pub struct TraceCommitmentBytes {
     pub original: table::types::TableCommitmentBytes,
     pub interaction: table::types::TableCommitmentBytes,

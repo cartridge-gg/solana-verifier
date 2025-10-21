@@ -65,15 +65,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y libudev-dev build-essential pkg-config llvm libclang-dev protobuf-compiler libssl-dev
       - name: Install Solana CLI
-        run: sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.11/install)"
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - name: Compile Solana
         run: |
-          cd programs/verifier1 && 
-          cargo build-sbf      
+          cd programs/verifier1 && cargo build-sbf && cd ../..
+          cd programs/verifier2 && cargo build-sbf && cd ../..
+          cd programs/verifier3 && cargo build-sbf && cd ../..
+          cd programs/verifier4 && cargo build-sbf
       - name: Run solana-test-validator
         run: | 
           solana-test-validator --quiet &
           sleep 10 &
-          cargo run --example full_flow
+          cargo run --example verify_universal

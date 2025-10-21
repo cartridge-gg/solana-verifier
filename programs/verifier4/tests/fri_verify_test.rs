@@ -66,7 +66,7 @@ fn push_data(stack: &mut BidirectionalStackAccount) {
         coset_x_inv: Felt::ZERO,
         current_coset_index: 0,
     };
-    // Użyj nowej metody do przechowania FriVerifyData w cache
+    // Use new method to store FriVerifyData in cache
     stack.store_in_cache(&fri_verify_data);
     println!("FriVerifyData stored in cache");
 }

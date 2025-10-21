@@ -5,7 +5,7 @@ use utils::{
 };
 
 // EvalOodsPolynomial task - evaluates OODS polynomial for a single point
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct EvalOodsPolynomial {
     processed: bool,

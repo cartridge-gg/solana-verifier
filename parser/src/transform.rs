@@ -1,7 +1,7 @@
 use crate::stark_proof;
 use felt::Felt;
 use types::funvec::FunVec;
-use types::swiftness::air::dynamic::DynamicParams;
+// use types::swiftness::air::dynamic::DynamicParams;
 use types::swiftness::air::public_memory::PublicInput as PublicInputVerifier;
 use types::swiftness::air::trace::config::Config as TraceConfigVerifier;
 use types::swiftness::air::trace::Decommitment as TraceDecommitmentVerifier;
@@ -119,20 +119,20 @@ impl TransformTo<VectorConfigVerifier> for stark_proof::VectorCommitmentConfig {
 
 impl TransformTo<PublicInputVerifier> for stark_proof::PublicInput {
     fn transform_to(self) -> PublicInputVerifier {
-        let dynamic_params = match self.dynamic_params.is_empty() {
-            true => None,
-            false => {
-                let params: Vec<u32> = self.dynamic_params.values().cloned().collect();
-                Some(DynamicParams::from(params))
-            }
-        };
+        // let dynamic_params = match self.dynamic_params.is_empty() {
+        //     true => None,
+        //     false => {
+        //         let params: Vec<u32> = self.dynamic_params.values().cloned().collect();
+        //         Some(DynamicParams::from(params))
+        //     }
+        // };
 
         PublicInputVerifier {
             log_n_steps: self.log_n_steps.into(),
             range_check_min: self.range_check_min.into(),
             range_check_max: self.range_check_max.into(),
             layout: self.layout.into(),
-            dynamic_params,
+            // dynamic_params,
             segments: FunVec::from_vec(
                 self.segments
                     .into_iter()

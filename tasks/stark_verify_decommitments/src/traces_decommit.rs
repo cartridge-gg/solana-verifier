@@ -1,7 +1,7 @@
 use felt::Felt;
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier3,
-    ProofData, StarkVerifyTrait, TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    ProofDataVerification, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::table_decommit::TableDecommit;
@@ -54,7 +54,7 @@ impl Default for TracesDecommit {
 
 impl Executable for TracesDecommit {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier3 + CacheStorage,
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + ProofDataVerification + CacheStorage,
     >(
         &mut self,
         stack: &mut T,
@@ -76,7 +76,7 @@ impl Executable for TracesDecommit {
                     queries_slice[i * 2] = index;
                 }
 
-                let proof = stack.get_proof_reference::<StarkProof>();
+                let proof = stack.get_proof_reference();
                 self.decommitment_values_len =
                     Felt::from(proof.witness.traces_decommitment.original.values.len());
                 self.witness_count = proof
@@ -94,7 +94,7 @@ impl Executable for TracesDecommit {
             TracesDecommitStep::PrepareOriginalWitnessAuth => {
                 // Push witness authentications first
                 for i in (0..self.witness_count).rev() {
-                    let proof = stack.get_proof_reference::<StarkProof>();
+                    let proof = stack.get_proof_reference();
                     stack
                         .push_front(
                             &proof
@@ -125,7 +125,7 @@ impl Executable for TracesDecommit {
                     .unwrap())
                     .rev()
                 {
-                    let proof = stack.get_proof_reference::<StarkProof>();
+                    let proof = stack.get_proof_reference();
                     let decommitment_bytes =
                         proof.witness.traces_decommitment.original.values.as_slice()[i]
                             .to_bytes_be();
@@ -155,7 +155,7 @@ impl Executable for TracesDecommit {
 
             TracesDecommitStep::PrepareInteractionTable => {
                 // Get interaction metadata
-                let proof = stack.get_proof_reference::<StarkProof>();
+                let proof = stack.get_proof_reference();
                 self.decommitment_values_len =
                     Felt::from(proof.witness.traces_decommitment.interaction.values.len());
                 self.witness_count = proof
@@ -172,7 +172,7 @@ impl Executable for TracesDecommit {
 
             TracesDecommitStep::PrepareInteractionWitnessAuth => {
                 for i in (0..self.witness_count).rev() {
-                    let proof = stack.get_proof_reference::<StarkProof>();
+                    let proof = stack.get_proof_reference();
                     stack
                         .push_front(
                             &proof
@@ -203,7 +203,7 @@ impl Executable for TracesDecommit {
                     .unwrap())
                     .rev()
                 {
-                    let proof = stack.get_proof_reference::<StarkProof>();
+                    let proof = stack.get_proof_reference();
                     let decommitment_bytes = proof
                         .witness
                         .traces_decommitment

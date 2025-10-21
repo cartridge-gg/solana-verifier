@@ -73,33 +73,33 @@ impl Executable for ComputeNextLayer {
             }
 
             ComputeNextLayerStep::ComputeCosetElements => {
-                let (query_index, query_x_inv, coset_size) = {
+                let query = {
                     let fri_verify_data = stack.borrow_from_cache::<FriVerifyData>();
-
-                    if let Some(query) = fri_verify_data.get_first_active_query() {
-                        (query.index, query.x_inv_value, fri_verify_data.coset_size)
-                    } else {
-                        self.stage = ComputeNextLayerStep::Done;
-                        return vec![];
-                    }
+                    fri_verify_data.get_first_active_query().copied()
                 };
 
-                let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
+                let Some(query) = query else {
+                    self.stage = ComputeNextLayerStep::Done;
+                    return vec![];
+                };
 
-                let query_uint = query_index.to_biguint();
-                let coset_index = query_uint / coset_size.to_biguint();
-                let coset_index_felt =
-                    Felt::from_bytes_be_slice(coset_index.to_bytes_be().as_slice());
+                let coset_start_index = {
+                    let fri_verify_data = stack.borrow_from_cache_mut::<FriVerifyData>();
 
-                fri_verify_data.working_indices.push(coset_index_felt);
-                fri_verify_data.next_x_inv_value = query_x_inv.pow_felt(&coset_size);
+                    let coset_index_felt = Felt::from_bytes_be_slice(
+                        (query.index.to_biguint() / fri_verify_data.coset_size.to_biguint())
+                            .to_bytes_be()
+                            .as_slice(),
+                    );
 
-                let coset_start_index = coset_index_felt * coset_size;
+                    fri_verify_data.working_indices.push(coset_index_felt);
+                    fri_verify_data.next_x_inv_value =
+                        query.x_inv_value.pow_felt(&fri_verify_data.coset_size);
+                    coset_index_felt * fri_verify_data.coset_size
+                };
+
                 self.stage = ComputeNextLayerStep::WaitForCosetElements;
-                vec![
-                    ComputeCosetElements::with_coset_start_index(coset_start_index)
-                        .to_vec_with_type_tag(),
-                ]
+                vec![ComputeCosetElements::new(coset_start_index).to_vec_with_type_tag()]
             }
             ComputeNextLayerStep::WaitForCosetElements => {
                 self.stage = ComputeNextLayerStep::ProcessQueries;

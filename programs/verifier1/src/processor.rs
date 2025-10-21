@@ -119,11 +119,103 @@ impl Processor {
 
         Ok(())
     }
+
+    /// Copy data from another account to our account
+    pub fn process_copy_from_account(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        msg!("Processing CopyFromAccount instruction");
+
+        let accounts_iter = &mut accounts.iter();
+        let source_account = next_account_info(accounts_iter)?;
+        let dest_account = next_account_info(accounts_iter)?;
+
+        // Verify destination account is owned by this program
+        if dest_account.owner != program_id {
+            msg!("Error: Destination account not owned by this program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // Verify destination is writable
+        if !dest_account.is_writable {
+            msg!("Error: Destination account not writable");
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Borrow data (source is readonly, dest is mut)
+        let src_data = source_account.try_borrow_data()?;
+        let mut dst_data = dest_account.try_borrow_mut_data()?;
+
+        // Verify size
+        if dst_data.len() < src_data.len() {
+            msg!(
+                "Error: Destination too small ({} < {})",
+                dst_data.len(),
+                src_data.len()
+            );
+            return Err(ProgramError::AccountDataTooSmall);
+        }
+
+        // Copy data
+        dst_data[..src_data.len()].copy_from_slice(&src_data);
+        msg!(
+            "Successfully copied {} bytes from {} to {}",
+            src_data.len(),
+            source_account.key,
+            dest_account.key
+        );
+
+        Ok(())
+    }
+
+    /// Transfer ownership of an account to a new program
+    /// Following the pattern: realloc(0) -> assign -> realloc(original_size)
+    pub fn process_transfer_ownership(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        msg!("Processing TransferOwnership instruction");
+
+        let accounts_iter = &mut accounts.iter();
+        let target_account = next_account_info(accounts_iter)?;
+        let new_owner_account = next_account_info(accounts_iter)?;
+
+        // Verify current account is owned by this program
+        if target_account.owner != program_id {
+            msg!("Error: Account not owned by this program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // Save original size
+        let original_size = target_account.data_len();
+        msg!("Original account size: {}", original_size);
+
+        // Step 1: Resize to zero (required before ownership transfer)
+        msg!("Step 1: Resizing to 0 bytes");
+        target_account.resize(0)?;
+
+        // Step 2: Assign to new owner
+        msg!("Step 2: Assigning to new owner: {}", new_owner_account.key);
+        target_account.assign(new_owner_account.key);
+
+        // Step 3: Resize back to original size
+        msg!("Step 3: Resizing back to {} bytes", original_size);
+        target_account.resize(original_size)?;
+
+        msg!(
+            "Successfully transferred ownership of {} to {}",
+            target_account.key,
+            new_owner_account.key
+        );
+
+        Ok(())
+    }
 }
 
 /// Instruction processor
 pub fn process_instruction(
-    _program_id: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
@@ -144,7 +236,12 @@ pub fn process_instruction(
             Processor::process_push_data(accounts, data_payload)
         }
         VerifierInstruction::Execute(nonce) => Processor::process_execute(accounts, nonce),
-
+        VerifierInstruction::CopyFromAccount => {
+            Processor::process_copy_from_account(program_id, accounts)
+        }
+        VerifierInstruction::TransferOwnership => {
+            Processor::process_transfer_ownership(program_id, accounts)
+        }
         VerifierInstruction::Close => Processor::close(accounts),
     }
 }

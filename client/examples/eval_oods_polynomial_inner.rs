@@ -2,9 +2,9 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
@@ -436,7 +436,7 @@ async fn main() -> client::Result<()> {
     let simulation_steps = stack.simulate();
     println!("Steps in simulation: {simulation_steps}");
 
-    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+    let limit_instructions = ComputeBudgetInstruction::set_compute_unit_limit(1_200_000);
 
     // Execute all steps until task is complete - split into chunks of max 5000
     const MAX_CHUNK_SIZE: usize = 1;

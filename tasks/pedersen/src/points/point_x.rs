@@ -6,6 +6,7 @@ use utils::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)]
 pub enum PedersenPointsXPhase {
     Init,
     ComputePointStep1,

@@ -2,9 +2,9 @@ use client::{
     initialize_client, interact_with_program_instructions, send_and_confirm_transactions,
     setup_payer, setup_program, ClientError, Config,
 };
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
@@ -97,6 +97,7 @@ async fn main() -> client::Result<()> {
         "Using EvalCompositionPolynomial with TYPE_TAG: {}",
         EvalCompositionPolynomial::TYPE_TAG
     );
+    println!("task_len {:?}", task.to_vec_with_type_tag().len());
 
     let push_task_ix = Instruction::new_with_borsh(
         program_id,

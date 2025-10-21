@@ -4,28 +4,18 @@ use client::{
 };
 use felt::Felt;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    instruction::{AccountMeta, Instruction},
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::commitment::types::Decommitment;
-use types::swiftness::{
-    global_values::InteractionElements, stark::types::cast_struct_to_slice_mut,
-};
-use types::{
-    funvec::FunVec,
-    swiftness::stark::types::{FriVerifyData, StarkCommitment},
-};
+use types::swiftness::global_values::InteractionElements;
 use utils::BidirectionalStack;
-use utils::StarkCommitmentTrait;
 use utils::{AccountCast, CacheStorage, Executable};
 
-// Import z aliasami dla każdego verifier'a
 use verifier_1::{
     instruction::VerifierInstruction as VI1, state::BidirectionalStackAccount as Stack1,
 };
@@ -96,8 +86,6 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // let stark_commitment = StarkCommitment::default();
-    // let queries = Vec::new();
     // ========== STAGE 3 ==========
     println!("\n========== STAGE 3 ==========");
     let stark_verify_data =
@@ -470,7 +458,6 @@ async fn create_account_tx(
     Ok(())
 }
 
-// Dedykowane funkcje dla każdego verifier'a
 async fn set_account_data_chunked_v1(
     client: &RpcClient,
     payer: &Keypair,

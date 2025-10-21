@@ -59,6 +59,7 @@ pub struct StarkProof {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
+#[repr(C)]
 pub struct StarkUnsentCommitment {
     pub traces: trace::UnsentCommitment,
     pub composition: Felt,
@@ -71,6 +72,7 @@ pub struct StarkUnsentCommitment {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[repr(C)]
 pub struct StarkWitness {
     pub traces_decommitment: TracesDecommitment,
     pub traces_witness: TracesWitness,
@@ -80,6 +82,7 @@ pub struct StarkWitness {
 }
 
 #[derive(Debug, PartialEq, Default, Clone)]
+#[repr(C)]
 pub struct StarkCommitment<InteractionElements> {
     pub traces: TracesCommitment<InteractionElements>,
     pub composition: TableCommitment,
@@ -88,16 +91,18 @@ pub struct StarkCommitment<InteractionElements> {
     pub interaction_after_oods: FunVec<Felt, FUNVEC_OODS>,
     pub fri: FriCommitment,
 }
-#[repr(C)]
 #[derive(Debug)]
+#[repr(C)]
 pub struct VerifyVariables {
     // Store queries as pairs of (index, value, depth) - each query takes 3 Felts
+    // fix this as it's not intuitive - we have temp_queries to store queries that have two fields (index, value)
     pub queries: [Felt; FUNVEC_QUERIES],
     pub authentications: [Felt; FUNVEC_AUTHENTICATIONS],
     pub decommitment_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub montgomery_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub temp_queries: [Felt; FUNVEC_QUERIES],
-    pub queries_indexes: FunVec<Felt, 16>,
+    pub queries_indexes: [Felt; 16],
+    pub points: [Felt; FUNVEC_QUERY_INDICES],
 }
 
 impl Default for VerifyVariables {
@@ -108,7 +113,8 @@ impl Default for VerifyVariables {
             decommitment_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
-            queries_indexes: FunVec::default(),
+            queries_indexes: [Felt::ZERO; 16],
+            points: [Felt::ZERO; FUNVEC_QUERY_INDICES],
         }
     }
 }
@@ -153,7 +159,6 @@ impl Default for FriVerifyData {
     }
 }
 
-// Helper methods - TYLKO dla queries
 impl FriVerifyData {
     #[inline]
     pub fn get_first_active_query(&self) -> Option<&fri::types::FriLayerQuery> {
@@ -178,9 +183,7 @@ impl FriVerifyData {
     }
 
     pub fn advance_layer(&mut self) {
-        // Usuń active queries (shift je out)
         self.layer_queries.shift(self.active_query_count);
-        // Teraz "next" są na początku - ustaw jako active
         self.active_query_count = self.layer_queries.len();
     }
 
@@ -194,8 +197,7 @@ mod test {
     use crate::{
         funvec::FunVec,
         swiftness::{
-            air::public_memory::PublicInput,
-            air::types::Page,
+            air::{dynamic::DynamicParams, public_memory::PublicInput, types::Page},
             stark::{
                 config::StarkConfig,
                 types::{
@@ -215,7 +217,7 @@ mod test {
                 range_check_min: Felt::from(2),
                 range_check_max: Felt::from(3),
                 layout: Felt::from(4),
-                dynamic_params: None,
+                // dynamic_params: DynamicParams::default(),
                 segments: FunVec::default(),
                 padding_addr: Felt::from(5),
                 padding_value: Felt::from(6),

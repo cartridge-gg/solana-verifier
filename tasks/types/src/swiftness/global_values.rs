@@ -2,6 +2,7 @@ use super::transcript::Transcript;
 use felt::Felt;
 
 #[derive(Debug, PartialEq)]
+#[repr(C)]
 pub struct EcPoint {
     pub x: Felt,
     pub y: Felt,
@@ -9,6 +10,7 @@ pub struct EcPoint {
 
 // Accumulation of member expressions for auto generated composition polynomial code.
 #[derive(Debug, PartialEq)]
+#[repr(C)]
 pub struct GlobalValues {
     // Public input.
     pub trace_length: Felt,
@@ -94,6 +96,7 @@ impl Default for GlobalValues {
 // Elements that are sent from the prover after the commitment on the original trace.
 // Used for components after the first interaction, e.g., memory and range check.
 #[derive(Debug, Clone, PartialEq, Default)]
+#[repr(C)]
 pub struct InteractionElements {
     pub memory_multi_column_perm_perm_interaction_elm: Felt,
     pub memory_multi_column_perm_hash_interaction_elm0: Felt,

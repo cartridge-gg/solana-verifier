@@ -1,27 +1,24 @@
 use std::vec;
 
 use felt::{Felt, NonZeroFelt};
-use types::{
-    funvec::{FunVec, FUNVEC_QUERY_INDICES},
-    swiftness::{
-        air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-        global_values::InteractionElements,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof},
-    },
+use types::swiftness::{
+    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+    global_values::InteractionElements,
+    stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
 };
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
-    FullProofDataVerifier3, ProofData, StarkVerifyTrait, TypeIdentifiable,
+    ProofData, ProofDataVerification, StarkVerifyTrait, TypeIdentifiable,
 };
 
 use crate::eval_oods_boundary_poly_at_points::{ComputeQueryPoints, EvalOodsBoundaryPolyAtPoints};
 use types::swiftness::commitment::types::Decommitment as FriDecommitment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum StarkVerifyStep {
     ComputeQueryPoints,
     EvalOodsBoundaryPoly,
-    // FriVerify,
     Done,
 }
 
@@ -47,11 +44,12 @@ impl Default for StarkVerify {
 }
 
 impl Executable for StarkVerify {
+    #[inline(never)]
     fn execute<
         T: BidirectionalStack
             + ProofData
             + StarkVerifyTrait
-            + FullProofDataVerifier3
+            + ProofDataVerification
             + CacheStorage
             + CachedProofData,
     >(
@@ -61,16 +59,18 @@ impl Executable for StarkVerify {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
                 let queries_len = {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    fri_verify_data.queries.len()
+                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                    verify_variables.queries_indexes.len()
                 };
                 assert!(queries_len != 0, "Queries length is equal to 0");
 
+                // Push each element individually to avoid stack allocation
                 for i in (0..queries_len).rev() {
-                    let fri_verify_data: &FriVerifyData = stack.borrow_from_cache();
-                    stack
-                        .push_front(&fri_verify_data.queries.at(i).to_bytes_be())
-                        .unwrap();
+                    let query_value = {
+                        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                        verify_variables.queries_indexes[i]
+                    }; // Release immutable borrow
+                    stack.push_front(&query_value.to_bytes_be()).unwrap();
                 }
                 stack
                     .push_front(&Felt::from(queries_len).to_bytes_be())
@@ -96,7 +96,6 @@ impl Executable for StarkVerify {
                     .unwrap();
 
                 self.step = StarkVerifyStep::EvalOodsBoundaryPoly;
-                println!("Pushing ComputeQueryPoints task");
                 vec![ComputeQueryPoints::new().to_vec_with_type_tag()]
             }
 
@@ -104,28 +103,55 @@ impl Executable for StarkVerify {
                 let points_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 assert!(points_len != Felt::ZERO, "Points length is equal to 0");
                 stack.pop_front();
-                let mut points_vec = FunVec::<Felt, FUNVEC_QUERY_INDICES>::default();
 
-                //we need to store points for FriVerify task
-                for _ in 0..points_len.to_biguint().try_into().unwrap() {
+                for i in 0..points_len.to_biguint().try_into().unwrap() {
                     let point = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
-                    let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                    let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
+                    verify_variables.points[i] = point;
+                }
+
+                {
+                    let (fri_verify_data, verify_variables) = stack.get_fri_verify_data_and_verify_variables_mut::<FriVerifyData, VerifyVariables>();
+
+                    fri_verify_data.queries.flush();
+                    for i in 0..verify_variables.queries_indexes.len() {
+                        fri_verify_data
+                            .queries
+                            .push(verify_variables.queries_indexes[i]);
+                    }
+
                     let fri_decommitment: &mut FriDecommitment =
                         &mut fri_verify_data.fri_decommitment;
-                    fri_decommitment.points.push(point);
-                    points_vec.push(point);
+                    fri_decommitment.points.flush();
+                    for point in verify_variables.points.as_slice() {
+                        fri_decommitment.points.push(*point);
+                    }
                 }
 
-                for point in points_vec.as_slice().iter().rev() {
+                let points_len = {
+                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                    verify_variables
+                        .points
+                        .iter()
+                        .filter(|&&p| p != Felt::ZERO)
+                        .count()
+                };
+
+                for i in (0..points_len).rev() {
+                    let point = {
+                        let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                        verify_variables.points[i]
+                    };
                     stack.push_front(&point.to_bytes_be()).unwrap();
                 }
-
-                stack.push_front(&points_len.to_bytes_be()).unwrap();
+                stack
+                    .push_front(&Felt::from(points_len).to_bytes_be())
+                    .unwrap();
 
                 {
                     let (stark_commitment, coeffs) =
-                        FullProofDataVerifier3::get_stark_commitment_and_coefficients_mut::<
+                        ProofDataVerification::get_stark_commitment_and_coefficients_mut::<
                             StarkCommitment<InteractionElements>,
                         >(stack);
 
@@ -140,16 +166,8 @@ impl Executable for StarkVerify {
                 }
 
                 self.step = StarkVerifyStep::Done;
-                println!("Pushing EvalOodsBoundaryPoly task");
                 vec![EvalOodsBoundaryPolyAtPoints::new().to_vec_with_type_tag()]
             }
-
-            // StarkVerifyStep::FriVerify => {
-            //     self.step = StarkVerifyStep::Done;
-            //     println!("Pushing FriVerify task");
-            //     // vec![FriVerify::new().to_vec_with_type_tag()]
-            //     vec![]
-            // }
             StarkVerifyStep::Done => {
                 vec![]
             }
@@ -160,12 +178,3 @@ impl Executable for StarkVerify {
         self.step == StarkVerifyStep::Done
     }
 }
-
-// #[inline(always)]
-// fn commitment_push_to_stack<T: BidirectionalStack + StarkVerifyTrait>(
-//     commitment: &TableCommitment,
-//     stack: &mut T,
-// ) {
-//     let commitment_bytes = cast_struct_to_slice(commitment);
-//     stack.push_front(commitment_bytes).unwrap();
-// }

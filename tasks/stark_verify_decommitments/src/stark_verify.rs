@@ -10,8 +10,8 @@ use types::{
     },
 };
 use utils::{
-    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, FullProofDataVerifier2,
-    ProofData, StarkVerifyTrait, TypeIdentifiable,
+    impl_type_identifiable, BidirectionalStack, CacheStorage, Executable, ProofData,
+    ProofDataDecommitment, StarkVerifyTrait, TypeIdentifiable,
 };
 
 pub use crate::vector_decommit::VectorDecommit;
@@ -49,7 +49,7 @@ impl Default for StarkVerify {
 
 impl Executable for StarkVerify {
     fn execute<
-        T: BidirectionalStack + ProofData + StarkVerifyTrait + FullProofDataVerifier2 + CacheStorage,
+        T: BidirectionalStack + ProofData + StarkVerifyTrait + ProofDataDecommitment + CacheStorage,
     >(
         &mut self,
         stack: &mut T,
@@ -70,8 +70,16 @@ impl Executable for StarkVerify {
                 }
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    verify_variables.queries_indexes = self.queries;
+                    verify_variables.queries_indexes = self.queries.as_slice().try_into().unwrap();
                 }
+                // {
+                //     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+                //     fri_verify_data.queries.flush();
+                //     let queries = self.queries.as_slice();
+                //     for query in queries {
+                //         fri_verify_data.queries.push(*query);
+                //     }
+                // };
 
                 for query in self.queries.as_slice().iter().rev() {
                     stack.push_front(&query.to_bytes_be()).unwrap();
@@ -81,7 +89,6 @@ impl Executable for StarkVerify {
                     .push_front(&Felt::from(self.queries.len()).to_bytes_be())
                     .unwrap();
 
-                println!("Pushing TracesDecommit task");
                 self.step = StarkVerifyStep::TableDecommit;
                 vec![TracesDecommit::new().to_vec_with_type_tag()]
             }
