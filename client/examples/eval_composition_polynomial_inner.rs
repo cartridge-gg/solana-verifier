@@ -177,7 +177,7 @@ async fn main() -> client::Result<()> {
         let mut chunk_size = MAX_CHUNK_SIZE;
         if step >= 10 {
             chunk_size = 1;
-        } // Dla debugowania - małe chunki od początku
+        } // For debugging - small chunks from the beginning
 
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
         println!("Processing steps {}-{}", step, chunk_end - 1);

@@ -203,7 +203,7 @@ mod prepare_input {
         stark_commitment.fri = get();
         stack.stark_commitment = stark_commitment;
 
-        // Użyj nowej metody do przechowania FriVerifyData w cache
+        // Use new method to store FriVerifyData in cache
         let mut fri_verify_data = FriVerifyData::default();
         let fri_decommitment = get_decommitment();
         fri_verify_data.fri_decommitment = fri_decommitment;

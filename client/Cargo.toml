@@ -18,8 +18,6 @@ solana-compute-budget-interface = "3.0.0"
 solana-keypair = "3.0.0"
 solana-pubkey = "3.0.0"
 thiserror.workspace = true
-# starknet-types-core = { version = "0.3.0", features = ["hash"] }
-# starknet-crypto = "0.7.0"
 swiftness_proof_parser = { path = "../parser" }
 utils.workspace = true
 felt.workspace = true
@@ -31,10 +29,11 @@ env_logger = {version = "0.11.6",features = ["unstable-kv"]}
 log = {version = "0.4.22",features = ["kv"]}
 types.workspace = true
 
-verifier-1.workspace = true
-verifier-2.workspace = true
-verifier-3.workspace = true
-verifier-4.workspace = true
+# Only need types, not the full programs
+verifier-1 = { workspace = true, features = ["no-entrypoint"] }
+verifier-2 = { workspace = true, features = ["no-entrypoint"] }
+verifier-3 = { workspace = true, features = ["no-entrypoint"] }
+verifier-4 = { workspace = true, features = ["no-entrypoint"] }
 validate-public-input.workspace = true
 poseidon.workspace = true
 pedersen.workspace = true

@@ -24,7 +24,7 @@ pub enum TableDecommitStep {
     ProcessDecommitment,      // decommitment_from_stack()
     InitProcessWitness,       // read n_authentications and prepare batching
     ProcessWitnessBatch,      // process authentications in batches
-    CopyQueriesToVerifyVars,  // pętla kopiowania queries
+    CopyQueriesToVerifyVars,  // loop for copying queries
     ComputeHashes,            // compute_all_hashes() lub przygotowanie do HashSingleQuery
     HashSingleQuery,
     CollectHashResult,

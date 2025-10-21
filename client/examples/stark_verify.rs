@@ -92,7 +92,6 @@ async fn main() -> client::Result<()> {
     send_and_confirm_transactions(&client, &transactions).await?;
     println!("All data set successfully");
 
-    // Push the StarkVerify task to the stack
     let stark_verify_task = StarkVerify::new();
 
     println!("Using StarkVerify with TYPE_TAG: {}", StarkVerify::TYPE_TAG);

@@ -16,7 +16,6 @@ use types::swiftness::global_values::InteractionElements;
 use utils::BidirectionalStack;
 use utils::{AccountCast, CacheStorage, Executable};
 
-// Import z aliasami dla każdego verifier'a
 use verifier_1::{
     instruction::VerifierInstruction as VI1, state::BidirectionalStackAccount as Stack1,
 };
@@ -87,8 +86,6 @@ async fn async_main() -> client::Result<()> {
     )
     .await?;
 
-    // let stark_commitment = StarkCommitment::default();
-    // let queries = Vec::new();
     // ========== STAGE 3 ==========
     println!("\n========== STAGE 3 ==========");
     let stark_verify_data =
@@ -461,7 +458,6 @@ async fn create_account_tx(
     Ok(())
 }
 
-// Dedykowane funkcje dla każdego verifier'a
 async fn set_account_data_chunked_v1(
     client: &RpcClient,
     payer: &Keypair,
