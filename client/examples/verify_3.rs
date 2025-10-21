@@ -134,13 +134,13 @@ async fn async_main() -> client::Result<()> {
 
     println!("✓ Stage 3 completed on account1 (owner: verifier3)");
 
-     // Read final results
-     let mut account_data = client.get_account_data(&account1.pubkey()).await?;
-     let stack = Verifier3StackAccount::cast_mut(&mut account_data);
+    // Read final results
+    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
+    let stack = Verifier3StackAccount::cast_mut(&mut account_data);
 
-     assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
-     assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
-     println!("✓ All verifications passed!");
+    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    println!("✓ All verifications passed!");
     Ok(())
 }
 
@@ -298,8 +298,12 @@ async fn execute_verifier(
         let mut chunk_size = MAX_CHUNK_SIZE;
         // Stage 2 has stack overflow issues around step 389
         if stage_number == 3 {
-            if step >= 0{ chunk_size = 1; }
-            if step >= 2500 { chunk_size = 1; }
+            if step >= 0 {
+                chunk_size = 1;
+            }
+            if step >= 2500 {
+                chunk_size = 1;
+            }
         }
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
 
@@ -330,15 +334,17 @@ async fn execute_verifier(
 }
 
 mod prepare_input {
+    use felt::Felt;
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use types::{funvec::FunVec, swiftness::stark::types::{cast_struct_to_slice_mut, StarkCommitment}};
-    use felt::Felt;
     use types::swiftness::commitment::types::Decommitment;
+    use types::{
+        funvec::FunVec,
+        swiftness::stark::types::{cast_struct_to_slice_mut, StarkCommitment},
+    };
     use utils::CacheStorage;
     use verifier_3::state::BidirectionalStackAccount as Stack3;
-
 
     /// Prepare initial data for Stage 1
     /// Only Stage 1 needs initial data setup - all other stages use ping-pong copying

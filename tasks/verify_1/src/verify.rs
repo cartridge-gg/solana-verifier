@@ -43,8 +43,7 @@ impl Executable for Verify {
                 vec![ValidatePublicInput::new().to_vec_with_type_tag()]
             }
             VerifyStep::GetHash => {
-                let proof =
-                    stack.get_proof_reference();
+                let proof = stack.get_proof_reference();
                 let n_verifier_friendly_commitment_layers =
                     proof.config.n_verifier_friendly_commitment_layers;
                 assert!(
@@ -63,8 +62,7 @@ impl Executable for Verify {
                     "Stack back should be empty after GetHash"
                 );
 
-                let proof =
-                    stack.get_proof_reference();
+                let proof = stack.get_proof_reference();
 
                 let stark_domain = StarkDomains::new(
                     proof.config.log_trace_domain_size,

@@ -227,7 +227,9 @@ impl CachedProofData for BidirectionalStackAccount {
 
         (stark_commitment, proof, cache)
     }
-    fn get_fri_verify_data_and_verify_variables_mut<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P) {
+    fn get_fri_verify_data_and_verify_variables_mut<T: Sized, P: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P) {
         unreachable!("get_fri_verify_data_and_verify_variables_mut not supported in verifier4")
     }
 }
@@ -389,7 +391,9 @@ impl ProofDataVerification for BidirectionalStackAccount {
         (stark_commitment, &mut self.constraint_coefficients)
     }
 
-    fn get_sc_proof_cv<T: Sized, P: Sized>(&mut self) -> (&mut T, &mut P, &mut [Felt; COLUMN_VALUES_SIZE]) {
+    fn get_sc_proof_cv<T: Sized, P: Sized>(
+        &mut self,
+    ) -> (&mut T, &mut P, &mut [Felt; COLUMN_VALUES_SIZE]) {
         unreachable!("get_sc_proof_cv not supported in verifier4")
     }
 }

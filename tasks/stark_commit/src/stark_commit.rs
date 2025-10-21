@@ -352,7 +352,7 @@ impl Executable for StarkCommit {
                 for chunk_idx in (0..total_chunks).rev() {
                     let start = chunk_idx * chunk_size;
                     let end = ((chunk_idx + 1) * chunk_size).min(oods_values_len);
-                    
+
                     let chunk_bytes: Vec<[u8; 32]> = {
                         let proof: &StarkProof = stack.get_proof_reference();
                         proof.unsent_commitment.oods_values.as_slice()[start..end]
@@ -360,7 +360,7 @@ impl Executable for StarkCommit {
                             .map(|f| f.to_bytes_be())
                             .collect()
                     };
-                    
+
                     for byte_arr in chunk_bytes.iter().rev() {
                         stack.push_front(byte_arr).unwrap();
                     }
@@ -369,7 +369,7 @@ impl Executable for StarkCommit {
                 // Push digest + 1
                 let digest_plus_one = self.current_transcript_digest + Felt::ONE;
                 stack.push_front(&digest_plus_one.to_bytes_be()).unwrap();
-                
+
                 // Push initial state
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();
                 stack.push_front(&Felt::ZERO.to_bytes_be()).unwrap();

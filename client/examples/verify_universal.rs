@@ -535,8 +535,18 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        println!("DEBUG: last_layer_coefficients.len() = {}", proof_verifier.unsent_commitment.fri.last_layer_coefficients.len());
-        println!("DEBUG: log_last_layer_degree_bound = {}", proof_verifier.config.fri.log_last_layer_degree_bound);
+        println!(
+            "DEBUG: last_layer_coefficients.len() = {}",
+            proof_verifier
+                .unsent_commitment
+                .fri
+                .last_layer_coefficients
+                .len()
+        );
+        println!(
+            "DEBUG: log_last_layer_degree_bound = {}",
+            proof_verifier.config.fri.log_last_layer_degree_bound
+        );
 
         let mut stack = Verifier1StackAccount::default();
         stack.proof = proof_verifier.clone();

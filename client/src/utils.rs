@@ -1,18 +1,18 @@
 #![allow(deprecated)]
 
 use futures::future::join_all;
-use solana_instruction::{AccountMeta, Instruction};
-use solana_loader_v3_interface::{instruction, state::UpgradeableLoaderState};
-use solana_system_interface::instruction as system_instruction;
 use solana_commitment_config::CommitmentConfig;
 use solana_compute_budget_interface::ComputeBudgetInstruction;
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::Keypair;
+use solana_loader_v3_interface::{instruction, state::UpgradeableLoaderState};
+use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     signature::{Signature, Signer},
     transaction::Transaction,
 };
-use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
+use solana_system_interface::instruction as system_instruction;
 
 use std::{fs, path::Path, thread::sleep};
 
@@ -494,12 +494,8 @@ pub async fn write_program_to_buffer(
         let chunk_end = std::cmp::min(offset + config.buffer_chunk_size, program_data.len());
         let chunk = &program_data[offset..chunk_end];
 
-        let write_ix = instruction::write(
-            &buffer_pubkey,
-            &payer_pubkey,
-            offset as u32,
-            chunk.to_vec(),
-        );
+        let write_ix =
+            instruction::write(&buffer_pubkey, &payer_pubkey, offset as u32, chunk.to_vec());
 
         // Get latest blockhash for each chunk to avoid expired blockhash issues
         let blockhash = client

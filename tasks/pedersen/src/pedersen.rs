@@ -83,7 +83,8 @@ fn operate_with_affine_inline_never(
                 *px.inner(),
                 *py.inner(),
                 *pz.inner(),
-            ]).unwrap();
+            ])
+            .unwrap();
             let result = p.double();
             return (
                 Felt::from_bytes_be_slice(&result.x().to_bytes_be()),
@@ -250,7 +251,8 @@ impl Executable for LookupAndAccumulate {
 
                     for i in start_chunk..end_chunk {
                         let chunk_start = i * PedersenHash::CURVE_CONST_BITS;
-                        let chunk_end = (chunk_start + PedersenHash::CURVE_CONST_BITS).min(bits.len());
+                        let chunk_end =
+                            (chunk_start + PedersenHash::CURVE_CONST_BITS).min(bits.len());
                         let chunk = &bits[chunk_start..chunk_end];
                         let offset = bools_to_usize_le(chunk);
 

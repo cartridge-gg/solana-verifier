@@ -96,7 +96,10 @@ async fn main() -> client::Result<()> {
     // Push the EvalCompositionPolynomialInner task to the stack
     let validate_task = EvalCompositionPolynomialInner::new();
 
-    println!("validate task len {:?}", validate_task.to_vec_with_type_tag().len());
+    println!(
+        "validate task len {:?}",
+        validate_task.to_vec_with_type_tag().len()
+    );
 
     println!(
         "Using EvalCompositionPolynomialInner with TYPE_TAG: {}",
@@ -172,11 +175,13 @@ async fn main() -> client::Result<()> {
     let mut step = 0;
     while step < simulation_steps_usize {
         let mut chunk_size = MAX_CHUNK_SIZE;
-        if step >= 10 { chunk_size = 1; }  // Dla debugowania - małe chunki od początku
-        
+        if step >= 10 {
+            chunk_size = 1;
+        } // Dla debugowania - małe chunki od początku
+
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
         println!("Processing steps {}-{}", step, chunk_end - 1);
-        
+
         let mut transactions = Vec::new();
         for i in step..chunk_end {
             let execute_ix = Instruction::new_with_borsh(
@@ -192,10 +197,10 @@ async fn main() -> client::Result<()> {
             );
             transactions.push(tx);
         }
-        
+
         send_and_confirm_transactions(&client, &transactions).await?;
         println!("Chunk {}-{} completed", step, chunk_end - 1);
-        
+
         step = chunk_end;
     }
 

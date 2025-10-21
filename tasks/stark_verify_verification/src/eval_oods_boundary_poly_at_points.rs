@@ -246,7 +246,10 @@ impl Default for ComputeQueryPoints {
 // └──────────────────────────────┘  <- front (stack front)
 
 impl Executable for ComputeQueryPoints {
-    fn execute<T: BidirectionalStack + ProofData + CacheStorage + StarkVerifyTrait>(&mut self, stack: &mut T) -> Vec<Vec<u8>> {
+    fn execute<T: BidirectionalStack + ProofData + CacheStorage + StarkVerifyTrait>(
+        &mut self,
+        stack: &mut T,
+    ) -> Vec<Vec<u8>> {
         let log_eval_domain_size = Felt::from_bytes_be_slice(stack.borrow_front());
         stack.pop_front();
 
@@ -268,7 +271,7 @@ impl Executable for ComputeQueryPoints {
             let query = Felt::from_bytes_be_slice(stack.borrow_front());
             let index: u64 = (query * shift).to_biguint().try_into().unwrap();
             let point = FIELD_GENERATOR * eval_generator.pow(index.reverse_bits());
-            
+
             // Store point in account storage
             let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
             verify_variables.points[i] = point;

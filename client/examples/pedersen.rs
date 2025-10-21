@@ -21,9 +21,9 @@ use verifier_2::{instruction::VerifierInstruction, state::BidirectionalStackAcco
 #[allow(clippy::result_large_err)]
 async fn main() -> client::Result<()> {
     env_logger::Builder::from_default_env()
-    .filter_level(log::LevelFilter::Info)
-    .filter_module("client", log::LevelFilter::Info)
-    .init();
+        .filter_level(log::LevelFilter::Info)
+        .filter_module("client", log::LevelFilter::Info)
+        .init();
     // Parse command-line arguments
     let config = Config::parse_args();
 

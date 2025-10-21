@@ -127,7 +127,9 @@ impl Executable for StarkVerify {
                     // Store queries from verify_variables - element by element to avoid stack allocation
                     fri_verify_data.queries.flush();
                     for i in 0..verify_variables.queries_indexes.len() {
-                        fri_verify_data.queries.push(verify_variables.queries_indexes[i]);
+                        fri_verify_data
+                            .queries
+                            .push(verify_variables.queries_indexes[i]);
                     }
 
                     // Store points
@@ -141,7 +143,11 @@ impl Executable for StarkVerify {
 
                 let points_len = {
                     let verify_variables: &VerifyVariables = stack.get_verify_variables();
-                    verify_variables.points.iter().filter(|&&p| p != Felt::ZERO).count()
+                    verify_variables
+                        .points
+                        .iter()
+                        .filter(|&&p| p != Felt::ZERO)
+                        .count()
                 };
 
                 for i in (0..points_len).rev() {
@@ -151,8 +157,10 @@ impl Executable for StarkVerify {
                     };
                     stack.push_front(&point.to_bytes_be()).unwrap();
                 }
-                stack.push_front(&Felt::from(points_len).to_bytes_be()).unwrap();
-            
+                stack
+                    .push_front(&Felt::from(points_len).to_bytes_be())
+                    .unwrap();
+
                 {
                     let (stark_commitment, coeffs) =
                         ProofDataVerification::get_stark_commitment_and_coefficients_mut::<

@@ -242,14 +242,46 @@ impl Executable for EvalCompositionPolynomial {
 
                 // Set GlobalValues fields directly without creating intermediate structure on stack
                 gv.trace_length = self.trace_domain_size;
-                gv.initial_pc = public_input.segments.get(segments::PROGRAM).unwrap().begin_addr;
-                gv.final_pc = public_input.segments.get(segments::PROGRAM).unwrap().stop_ptr;
-                gv.initial_ap = public_input.segments.get(segments::EXECUTION).unwrap().begin_addr;
-                gv.final_ap = public_input.segments.get(segments::EXECUTION).unwrap().stop_ptr;
-                gv.initial_pedersen_addr = public_input.segments.get(segments::PEDERSEN).unwrap().begin_addr;
-                gv.initial_range_check_addr = public_input.segments.get(segments::RANGE_CHECK).unwrap().begin_addr;
-                gv.initial_bitwise_addr = public_input.segments.get(segments::BITWISE).unwrap().begin_addr;
-                gv.initial_poseidon_addr = public_input.segments.get(segments::POSEIDON).unwrap().begin_addr;
+                gv.initial_pc = public_input
+                    .segments
+                    .get(segments::PROGRAM)
+                    .unwrap()
+                    .begin_addr;
+                gv.final_pc = public_input
+                    .segments
+                    .get(segments::PROGRAM)
+                    .unwrap()
+                    .stop_ptr;
+                gv.initial_ap = public_input
+                    .segments
+                    .get(segments::EXECUTION)
+                    .unwrap()
+                    .begin_addr;
+                gv.final_ap = public_input
+                    .segments
+                    .get(segments::EXECUTION)
+                    .unwrap()
+                    .stop_ptr;
+                gv.initial_pedersen_addr = public_input
+                    .segments
+                    .get(segments::PEDERSEN)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_range_check_addr = public_input
+                    .segments
+                    .get(segments::RANGE_CHECK)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_bitwise_addr = public_input
+                    .segments
+                    .get(segments::BITWISE)
+                    .unwrap()
+                    .begin_addr;
+                gv.initial_poseidon_addr = public_input
+                    .segments
+                    .get(segments::POSEIDON)
+                    .unwrap()
+                    .begin_addr;
                 gv.range_check_min = public_input.range_check_min;
                 gv.range_check_max = public_input.range_check_max;
                 gv.offset_size = FELT_65536;
@@ -265,10 +297,13 @@ impl Executable for EvalCompositionPolynomial {
                 gv.poseidon_poseidon_full_round_key2 = poseidon_key2;
                 gv.poseidon_poseidon_partial_round_key0 = poseidon_partial_key0;
                 gv.poseidon_poseidon_partial_round_key1 = poseidon_partial_key1;
-                gv.memory_multi_column_perm_perm_interaction_elm = self.memory_multi_column_perm_perm_interaction_elm;
-                gv.memory_multi_column_perm_hash_interaction_elm0 = self.memory_multi_column_perm_hash_interaction_elm0;
+                gv.memory_multi_column_perm_perm_interaction_elm =
+                    self.memory_multi_column_perm_perm_interaction_elm;
+                gv.memory_multi_column_perm_hash_interaction_elm0 =
+                    self.memory_multi_column_perm_hash_interaction_elm0;
                 gv.range_check16_perm_interaction_elm = self.range_check16_perm_interaction_elm;
-                gv.diluted_check_permutation_interaction_elm = self.diluted_check_permutation_interaction_elm;
+                gv.diluted_check_permutation_interaction_elm =
+                    self.diluted_check_permutation_interaction_elm;
                 gv.diluted_check_interaction_z = self.diluted_check_interaction_z;
                 gv.diluted_check_interaction_alpha = self.diluted_check_interaction_alpha;
                 gv.memory_multi_column_perm_perm_public_memory_prod = self.public_memory_prod_ratio;
