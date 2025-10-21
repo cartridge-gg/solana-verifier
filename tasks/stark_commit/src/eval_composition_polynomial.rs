@@ -16,7 +16,7 @@ use types::swiftness::air::periodic_columns::{
 use types::swiftness::air::recursive_with_poseidon::segments;
 use types::swiftness::air::recursive_with_poseidon::PUBLIC_MEMORY_STEP;
 use types::swiftness::air::recursive_with_poseidon::{SHIFT_POINT_X, SHIFT_POINT_Y};
-use types::swiftness::global_values::{GlobalValues, InteractionElements};
+use types::swiftness::global_values::InteractionElements;
 use types::swiftness::stark::types::StarkCommitment;
 use types::swiftness::stark::types::StarkProof;
 use utils::{

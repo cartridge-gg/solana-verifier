@@ -95,20 +95,20 @@ fn operate_with_affine_inline_never(
     }
 
     // Compute differences
-    let u = &u - py;
-    let v = &v - px;
+    let u = u - py;
+    let v = v - px;
 
     // Compute intermediate values
-    let vv = &v * &v;
-    let uu = &u * &u;
-    let vvv = &v * &vv;
-    let r = &vv * px;
-    let a = &(&(&uu * pz) - &vvv) - &(&r + &r);
+    let vv = v * v;
+    let uu = u * u;
+    let vvv = v * vv;
+    let r = vv * px;
+    let a = (uu * pz - vvv) - (r + r);
 
     // Compute final coordinates
-    let x = &v * &a;
-    let y = &(u * (&r - &a)) - &(&vvv * py);
-    let z = &vvv * pz;
+    let x = v * a;
+    let y = u * (r - a) - vvv * py;
+    let z = vvv * pz;
 
     (x, y, z)
 }

@@ -1,13 +1,10 @@
 use std::vec;
 
 use felt::{Felt, NonZeroFelt};
-use types::{
-    funvec::{FunVec, FUNVEC_QUERY_INDICES},
-    swiftness::{
-        air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-        global_values::InteractionElements,
-        stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
-    },
+use types::swiftness::{
+    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+    global_values::InteractionElements,
+    stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
 };
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,

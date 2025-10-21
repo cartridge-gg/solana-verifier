@@ -93,7 +93,7 @@ async fn deploy_verifier(
     .unwrap();
     info!(public_key:% = verifier_account.pubkey(); "Creating new account");
     info!(size_in_bytes:% = space; "Account space");
-    let signature = create_account(client, &payer, program_id, verifier_account, space).await?;
+    let signature = create_account(client, payer, program_id, verifier_account, space).await?;
     info!(signature:% = signature; "Account created successfully");
     Ok(())
 }
@@ -115,7 +115,7 @@ async fn create_account(
     let create_account_tx = Transaction::new_signed_with_payer(
         &[create_account_ix],
         Some(&payer.pubkey()),
-        &[&payer, &stack_account],
+        &[payer, &stack_account],
         client.get_latest_blockhash().await?,
     );
     let signature = client

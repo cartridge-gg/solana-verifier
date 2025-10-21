@@ -117,7 +117,7 @@ async fn close_account<T: borsh::BorshSerialize>(
     let close_account_tx = Transaction::new_signed_with_payer(
         &[close_account_ix],
         Some(&payer.pubkey()),
-        &[&stack_account, &payer],
+        &[&stack_account, payer],
         client.get_latest_blockhash().await?,
     );
     let close_account_signature = client

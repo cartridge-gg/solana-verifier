@@ -122,7 +122,7 @@ impl Executable for EvalOodsBoundaryPolyAtPoints {
 
                 // Get trace generator from global values
                 let log_trace_domain_size = &proof.config.log_trace_domain_size;
-                let trace_domain_size = Felt::TWO.pow_felt(&log_trace_domain_size);
+                let trace_domain_size = Felt::TWO.pow_felt(log_trace_domain_size);
                 let trace_generator = FIELD_GENERATOR.pow_felt(
                     &STARK_PRIME_MINUS_ONE
                         .field_div(&NonZeroFelt::try_from(trace_domain_size).unwrap()),

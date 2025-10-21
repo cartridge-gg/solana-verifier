@@ -262,7 +262,7 @@ async fn copy_from_account(
         ],
     );
 
-    send_and_confirm_with_limit(client, &[copy_ix], &payer, 1_200_000, 100).await?;
+    send_and_confirm_with_limit(client, &[copy_ix], payer, 1_200_000, 100).await?;
     println!("  ✓ Copied successfully");
     Ok(())
 }
@@ -283,7 +283,7 @@ async fn transfer_ownership(
         ],
     );
 
-    send_and_confirm_with_limit(client, &[transfer_ix], &payer, 1_400_000, 100).await?;
+    send_and_confirm_with_limit(client, &[transfer_ix], payer, 1_400_000, 100).await?;
     println!("  ✓ Ownership transferred successfully");
     Ok(())
 }
@@ -304,7 +304,7 @@ async fn set_account_data_chunked(
         );
         instructions.push(set_data_ix);
     }
-    send_and_confirm_with_limit(client, &instructions, &payer, 1_400_000, 100).await?;
+    send_and_confirm_with_limit(client, &instructions, payer, 1_400_000, 100).await?;
     info!("Data set successfully");
     Ok(())
 }
@@ -322,7 +322,7 @@ async fn push_task(
         vec![AccountMeta::new(account.pubkey(), false)],
     );
 
-    send_and_confirm_with_limit(client, &[push_task_ix], &payer, 1_200_000, 100).await?;
+    send_and_confirm_with_limit(client, &[push_task_ix], payer, 1_200_000, 100).await?;
     println!("  Task pushed successfully");
     Ok(())
 }
@@ -353,7 +353,7 @@ async fn execute_verifier(
             instructions.push(execute_ix);
         }
 
-        send_and_confirm_with_limit(client, &instructions, &payer, 1_200_000, 100).await?;
+        send_and_confirm_with_limit(client, &instructions, payer, 1_200_000, 100).await?;
         info!("Chunk {}-{} completed", step, chunk_end - 1);
 
         step = chunk_end;
@@ -374,14 +374,16 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        let mut stack = Verifier1StackAccount::default();
-        stack.proof = proof_verifier.clone();
-        stack.oods_values = proof_verifier
-            .unsent_commitment
-            .oods_values
-            .as_slice()
-            .try_into()
-            .unwrap();
+        let mut stack = Verifier1StackAccount {
+            proof: proof_verifier.clone(),
+            oods_values: proof_verifier
+                .unsent_commitment
+                .oods_values
+                .as_slice()
+                .try_into()
+                .unwrap(),
+            ..Default::default()
+        };
 
         cast_struct_to_slice_mut(&mut stack).to_vec()
     }

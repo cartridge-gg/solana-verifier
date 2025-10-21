@@ -5,7 +5,6 @@ use crate::TableCommit;
 use crate::TracesCommit;
 use crate::VerifyOods;
 use felt::Felt;
-use poseidon::poseidon::PoseidonHashMany;
 use transcript::transcript::TranscriptRandomFelt;
 use transcript::transcript::TranscriptReadFeltVector;
 use types::swiftness::air::recursive_with_poseidon::Layout;

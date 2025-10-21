@@ -320,7 +320,7 @@ impl TableDecommit {
                 for &value in slice {
                     hasher.update(value.to_bytes_be());
                 }
-                Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+                Felt::from_bytes_be_slice(&hasher.finalize()[12..32])
             };
 
             // self.vector_queries[i].value = hash;
@@ -406,7 +406,7 @@ impl Executable for GenerateVectorQueries {
                             hasher.update(value.to_bytes_be());
                         }
 
-                        Felt::from_bytes_be_slice(&hasher.finalize().as_slice()[12..32])
+                        Felt::from_bytes_be_slice(&hasher.finalize()[12..32])
                     };
 
                     // Push result to stack
