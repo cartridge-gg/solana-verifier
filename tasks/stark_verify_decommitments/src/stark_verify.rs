@@ -89,7 +89,6 @@ impl Executable for StarkVerify {
                     .push_front(&Felt::from(self.queries.len()).to_bytes_be())
                     .unwrap();
 
-                println!("Pushing TracesDecommit task");
                 self.step = StarkVerifyStep::TableDecommit;
                 vec![TracesDecommit::new().to_vec_with_type_tag()]
             }

@@ -60,6 +60,7 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
+                solana_program::msg!("StarkVerifyStep::ComputeQueryPoints");
                 // Use queries_indexes from VerifyVariables instead of cache to avoid access violations
                 let queries_indexes = {
                     let verify_variables: &VerifyVariables = stack.get_verify_variables();

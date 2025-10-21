@@ -5076,6 +5076,7 @@ dependencies = [
  "felt",
  "poseidon",
  "sha3",
+ "solana-program",
  "transcript",
  "types",
  "utils",

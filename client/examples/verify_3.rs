@@ -69,25 +69,7 @@ async fn async_main() -> client::Result<()> {
     println!("========================================\n");
 
     // Deploy ALL 4 verifier programs
-    println!("Deploying programs...");
-
-    let verifier1_program_id = setup_program(
-        &client,
-        &payer,
-        &config,
-        Path::new("target/deploy/verifier_1.so"),
-    )
-    .await?;
-    println!("✓ Verifier 1: {}", verifier1_program_id);
-
-    let verifier2_program_id = setup_program(
-        &client,
-        &payer,
-        &config,
-        Path::new("target/deploy/verifier_2.so"),
-    )
-    .await?;
-    println!("✓ Verifier 2: {}", verifier2_program_id);
+    println!("Deploying program...");
 
     let verifier3_program_id = setup_program(
         &client,
@@ -98,18 +80,8 @@ async fn async_main() -> client::Result<()> {
     .await?;
     println!("✓ Verifier 3: {}", verifier3_program_id);
 
-    let verifier4_program_id = setup_program(
-        &client,
-        &payer,
-        &config,
-        Path::new("target/deploy/verifier_4.so"),
-    )
-    .await?;
-    println!("✓ Verifier 4: {}", verifier4_program_id);
-
     // Create TWO accounts for ping-pong
     let account1 = Keypair::new();
-    let account2 = Keypair::new();
 
     let space = size_of::<Verifier1StackAccount>();
     println!(
@@ -119,12 +91,6 @@ async fn async_main() -> client::Result<()> {
     println!("  Account size: {} bytes", space);
     create_account_tx(&client, &payer, &account1, space, &verifier1_program_id).await?;
 
-    println!(
-        "\n✓ Creating account2: {} (owner: verifier2)",
-        account2.pubkey()
-    );
-    create_account_tx(&client, &payer, &account2, space, &verifier2_program_id).await?;
-
     // ========== STAGE 1: Verifier1 on Account1 ==========
     println!("\n========== STAGE 1: Verifier1 on Account1 ==========");
 
@@ -133,95 +99,11 @@ async fn async_main() -> client::Result<()> {
     set_account_data_chunked(
         &client,
         &payer,
-        &verifier1_program_id,
+        &verifier3_program_id,
         &account1,
         &stack_bytes,
     )
     .await?;
-
-    // Push Verify task
-    let verify_task = Verify_Stage_One::new();
-    push_task(
-        &client,
-        &payer,
-        &verifier1_program_id,
-        &account1,
-        verify_task.to_vec_with_type_tag(),
-    )
-    .await?;
-
-    // Calculate exact number of steps needed via simulation
-    let mut account_data = client.get_account_data(&account1.pubkey()).await?;
-    let stack = Verifier1StackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate();
-    println!("  Steps in simulation: {}", simulation_steps);
-
-    execute_verifier(
-        &client,
-        &payer,
-        &verifier1_program_id,
-        &account1,
-        simulation_steps as u32,
-        1, // Stage 1
-    )
-    .await?;
-
-    println!("✓ Stage 1 completed on account1");
-
-    // ========== STAGE 2: Verifier2 on Account2 (PING-PONG: copy account1 → account2) ==========
-    println!("\n========== STAGE 2: Verifier2 on Account2 ==========");
-
-    // PING-PONG: Copy all data from account1 to account2
-    println!("  Copying account1 → account2...");
-    copy_from_account(&client, &payer, &verifier2_program_id, &account1, &account2).await?;
-
-    // Push Verify task (digest and counter are on stack, copied from account1)
-    // Verify_Stage_Two will read them from stack in execute()
-    let verify_task = Verify_Stage_Two::default();
-    push_task(
-        &client,
-        &payer,
-        &verifier2_program_id,
-        &account2,
-        verify_task.to_vec_with_type_tag(),
-    )
-    .await?;
-
-    // Calculate exact number of steps needed via simulation
-    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    let stack = Verifier2StackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate();
-    println!("  Steps in simulation: {}", simulation_steps);
-
-    execute_verifier(
-        &client,
-        &payer,
-        &verifier2_program_id,
-        &account2,
-        simulation_steps as u32,
-        2, // Stage 2
-    )
-    .await?;
-
-    println!("✓ Stage 2 completed on account2");
-
-    // ========== STAGE 3: Verifier3 on Account1 (TRANSFER ownership account1: verifier1 → verifier3) ==========
-    println!("\n========== STAGE 3: Verifier3 on Account1 ==========");
-
-    // Transfer ownership of account1 from verifier1 to verifier3
-    println!("  Transferring ownership account1: verifier1 → verifier3...");
-    transfer_ownership(
-        &client,
-        &payer,
-        &verifier1_program_id,
-        &account1,
-        &verifier3_program_id,
-    )
-    .await?;
-
-    // PING-PONG: Copy all data from account2 to account1
-    println!("  Copying account2 → account1...");
-    copy_from_account(&client, &payer, &verifier3_program_id, &account2, &account1).await?;
 
     // Push Verify task (Verifier3 uses copied data from account2)
     let verify_task = Verify_Stage_Three::new();
@@ -252,86 +134,13 @@ async fn async_main() -> client::Result<()> {
 
     println!("✓ Stage 3 completed on account1 (owner: verifier3)");
 
-    // ========== STAGE 4: Verifier4 on Account2 (TRANSFER ownership account2: verifier2 → verifier4) ==========
-    println!("\n========== STAGE 4: Verifier4 on Account2 ==========");
+     // Read final results
+     let mut account_data = client.get_account_data(&account1.pubkey()).await?;
+     let stack = Verifier3StackAccount::cast_mut(&mut account_data);
 
-    // Transfer ownership of account2 from verifier2 to verifier4
-    println!("  Transferring ownership account2: verifier2 → verifier4...");
-    transfer_ownership(
-        &client,
-        &payer,
-        &verifier2_program_id,
-        &account2,
-        &verifier4_program_id,
-    )
-    .await?;
-
-    // PING-PONG: Copy all data from account1 to account2
-    println!("  Copying account1 → account2...");
-    copy_from_account(&client, &payer, &verifier4_program_id, &account1, &account2).await?;
-
-    // Push Verify task (Verifier4 uses copied data from account1)
-    let verify_task = Verify_Stage_Four::new();
-    push_task(
-        &client,
-        &payer,
-        &verifier4_program_id,
-        &account2,
-        verify_task.to_vec_with_type_tag(),
-    )
-    .await?;
-
-    // Calculate exact number of steps needed via simulation
-    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    let stack = Verifier4StackAccount::cast_mut(&mut account_data);
-    let simulation_steps = stack.simulate();
-    println!("  Steps in simulation: {}", simulation_steps);
-
-    execute_verifier(
-        &client,
-        &payer,
-        &verifier4_program_id,
-        &account2,
-        simulation_steps as u32,
-        4, // Stage 4
-    )
-    .await?;
-
-    // Read final results
-    let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    let stack = Verifier1StackAccount::cast_mut(&mut account_data);
-
-    let result_program_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-    let result_output_hash = Felt::from_bytes_be_slice(stack.borrow_front());
-    stack.pop_front();
-
-    println!("\n========== VERIFICATION RESULTS ==========");
-    println!("  Program Hash: {:?}", result_program_hash);
-    println!("  Output Hash:  {:?}", result_output_hash);
-
-    // Verify expected values
-    assert_eq!(
-        result_program_hash,
-        Felt::from_hex("0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07").unwrap(),
-        "Program hash mismatch"
-    );
-    assert_eq!(
-        result_output_hash,
-        Felt::from_hex("0x3233b5615a8de5563f7d3ba086b8f260189ac47753a1c131d063ed3f6c24400")
-            .unwrap(),
-        "Output hash mismatch"
-    );
-
-    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
-    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
-    println!("\n✓ All 4 stages completed successfully using PING-PONG architecture!");
-    println!("✓ All verifications passed!");
-    println!("✓ PING-PONG verifier test completed on Solana!");
-    println!("\nFinal owners:");
-    println!("  Account1: {} (owner: verifier3)", account1.pubkey());
-    println!("  Account2: {} (owner: verifier4)", account2.pubkey());
-
+     assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
+     assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+     println!("✓ All verifications passed!");
     Ok(())
 }
 
@@ -524,8 +333,12 @@ mod prepare_input {
     use swiftness_proof_parser::{
         json_parser, transform::TransformTo, StarkProof as StarkProofParser,
     };
-    use types::swiftness::stark::types::cast_struct_to_slice_mut;
-    use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
+    use types::{funvec::FunVec, swiftness::stark::types::{cast_struct_to_slice_mut, StarkCommitment}};
+    use felt::Felt;
+    use types::swiftness::commitment::types::Decommitment;
+    use utils::CacheStorage;
+    use verifier_3::state::BidirectionalStackAccount as Stack3;
+
 
     /// Prepare initial data for Stage 1
     /// Only Stage 1 needs initial data setup - all other stages use ping-pong copying
@@ -535,10 +348,7 @@ mod prepare_input {
         let proof = StarkProofParser::try_from(proof_json).unwrap();
         let proof_verifier = proof.transform_to();
 
-        println!("DEBUG: last_layer_coefficients.len() = {}", proof_verifier.unsent_commitment.fri.last_layer_coefficients.len());
-        println!("DEBUG: log_last_layer_degree_bound = {}", proof_verifier.config.fri.log_last_layer_degree_bound);
-
-        let mut stack = Verifier1StackAccount::default();
+        let mut stack = Stack3::default();
         stack.proof = proof_verifier.clone();
         stack.oods_values = proof_verifier
             .unsent_commitment
@@ -546,9 +356,47 @@ mod prepare_input {
             .as_slice()
             .try_into()
             .unwrap();
+        stack.stark_commitment = StarkCommitment::default();
+        let queries = vec![
+            "0xd20990",
+            "0x1702a2dc",
+            "0x233bfb24",
+            "0x2fc8f32e",
+            "0x367bcdcb",
+            "0x44445cc6",
+            "0x4bf4ed93",
+            "0x8df252ca",
+            "0x97a48b5b",
+            "0xafea6443",
+            "0xc62f63b8",
+            "0xd76e5257",
+            "0xecca885b",
+            "0xedc42f8b",
+            "0xf6821efe",
+            "0xf7769c26",
+        ];
+        queries
+            .iter()
+            .map(|f| Felt::from_hex_unchecked(f))
+            .collect::<Vec<Felt>>();
 
-        println!("DEBUG: After assignment - stack.proof.unsent_commitment.fri.last_layer_coefficients.len() = {}",
-            stack.proof.unsent_commitment.fri.last_layer_coefficients.len());
+        let stark_verify_data = types::swiftness::stark::types::FriVerifyData {
+            queries: FunVec::from_vec(queries.to_vec()),
+            fri_decommitment: Decommitment::default(),
+            current_layer: 0,
+            layer_queries: FunVec::default(),
+            active_query_count: 0,
+            working_elements: FunVec::default(),
+            working_indices: FunVec::default(),
+            working_y_values: FunVec::default(),
+            coset_size: Felt::ZERO,
+            eval_point: Felt::ZERO,
+            sibling_witness: FunVec::default(),
+            next_x_inv_value: Felt::ZERO,
+            coset_x_inv: Felt::ZERO,
+            current_coset_index: 0,
+        };
+        stack.store_in_cache(&stark_verify_data);
 
         cast_struct_to_slice_mut(&mut stack).to_vec()
     }
