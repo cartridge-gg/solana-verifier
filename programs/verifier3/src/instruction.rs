@@ -24,12 +24,6 @@ pub enum VerifierInstruction {
     /// 0. `[writable]` The verifier account
     Execute(u32),
 
-    /// Test CPI: just increments front_index
-    ///
-    /// Accounts expected:
-    /// 0. `[writable]` The verifier account
-    TestExecute,
-
     /// Copies data from another account (owned by different program)
     ///
     /// Accounts expected:

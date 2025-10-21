@@ -12,17 +12,8 @@ use solana_sdk::{
 };
 use solana_system_interface::instruction::create_account;
 use std::{mem::size_of, path::Path};
-use swiftness_proof_parser::{json_parser, transform::TransformTo, StarkProof as StarkProofParser};
-use types::swiftness::commitment::types::Decommitment;
-use types::swiftness::{
-    global_values::InteractionElements, stark::types::cast_struct_to_slice_mut,
-};
-use types::{
-    funvec::FunVec,
-    swiftness::stark::types::{FriVerifyData, StarkCommitment},
-};
+use types::swiftness::global_values::InteractionElements;
 use utils::BidirectionalStack;
-use utils::StarkCommitmentTrait;
 use utils::{AccountCast, CacheStorage, Executable};
 
 // Import z aliasami dla każdego verifier'a

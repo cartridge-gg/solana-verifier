@@ -245,18 +245,15 @@ mod prepare_input {
     };
     use types::funvec::FunVec;
     use types::swiftness::air::trace::Commitment as TraceCommitment;
-    use types::swiftness::air::trace::Decommitment as TraceDecommitment;
     use types::swiftness::commitment::table::config::Config as TableConfig;
     use types::swiftness::commitment::table::types::Commitment as TableCommitment;
     use types::swiftness::commitment::types::Decommitment;
     use types::swiftness::commitment::vector::config::Config as VectorConfig;
     use types::swiftness::commitment::vector::types::Commitment as VectorCommitment;
+    use types::swiftness::global_values::InteractionElements;
     use types::swiftness::stark::types::cast_struct_to_slice_mut;
     use types::swiftness::stark::types::StarkCommitment;
-    use types::swiftness::{global_values::InteractionElements, stark::types::VerifyVariables};
-    use utils::BidirectionalStack;
     use utils::CacheStorage;
-    use utils::StarkCommitmentTrait;
     use verifier_2::state::BidirectionalStackAccount;
 
     use crate::constraint_coefficients;
