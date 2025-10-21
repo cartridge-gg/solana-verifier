@@ -80,7 +80,6 @@ impl Executable for FriVerify {
             }
 
             FriVerifyStep::VerifyLastLayer(chunk_index) => {
-                println!("DEBUG: FriVerifyStep::VerifyLastLayer step");
                 let (stark_commitment, _, fri_verify_data) = stack.get_stark_commitment_proof_and_cache::<
                     StarkCommitment<InteractionElements>,
                     StarkProof,

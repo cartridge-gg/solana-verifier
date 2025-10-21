@@ -31,7 +31,6 @@ pub enum StarkCommitStep {
     GenerateOodsCoefficients,
     FriCommit,
     ProofOfWork,
-    Output,
     Done,
 }
 
@@ -467,17 +466,8 @@ impl Executable for StarkCommit {
                     .push_front(&self.current_transcript_digest.to_bytes_be())
                     .unwrap();
 
-                self.step = StarkCommitStep::Output;
-                vec![ProofOfWork::new().to_vec_with_type_tag()]
-            }
-            StarkCommitStep::Output => {
-                // let _reseted_counter = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
-                // let _digest = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
-
                 self.step = StarkCommitStep::Done;
-                vec![]
+                vec![ProofOfWork::new().to_vec_with_type_tag()]
             }
             StarkCommitStep::Done => {
                 vec![]

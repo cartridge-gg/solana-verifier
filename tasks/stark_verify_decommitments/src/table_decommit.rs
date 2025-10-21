@@ -79,7 +79,6 @@ impl Executable for TableDecommit {
             TableDecommitStep::ReadCommitmentAndQueries => {
                 // Read table commitment
                 let table_commitment = commitment_from_stack(stack);
-                println!("Table commitment: {:?}", table_commitment);
                 self.commitment = table_commitment.vector_commitment;
 
                 // Store commitment config
@@ -104,7 +103,6 @@ impl Executable for TableDecommit {
                 let queries_count: usize = queries_len.to_biguint().try_into().unwrap();
 
                 self.total_queries = queries_count;
-                println!("Total queries: {}", self.total_queries);
                 assert!(
                     self.total_queries != 0,
                     "Total queries must be greater than 0"
@@ -206,14 +204,10 @@ impl Executable for TableDecommit {
 
             TableDecommitStep::ComputeHashes => {
                 self.current_query_index = 0;
-                println!("TableDecommitStep::ComputeHashes step");
 
-                // Decide next step based on configuration
                 if self.n_columns > 1 && self.is_bottom_layer_verifier_friendly {
-                    // Need to hash each query with Poseidon (one by one)
                     self.step = TableDecommitStep::HashSingleQuery;
                 } else {
-                    // Can compute all hashes directly in this step
                     self.compute_all_hashes(stack);
                     self.step = TableDecommitStep::PrepareVectorDecommit;
                 }
@@ -222,9 +216,7 @@ impl Executable for TableDecommit {
             }
 
             TableDecommitStep::HashSingleQuery => {
-                println!("TableDecommitStep::HashSingleQuery step");
                 if self.current_query_index < self.total_queries {
-                    // Push query index for GenerateVectorQueries
                     stack
                         .push_front(&Felt::from(self.current_query_index).to_bytes_be())
                         .unwrap();
@@ -237,15 +229,12 @@ impl Executable for TableDecommit {
                     )
                     .to_vec_with_type_tag()]
                 } else {
-                    // All queries hashed, proceed to vector decommit
                     self.step = TableDecommitStep::PrepareVectorDecommit;
                     vec![]
                 }
             }
 
             TableDecommitStep::CollectHashResult => {
-                println!("TableDecommitStep::CollectHashResult step");
-                // Get hash result from GenerateVectorQueries
                 let hash = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
 
@@ -255,13 +244,11 @@ impl Executable for TableDecommit {
                 }
                 self.current_query_index += 1;
 
-                // Move to next query or finish
                 self.step = TableDecommitStep::HashSingleQuery;
                 vec![]
             }
 
             TableDecommitStep::PrepareVectorDecommit => {
-                println!("TableDecommitStep::PrepareVectorDecommit step");
                 witness_push_to_stack_static(stack, self.n_authentications);
                 {
                     for i in (0..self.total_queries).rev() {
@@ -372,7 +359,6 @@ impl Executable for GenerateVectorQueries {
     ) -> Vec<Vec<u8>> {
         match self.step {
             GenerateVectorQueriesStep::Init => {
-                println!("GenerateVectorQueriesStep::Init step");
                 // Get current query index
                 let current_query_index = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
@@ -388,7 +374,6 @@ impl Executable for GenerateVectorQueries {
                             ..((current_query_index + 1) * self.n_columns as usize)]
                             .to_vec()
                     };
-                    println!("GenerateVectorQueriesStep::Init step if verifier_friendly");
                     PoseidonHashMany::push_input(&inputs, stack);
 
                     self.step = GenerateVectorQueriesStep::WaitForPoseidonHash;
@@ -418,7 +403,6 @@ impl Executable for GenerateVectorQueries {
             }
 
             GenerateVectorQueriesStep::WaitForPoseidonHash => {
-                println!("GenerateVectorQueriesStep::WaitForPoseidonHash step");
                 // Get result from PoseidonHashMany
                 let result = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();

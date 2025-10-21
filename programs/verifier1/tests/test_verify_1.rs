@@ -30,9 +30,6 @@ pub fn test_proof_verification() {
     while !stack.is_empty_back() {
         stack.execute();
         println!("steps: {}", steps);
-        // if steps == 25560 {
-        //     break;
-        // }
         steps += 1;
     }
     let counter = Felt::from_bytes_be_slice(stack.borrow_front());

@@ -1,4 +1,5 @@
 use crate::eval_composition_polynomial_inner::EvalCompositionPolynomialInner;
+use crate::get_public_memory_product_ratio::GetPublicMemoryProductRatio;
 use crate::helpers::{
     DILUTED_N_BITS, DILUTED_SPACING, FELT_2, PEDERSEN_BUILTIN_RATIO, PEDERSEN_BUILTIN_REPETITIONS,
     POSEIDON_RATIO,
@@ -144,28 +145,27 @@ impl Executable for EvalCompositionPolynomial {
                 vec![]
             }
             EvalCompositionStep::ComputePublicMemoryProductRatio => {
-                let _public_memory_column_size = self
+                let public_memory_column_size = self
                     .trace_domain_size
                     .field_div(&NonZeroFelt::try_from(Felt::from(PUBLIC_MEMORY_STEP)).unwrap());
 
+                let z = self.memory_multi_column_perm_perm_interaction_elm;
+                let alpha = self.memory_multi_column_perm_hash_interaction_elm0;
+
+                stack
+                    .push_front(&public_memory_column_size.to_bytes_be())
+                    .unwrap();
+                stack.push_front(&alpha.to_bytes_be()).unwrap();
+                stack.push_front(&z.to_bytes_be()).unwrap();
+
                 self.step = EvalCompositionStep::ComputePeriodicColumns;
-                // vec![PublicMemoryRatio::new(
-                //     self.memory_multi_column_perm_perm_interaction_elm,
-                //     self.memory_multi_column_perm_hash_interaction_elm0,
-                //     public_memory_column_size,
-                // )
-                // .to_vec_with_type_tag()]
-                vec![]
+                vec![GetPublicMemoryProductRatio::new().to_vec_with_type_tag()]
             }
 
             EvalCompositionStep::ComputePeriodicColumns => {
-                // self.public_memory_prod_ratio = Felt::from_bytes_be_slice(stack.borrow_front());
-                // stack.pop_front();
+                self.public_memory_prod_ratio = Felt::from_bytes_be_slice(stack.borrow_front());
+                stack.pop_front();
 
-                self.public_memory_prod_ratio = Felt::from_hex_unchecked(
-                    "0x5593c3e7c28433d4bed879adb1cb8081b0a46decda462e76da45b0d7244cbf0",
-                ); // Placeholder until PublicMemoryRatio is implemented
-                   // Calculate n_steps
                 let proof: &StarkProof = stack.get_proof_reference();
                 let public_input = &proof.public_input;
                 let n_steps = FELT_2.pow_felt(&public_input.log_n_steps);
@@ -197,7 +197,6 @@ impl Executable for EvalCompositionPolynomial {
             }
 
             EvalCompositionStep::ComputePoseidonPoints => {
-                // Calculate poseidon points
                 let n_steps = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 let n_poseidon_copies =
@@ -227,7 +226,6 @@ impl Executable for EvalCompositionPolynomial {
             }
 
             EvalCompositionStep::EvalPolynomial => {
-                // Get all the computed values
                 let (
                     poseidon_key0,
                     poseidon_key1,
@@ -236,11 +234,9 @@ impl Executable for EvalCompositionPolynomial {
                     poseidon_partial_key1,
                 ) = self.poseidon_keys;
 
-                // Get proof reference and mutable global_values reference simultaneously to avoid borrowing conflicts
                 let (proof, gv) = stack.get_proof_and_global_values_mut();
                 let public_input = &proof.public_input;
 
-                // Set GlobalValues fields directly without creating intermediate structure on stack
                 gv.trace_length = self.trace_domain_size;
                 gv.initial_pc = public_input
                     .segments
@@ -312,7 +308,6 @@ impl Executable for EvalCompositionPolynomial {
                 gv.diluted_check_permutation_public_memory_prod = FELT_1;
                 gv.diluted_check_final_cum_val = self.diluted_prod;
 
-                // Push parameters for EvalCompositionPolynomialInner
                 stack
                     .push_front(&self.trace_generator.to_bytes_be())
                     .unwrap();

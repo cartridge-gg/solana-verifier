@@ -76,7 +76,6 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::ProcessLayer => {
-                println!("DEBUG: FriVerifyLayersStep::ProcessLayer step");
                 let (stark_commitment, proof, fri_verify_data) = stack
                 .get_stark_commitment_proof_and_cache_mut::<
                     StarkCommitment<InteractionElements>,
