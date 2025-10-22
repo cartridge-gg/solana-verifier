@@ -38,6 +38,12 @@ pub enum VerifierInstruction {
     /// 1. `[]` The new owner program ID
     TransferOwnership,
 
+    /// Clears the verifier account data (resize to 0 and back to original size)
+    ///
+    /// Accounts expected:
+    /// 0. `[writable]` The verifier account
+    ClearAccount,
+
     /// Closes the verifier account
     ///
     /// Accounts expected:

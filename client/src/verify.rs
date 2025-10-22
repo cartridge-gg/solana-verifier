@@ -14,7 +14,7 @@ use utils::BidirectionalStack;
 use utils::Executable;
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_1::state::BidirectionalStackAccount as Verifier1StackAccount;
-use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
+// use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
 use verifier_2::state::BidirectionalStackAccount as Verifier2StackAccount;
 use verifier_3::state::BidirectionalStackAccount as Verifier3StackAccount;
 use verifier_4::state::BidirectionalStackAccount as Verifier4StackAccount;
@@ -55,6 +55,15 @@ pub async fn verify(config: &Config) -> Result<()> {
         .pubkey();
     let account1 = read_keypair_file("keypairs/verifier-1-account-keypair.json").unwrap();
     let account2 = read_keypair_file("keypairs/verifier-2-account-keypair.json").unwrap();
+
+    // Ensure accounts are owned by verifier1 and verifier2 before starting verification
+    info!("  Ensuring proper ownership before verification...");
+    ensure_ownership(&client, &payer, &verifier1_program_id, &account1).await?;
+    ensure_ownership(&client, &payer, &verifier2_program_id, &account2).await?;
+
+    // Clear account1 before starting verification (ensures clean state)
+    // info!("  Clearing account1 before verification...");
+    // clear_account(&client, &payer, &account1).await?;
 
     // Prepare initial data for Verifier1 (only needed for Stage 1)
     let stack_bytes = prepare_input::get_bytes_stage1();
@@ -98,6 +107,10 @@ pub async fn verify(config: &Config) -> Result<()> {
     // ========== STAGE 2: Verifier2 on Account2 (PING-PONG: copy account1 → account2) ==========
     info!("\n========== STAGE 2: Verifier2 on Account2 ==========");
 
+    // Clear account2 before starting verification (ensures clean state)
+    info!("  Clearing account2 before verification...");
+    // clear_account(&client, &payer, &account2).await?;
+
     copy_from_account(&client, &payer, &verifier2_program_id, &account1, &account2).await?;
 
     // Push Verify task (digest and counter are on stack, copied from account1)
@@ -112,11 +125,30 @@ pub async fn verify(config: &Config) -> Result<()> {
     )
     .await?;
 
+    info!("Going to fetch account2 data");
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
+
+    // // Save account_data to file for debugging
+    // std::fs::write("debug_account2_data.bin", &account_data).unwrap();
+    // info!("Account2 data saved to debug_account2_data.bin ({} bytes)", account_data.len());
+
+    // // Also save as hex for easier inspection
+    // let hex_data = hex::encode(&account_data);
+    // std::fs::write("debug_account2_data.hex", hex_data).unwrap();
+    // info!("Account2 data also saved as hex to debug_account2_data.hex");
+
+    info!("Account2 data fetched successfully");
     let stack = Verifier2StackAccount::cast_mut(&mut account_data);
+    info!("Account2 data casted successfully");
+    info!("Going to simulate");
     let simulation_steps = stack.simulate();
+    info!("Simulation completed successfully");
     info!("  Steps in simulation: {}", simulation_steps);
+
+    // Save account_data after simulation for debugging
+    std::fs::write("debug_account2_data_after_sim.bin", &account_data).unwrap();
+    info!("Account2 data after simulation saved to debug_account2_data_after_sim.bin");
 
     execute_verifier(
         &client,
@@ -242,6 +274,8 @@ pub async fn verify(config: &Config) -> Result<()> {
             .unwrap(),
         "Output hash mismatch"
     );
+    assert!(stack.is_empty_back(), "Stack should be empty");
+    assert!(stack.is_empty_front(), "Stack should be empty");
 
     Ok(())
 }
@@ -255,7 +289,7 @@ async fn copy_from_account(
 ) -> Result<()> {
     let copy_ix = Instruction::new_with_borsh(
         *dest_program_id,
-        &Verifier2Instruction::CopyFromAccount, // All verifiers have the same instruction
+        &Verifier1Instruction::CopyFromAccount, // All verifiers have the same instruction
         vec![
             AccountMeta::new_readonly(source_account.pubkey(), false),
             AccountMeta::new(dest_account.pubkey(), false),
@@ -338,7 +372,8 @@ async fn execute_verifier(
 
     let mut step = 0;
     while step < simulation_steps_usize {
-        let chunk_size = if step >= 24500 { 1 } else { CHUNK_SIZE };
+        // let chunk_size = if step >= 24500 { 1 } else { CHUNK_SIZE };
+        let chunk_size = CHUNK_SIZE;
         let chunk_end = std::cmp::min(step + chunk_size, simulation_steps_usize);
 
         info!("Processing steps {}-{}", step, chunk_end - 1);
@@ -358,6 +393,41 @@ async fn execute_verifier(
 
         step = chunk_end;
     }
+    Ok(())
+}
+
+/// Ensure account is owned by the specified program, transfer ownership if needed
+async fn ensure_ownership(
+    client: &RpcClient,
+    payer: &Keypair,
+    target_program_id: &solana_sdk::pubkey::Pubkey,
+    account: &Keypair,
+) -> Result<()> {
+    // Get account info to find current owner
+    let account_info = client.get_account(&account.pubkey()).await?;
+    let current_owner = account_info.owner;
+
+    // if current_owner == *target_program_id {
+    //     info!("  Account already owned by target program: {}", target_program_id);
+    //     return Ok(());
+    // }
+
+    info!(
+        "  Transferring ownership from {} to {}",
+        current_owner, target_program_id
+    );
+
+    let transfer_ix = Instruction::new_with_borsh(
+        current_owner,
+        &Verifier1Instruction::TransferOwnership,
+        vec![
+            AccountMeta::new(account.pubkey(), false),
+            AccountMeta::new_readonly(*target_program_id, false),
+        ],
+    );
+
+    send_and_confirm_with_limit(client, &[transfer_ix], payer, 1_400_000, 100).await?;
+    info!("  Ownership transferred successfully");
     Ok(())
 }
 

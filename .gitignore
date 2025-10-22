@@ -23,7 +23,8 @@ target/
 
 test-ledger/
 keypairs/
-
+payer-keypair/
+deployment/
 
 # General
 .DS_Store

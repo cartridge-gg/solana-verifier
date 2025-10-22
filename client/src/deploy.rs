@@ -25,6 +25,8 @@ pub async fn deploy(config: &Config) -> Result<()> {
     info!(balance_sol:% = balance_sol_before_deployment; "Balance");
     info!(public_key:% = payer.pubkey(); "Using payer");
 
+    write_keypair_file(&payer, config.keypairs_dir.join("payer-keypair.json")).unwrap();
+
     let verifier_1_program_path = Path::new("target/deploy/verifier_1.so");
     let verifier_2_program_path = Path::new("target/deploy/verifier_2.so");
     let verifier_3_program_path = Path::new("target/deploy/verifier_3.so");
