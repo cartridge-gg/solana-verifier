@@ -226,10 +226,7 @@ impl Processor {
 
     /// Clear account data by resizing to 0 and back to original size
     /// This completely clears the account while preserving ownership and size
-    pub fn process_clear_account(
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-    ) -> ProgramResult {
+    pub fn process_clear_account(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         msg!("Processing ClearAccount instruction");
 
         let accounts_iter = &mut accounts.iter();
@@ -252,14 +249,14 @@ impl Processor {
         msg!("Step 2: Resizing back to {} bytes in chunks", original_size);
         const MAX_CHUNK_SIZE: usize = 10_240; // MAX_PERMITTED_DATA_INCREASE
         let mut current_size = 0;
-        
+
         while current_size < original_size {
             let chunk_size = std::cmp::min(MAX_CHUNK_SIZE, original_size - current_size);
             let new_size = current_size + chunk_size;
-            
+
             msg!("  Resizing to {} bytes (chunk: {})", new_size, chunk_size);
             target_account.resize(new_size)?;
-            
+
             current_size = new_size;
         }
 
@@ -301,9 +298,7 @@ pub fn process_instruction(
         VerifierInstruction::TransferOwnership => {
             Processor::process_transfer_ownership(program_id, accounts)
         }
-        VerifierInstruction::ClearAccount => {
-            Processor::process_clear_account(program_id, accounts)
-        }
+        VerifierInstruction::ClearAccount => Processor::process_clear_account(program_id, accounts),
         VerifierInstruction::Close => Processor::close(accounts),
     }
 }

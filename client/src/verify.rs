@@ -128,16 +128,16 @@ pub async fn verify(config: &Config) -> Result<()> {
     info!("Going to fetch account2 data");
     // Calculate exact number of steps needed via simulation
     let mut account_data = client.get_account_data(&account2.pubkey()).await?;
-    
+
     // // Save account_data to file for debugging
     // std::fs::write("debug_account2_data.bin", &account_data).unwrap();
     // info!("Account2 data saved to debug_account2_data.bin ({} bytes)", account_data.len());
-    
+
     // // Also save as hex for easier inspection
     // let hex_data = hex::encode(&account_data);
     // std::fs::write("debug_account2_data.hex", hex_data).unwrap();
     // info!("Account2 data also saved as hex to debug_account2_data.hex");
-    
+
     info!("Account2 data fetched successfully");
     let stack = Verifier2StackAccount::cast_mut(&mut account_data);
     info!("Account2 data casted successfully");
@@ -145,7 +145,7 @@ pub async fn verify(config: &Config) -> Result<()> {
     let simulation_steps = stack.simulate();
     info!("Simulation completed successfully");
     info!("  Steps in simulation: {}", simulation_steps);
-    
+
     // Save account_data after simulation for debugging
     std::fs::write("debug_account2_data_after_sim.bin", &account_data).unwrap();
     info!("Account2 data after simulation saved to debug_account2_data_after_sim.bin");
@@ -274,8 +274,8 @@ pub async fn verify(config: &Config) -> Result<()> {
             .unwrap(),
         "Output hash mismatch"
     );
-    assert_eq!(stack.is_empty_back(), true, "Stack should be empty");
-    assert_eq!(stack.is_empty_front(), true, "Stack should be empty");
+    assert!(stack.is_empty_back(), "Stack should be empty");
+    assert!(stack.is_empty_front(), "Stack should be empty");
 
     Ok(())
 }
@@ -406,13 +406,16 @@ async fn ensure_ownership(
     // Get account info to find current owner
     let account_info = client.get_account(&account.pubkey()).await?;
     let current_owner = account_info.owner;
-    
+
     // if current_owner == *target_program_id {
     //     info!("  Account already owned by target program: {}", target_program_id);
     //     return Ok(());
     // }
-    
-    info!("  Transferring ownership from {} to {}", current_owner, target_program_id);
+
+    info!(
+        "  Transferring ownership from {} to {}",
+        current_owner, target_program_id
+    );
 
     let transfer_ix = Instruction::new_with_borsh(
         current_owner,
@@ -425,33 +428,6 @@ async fn ensure_ownership(
 
     send_and_confirm_with_limit(client, &[transfer_ix], payer, 1_400_000, 100).await?;
     info!("  Ownership transferred successfully");
-    Ok(())
-}
-
-/// Clear an account using the ClearAccount instruction
-/// This ensures the account is completely cleared before verification
-/// Uses the current owner of the account to perform the clearing
-async fn clear_account(
-    client: &RpcClient,
-    payer: &Keypair,
-    account: &Keypair,
-) -> Result<()> {
-    // Get account info to find current owner
-    let account_info = client.get_account(&account.pubkey()).await?;
-    let owner_program_id = account_info.owner;
-    
-    info!("  Clearing account owned by: {}", owner_program_id);
-
-    let clear_ix = Instruction::new_with_borsh(
-        owner_program_id,
-        &Verifier1Instruction::ClearAccount, // All verifiers have the same instruction
-        vec![
-            AccountMeta::new(account.pubkey(), false),
-        ],
-    );
-
-    send_and_confirm_with_limit(client, &[clear_ix], payer, 1_400_000, 100).await?;
-    info!("  Account cleared successfully");
     Ok(())
 }
 
