@@ -586,6 +586,7 @@ dependencies = [
  "felt",
  "futures",
  "get-hash",
+ "hex",
  "log",
  "pedersen",
  "poseidon",

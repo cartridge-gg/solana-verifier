@@ -206,26 +206,67 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        // Save original size
-        let original_size = target_account.data_len();
-        msg!("Original account size: {}", original_size);
-
-        // Step 1: Resize to zero (required before ownership transfer)
-        msg!("Step 1: Resizing to 0 bytes");
-        target_account.resize(0)?;
-
-        // Step 2: Assign to new owner
-        msg!("Step 2: Assigning to new owner: {}", new_owner_account.key);
+        // Step 1: Assign to new owner
+        msg!("Step 1: Assigning to new owner: {}", new_owner_account.key);
         target_account.assign(new_owner_account.key);
 
-        // Step 3: Resize back to original size
-        msg!("Step 3: Resizing back to {} bytes", original_size);
-        target_account.resize(original_size)?;
+        // Step 2: Zero out all data manually
+        msg!("Step 2: Zeroing out all data");
+        let mut data = target_account.try_borrow_mut_data()?;
+        data.fill(0);
 
         msg!(
             "Successfully transferred ownership of {} to {}",
             target_account.key,
             new_owner_account.key
+        );
+
+        Ok(())
+    }
+
+    /// Clear account data by resizing to 0 and back to original size
+    /// This completely clears the account while preserving ownership and size
+    pub fn process_clear_account(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+    ) -> ProgramResult {
+        msg!("Processing ClearAccount instruction");
+
+        let accounts_iter = &mut accounts.iter();
+        let target_account = next_account_info(accounts_iter)?;
+
+        // Verify current account is owned by this program
+        if target_account.owner != program_id {
+            msg!("Error: Account not owned by this program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // Save original size
+        let original_size = target_account.data_len();
+        msg!("Original account size: {}", original_size);
+
+        // Step 1: Resize to zero (clears all data)
+        msg!("Step 1: Resizing to 0 bytes (clearing data)");
+        target_account.resize(0)?;
+
+        msg!("Step 2: Resizing back to {} bytes in chunks", original_size);
+        const MAX_CHUNK_SIZE: usize = 10_240; // MAX_PERMITTED_DATA_INCREASE
+        let mut current_size = 0;
+        
+        while current_size < original_size {
+            let chunk_size = std::cmp::min(MAX_CHUNK_SIZE, original_size - current_size);
+            let new_size = current_size + chunk_size;
+            
+            msg!("  Resizing to {} bytes (chunk: {})", new_size, chunk_size);
+            target_account.resize(new_size)?;
+            
+            current_size = new_size;
+        }
+
+        msg!(
+            "Successfully cleared account {} ({} bytes)",
+            target_account.key,
+            original_size
         );
 
         Ok(())
@@ -260,6 +301,9 @@ pub fn process_instruction(
         }
         VerifierInstruction::TransferOwnership => {
             Processor::process_transfer_ownership(program_id, accounts)
+        }
+        VerifierInstruction::ClearAccount => {
+            Processor::process_clear_account(program_id, accounts)
         }
         VerifierInstruction::Close => Processor::close(accounts),
     }
