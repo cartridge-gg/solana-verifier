@@ -8,8 +8,6 @@ use solana_sdk::{
 use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use verifier_1::instruction::VerifierInstruction as Verifier1Instruction;
 use verifier_2::instruction::VerifierInstruction as Verifier2Instruction;
-use verifier_3::instruction::VerifierInstruction as Verifier3Instruction;
-use verifier_4::instruction::VerifierInstruction as Verifier4Instruction;
 
 use crate::{initialize_client, setup_payer, Config, Result};
 use log::info;
@@ -44,19 +42,11 @@ pub async fn retrive_funds(config: &Config) -> Result<()> {
     let program_id_3 = program_keypair_3.pubkey();
 
     info!(program_id:% = program_id_3; "Using program");
-    let stack_account_3 =
-        Keypair::read_from_file("keypairs/verifier-3-account-keypair.json").unwrap();
-
-    info!("Loaded verifier-3 account");
 
     let program_keypair_4 = Keypair::read_from_file("keypairs/verifier_4-keypair.json").unwrap();
     let program_id_4 = program_keypair_4.pubkey();
 
     info!(program_id:% = program_id_4; "Using program");
-    let stack_account_4 =
-        Keypair::read_from_file("keypairs/verifier-4-account-keypair.json").unwrap();
-
-    info!("Loaded verifier-4 account");
 
     let balance = client.get_balance(&payer.pubkey()).await?;
     let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
@@ -76,22 +66,6 @@ pub async fn retrive_funds(config: &Config) -> Result<()> {
         program_id_2,
         stack_account_2,
         Verifier2Instruction::Close,
-    )
-    .await?;
-    close_account(
-        &client,
-        &payer,
-        program_id_3,
-        stack_account_3,
-        Verifier3Instruction::Close,
-    )
-    .await?;
-    close_account(
-        &client,
-        &payer,
-        program_id_4,
-        stack_account_4,
-        Verifier4Instruction::Close,
     )
     .await?;
 

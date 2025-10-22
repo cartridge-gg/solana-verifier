@@ -24,6 +24,7 @@ fn main() {
         .spawn(|| {
             env_logger::Builder::from_default_env()
                 .filter_level(log::LevelFilter::Info)
+                .filter_module("client", log::LevelFilter::Trace)
                 .init();
 
             let rt = tokio::runtime::Builder::new_multi_thread()
