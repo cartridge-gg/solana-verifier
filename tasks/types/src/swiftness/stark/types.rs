@@ -101,8 +101,9 @@ pub struct VerifyVariables {
     pub decommitment_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub montgomery_values: [Felt; FUNVEC_DECOMMITMENT_VALUES],
     pub temp_queries: [Felt; FUNVEC_QUERIES],
-    pub queries_indexes: [Felt; 16],
+    pub queries_indexes: [Felt; FUNVEC_QUERY_INDICES],
     pub points: [Felt; FUNVEC_QUERY_INDICES],
+    pub n_queries: Felt, // Actual number of queries (stored separately to avoid conflicts)
 }
 
 impl Default for VerifyVariables {
@@ -113,8 +114,9 @@ impl Default for VerifyVariables {
             decommitment_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             montgomery_values: [Felt::ZERO; FUNVEC_DECOMMITMENT_VALUES],
             temp_queries: [Felt::ZERO; FUNVEC_QUERIES],
-            queries_indexes: [Felt::ZERO; 16],
+            queries_indexes: [Felt::ZERO; FUNVEC_QUERY_INDICES],
             points: [Felt::ZERO; FUNVEC_QUERY_INDICES],
+            n_queries: Felt::ZERO,
         }
     }
 }

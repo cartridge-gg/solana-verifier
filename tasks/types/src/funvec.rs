@@ -10,7 +10,7 @@ pub const FUNVEC_LEAVES: usize = 512;
 pub const FUNVEC_COSET_ELEMENTS: usize = 16; // Maximum coset size in FRI
 pub const FUNVEC_AUTHENTICATIONS: usize = 512;
 pub const FUNVEC_LAST_LAYER: usize = 256;
-pub const FUNVEC_DECOMMITMENT_VALUES: usize = 256;
+pub const FUNVEC_DECOMMITMENT_VALUES: usize = 512; // Increased to handle n_columns * queries (e.g., 8 * 50 = 400)
 pub const FUNVEC_PAGES: usize = 1024;
 pub const FUNVEC_SEGMENTS: usize = 12;
 pub const FUNVEC_QUERIES: usize = 1500;

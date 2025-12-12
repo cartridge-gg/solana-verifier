@@ -1,5 +1,50 @@
 # Solana Verifier
 
+## Running Examples
+
+### Verify Example
+
+The `verify` example demonstrates the complete verification flow with all 4 verifiers. You can specify which proof file to verify using the `--proof` argument.
+
+#### Basic Usage
+
+Run with default proof (saya.json):
+```bash
+cargo run --example verify
+```
+
+#### Specify Custom Proof File
+
+Run with a specific proof file:
+```bash
+cargo run --example verify -- --proof example_proof/fibonnaci_stone6_keccak_160_lsb.json
+```
+
+Or use the short form:
+```bash
+cargo run --example verify -- -p example_proof/fibonnaci_stone6_keccak_160_lsb.json
+```
+
+#### Available Proof Files
+
+The following proof files are available in the `example_proof/` directory:
+- `saya.json` (default)
+- `fibonnaci_stone6_keccak_160_lsb.json`
+
+
+#### What the Example Does
+
+1. **Deploys all 4 verifier programs** to the Solana network
+2. **Creates two accounts** for the ping-pong architecture
+3. **Loads the specified proof** from the JSON file
+4. **Executes Stage 1** (Verifier1) - validates public input, computes hash, creates STARK commitment
+5. **Executes Stage 2** (Verifier2) - verifies STARK decommitments
+6. **Executes Stage 3** (Verifier3) - verifies STARK verification step
+7. **Executes Stage 4** (Verifier4) - verifies FRI (Fast Reed-Solomon Interactive) proof
+8. **Displays final verification results** including program hash and output hash
+
+The example uses the ping-pong pattern to transfer data between accounts as ownership changes between verifiers.
+
 ## Prerequisites
 
 Before building or running the project, ensure you have the following dependencies installed:
