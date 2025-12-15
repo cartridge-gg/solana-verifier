@@ -2,7 +2,7 @@ use std::vec;
 
 use felt::Felt;
 use types::{
-    funvec::FunVec,
+    funvec::{FunVec, FUNVEC_QUERY_INDICES},
     swiftness::{
         commitment::table::types::Commitment as TableCommitment,
         global_values::InteractionElements,
@@ -27,7 +27,7 @@ pub enum StarkVerifyStep {
 #[repr(C)]
 pub struct StarkVerify {
     step: StarkVerifyStep,
-    queries: FunVec<Felt, 16>,
+    queries: FunVec<Felt, FUNVEC_QUERY_INDICES>,
 }
 
 impl_type_identifiable!(StarkVerify);
@@ -70,7 +70,18 @@ impl Executable for StarkVerify {
                 }
                 {
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    verify_variables.queries_indexes = self.queries.as_slice().try_into().unwrap();
+                    // Copy queries to queries_indexes
+                    // queries_indexes is [Felt; FUNVEC_QUERY_INDICES] (50 elements)
+                    // self.queries may have fewer elements, so we copy what we have and zero the rest
+                    let queries_slice = self.queries.as_slice();
+                    let actual_queries_len = queries_slice.len();
+                    let copy_len = actual_queries_len.min(FUNVEC_QUERY_INDICES);
+                    verify_variables.queries_indexes[..copy_len]
+                        .copy_from_slice(&queries_slice[..copy_len]);
+                    // Zero out remaining elements
+                    verify_variables.queries_indexes[copy_len..].fill(Felt::ZERO);
+                    // Store actual queries count
+                    verify_variables.n_queries = Felt::from(actual_queries_len as u64);
                 }
                 // {
                 //     let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();

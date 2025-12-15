@@ -1,10 +1,13 @@
 use std::vec;
 
 use felt::{Felt, NonZeroFelt};
-use types::swiftness::{
-    air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
-    global_values::InteractionElements,
-    stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
+use types::{
+    funvec::FUNVEC_QUERY_INDICES,
+    swiftness::{
+        air::domains::{FIELD_GENERATOR, STARK_PRIME_MINUS_ONE},
+        global_values::InteractionElements,
+        stark::types::{FriVerifyData, StarkCommitment, StarkProof, VerifyVariables},
+    },
 };
 use utils::{
     impl_type_identifiable, BidirectionalStack, CacheStorage, CachedProofData, Executable,
@@ -58,10 +61,11 @@ impl Executable for StarkVerify {
     ) -> Vec<Vec<u8>> {
         match self.step {
             StarkVerifyStep::ComputeQueryPoints => {
-                let queries_len = {
-                    let verify_variables: &VerifyVariables = stack.get_verify_variables();
-                    verify_variables.queries_indexes.len()
-                };
+                // Get actual queries count
+                let verify_variables: &VerifyVariables = stack.get_verify_variables();
+                let queries_len: usize =
+                    verify_variables.n_queries.to_biguint().try_into().unwrap();
+
                 assert!(queries_len != 0, "Queries length is equal to 0");
 
                 // Push each element individually to avoid stack allocation
@@ -115,7 +119,11 @@ impl Executable for StarkVerify {
                     let (fri_verify_data, verify_variables) = stack.get_fri_verify_data_and_verify_variables_mut::<FriVerifyData, VerifyVariables>();
 
                     fri_verify_data.queries.flush();
-                    for i in 0..verify_variables.queries_indexes.len() {
+                    // Get actual queries count
+                    let actual_queries_len: usize =
+                        verify_variables.n_queries.to_biguint().try_into().unwrap();
+                    // Only push actual queries (not the padding zeros)
+                    for i in 0..actual_queries_len.min(FUNVEC_QUERY_INDICES) {
                         fri_verify_data
                             .queries
                             .push(verify_variables.queries_indexes[i]);

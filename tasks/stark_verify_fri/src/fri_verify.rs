@@ -14,6 +14,7 @@ use utils::{
 #[repr(C)]
 pub struct FriVerify {
     stage: FriVerifyStep,
+    current_query_index: usize,
 }
 
 #[allow(dead_code)]
@@ -24,6 +25,7 @@ const FIELD_GENERATOR_INVERSE: Felt =
 #[repr(C)]
 pub enum FriVerifyStep {
     Init,
+    InitBatch(usize), // Process queries in batches
     VerifyLastLayer(usize),
     Done,
 }
@@ -33,6 +35,7 @@ impl FriVerify {
     pub fn new() -> Self {
         Self {
             stage: FriVerifyStep::Init,
+            current_query_index: 0,
         }
     }
 }
@@ -58,8 +61,20 @@ impl Executable for FriVerify {
                     "FRI decommitment length does not match queries length"
                 );
 
+                self.current_query_index = 0;
+                self.stage = FriVerifyStep::InitBatch(0);
+                vec![]
+            }
+
+            FriVerifyStep::InitBatch(chunk_index) => {
+                let fri_verify_data: &mut FriVerifyData = stack.borrow_from_cache_mut();
+
+                const BATCH_SIZE: usize = 10;
                 let query_count = fri_verify_data.queries.len();
-                for index in 0..query_count {
+                let start = chunk_index * BATCH_SIZE;
+                let end = (start + BATCH_SIZE).min(query_count);
+
+                for index in start..end {
                     let query = *fri_verify_data.queries.at(index);
                     let point = *fri_verify_data.fri_decommitment.points.at(index);
                     let value = *fri_verify_data.fri_decommitment.values.at(index);
@@ -73,10 +88,14 @@ impl Executable for FriVerify {
                     });
                 }
 
-                fri_verify_data.init_active_queries();
-
-                self.stage = FriVerifyStep::VerifyLastLayer(0);
-                vec![FriVerifyLayers::new().to_vec_with_type_tag()]
+                if end >= query_count {
+                    fri_verify_data.init_active_queries();
+                    self.stage = FriVerifyStep::VerifyLastLayer(0);
+                    vec![FriVerifyLayers::new().to_vec_with_type_tag()]
+                } else {
+                    self.stage = FriVerifyStep::InitBatch(chunk_index + 1);
+                    vec![]
+                }
             }
 
             FriVerifyStep::VerifyLastLayer(chunk_index) => {

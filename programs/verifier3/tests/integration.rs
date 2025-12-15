@@ -50,6 +50,7 @@ pub fn test_proof_verification() {
         }
     }
     stack.verify_variables = verify_variables;
+    stack.verify_variables.n_queries = Felt::from(queries.len() as u64);
 
     let stark_verify_data = types::swiftness::stark::types::FriVerifyData {
         queries: FunVec::from_vec(queries.clone()),

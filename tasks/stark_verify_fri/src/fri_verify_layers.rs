@@ -14,6 +14,7 @@ use types::swiftness::stark::types::{FriVerifyData, StarkCommitment, StarkProof,
 #[repr(C)]
 pub struct FriVerifyLayers {
     stage: FriVerifyLayersStep,
+    current_leaf_index: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,6 +22,7 @@ pub struct FriVerifyLayers {
 pub enum FriVerifyLayersStep {
     Init,
     ProcessLayer,
+    ProcessLeavesBatch(usize),
     PushTableData,
     WaitForTableDecommit,
     Done,
@@ -32,6 +34,7 @@ impl FriVerifyLayers {
     pub fn new() -> Self {
         Self {
             stage: FriVerifyLayersStep::Init,
+            current_leaf_index: 0,
         }
     }
 }
@@ -76,7 +79,7 @@ impl Executable for FriVerifyLayers {
             }
 
             FriVerifyLayersStep::ProcessLayer => {
-                let (stark_commitment, proof, fri_verify_data) = stack
+                let (stark_commitment, _, fri_verify_data) = stack
                 .get_stark_commitment_proof_and_cache_mut::<
                     StarkCommitment<InteractionElements>,
                     StarkProof,
@@ -104,24 +107,49 @@ impl Executable for FriVerifyLayers {
                     fri_verify_data.coset_size = Felt::TWO.pow_felt(&step_size);
                     fri_verify_data.eval_point =
                         *stark_commitment.fri.eval_points.get(current).unwrap();
-
-                    let leaves = &proof
-                        .witness
-                        .fri_witness
-                        .layers
-                        .get(current)
-                        .unwrap()
-                        .leaves;
-                    for i in 0..leaves.len() {
-                        if let Some(value) = leaves.get(i) {
-                            fri_verify_data.sibling_witness.push(*value);
-                        }
-                    }
-                    self.stage = FriVerifyLayersStep::PushTableData;
-                    vec![ComputeNextLayer::new().to_vec_with_type_tag()]
+                    self.current_leaf_index = 0;
+                    self.stage = FriVerifyLayersStep::ProcessLeavesBatch(0);
+                    vec![]
                 } else {
                     // All layers processed - copy working_queries to final result
                     self.stage = FriVerifyLayersStep::Done;
+                    vec![]
+                }
+            }
+
+            FriVerifyLayersStep::ProcessLeavesBatch(chunk_index) => {
+                let (_, proof, fri_verify_data) = stack
+                    .get_stark_commitment_proof_and_cache_mut::<
+                        StarkCommitment<InteractionElements>,
+                        StarkProof,
+                        FriVerifyData,
+                    >();
+
+                let current = fri_verify_data.current_layer;
+                let leaves = &proof
+                    .witness
+                    .fri_witness
+                    .layers
+                    .get(current)
+                    .unwrap()
+                    .leaves;
+
+                const BATCH_SIZE: usize = 50;
+                let leaves_len = leaves.len();
+                let start = chunk_index * BATCH_SIZE;
+                let end = (start + BATCH_SIZE).min(leaves_len);
+
+                for i in start..end {
+                    if let Some(value) = leaves.get(i) {
+                        fri_verify_data.sibling_witness.push(*value);
+                    }
+                }
+
+                if end >= leaves_len {
+                    self.stage = FriVerifyLayersStep::PushTableData;
+                    vec![ComputeNextLayer::new().to_vec_with_type_tag()]
+                } else {
+                    self.stage = FriVerifyLayersStep::ProcessLeavesBatch(chunk_index + 1);
                     vec![]
                 }
             }

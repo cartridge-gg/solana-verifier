@@ -1,6 +1,6 @@
 use felt::Felt;
 use sha3::{Digest, Keccak256};
-use types::funvec::FUNVEC_AUTHENTICATIONS;
+use types::funvec::{FUNVEC_AUTHENTICATIONS, FUNVEC_DECOMMITMENT_VALUES};
 use utils::{
     impl_type_identifiable, BidirectionalStack, Executable, ProofData, StarkVerifyTrait,
     TypeIdentifiable,
@@ -21,7 +21,8 @@ const BATCH_SIZE: usize = 50;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableDecommitStep {
     ReadCommitmentAndQueries, // commitment + queries count
-    ProcessDecommitment,      // decommitment_from_stack()
+    ProcessDecommitment,      // read decommitment count and initialize batching
+    ProcessDecommitmentBatch, // process decommitment values in batches
     InitProcessWitness,       // read n_authentications and prepare batching
     ProcessWitnessBatch,      // process authentications in batches
     CopyQueriesToVerifyVars,  // loop for copying queries
@@ -43,7 +44,8 @@ pub struct TableDecommit {
     total_queries: usize,
     n_authentications: usize,
     decommitment_values_count: usize,
-    current_auth_index: usize, // Track current authentication being processed
+    current_decommitment_index: usize, // Track current decommitment value being processed
+    current_auth_index: usize,         // Track current authentication being processed
 }
 
 impl_type_identifiable!(TableDecommit);
@@ -59,6 +61,7 @@ impl TableDecommit {
             total_queries: 0,
             n_authentications: 0,
             decommitment_values_count: 0,
+            current_decommitment_index: 0,
             current_auth_index: 0,
         }
     }
@@ -113,22 +116,49 @@ impl Executable for TableDecommit {
             }
 
             TableDecommitStep::ProcessDecommitment => {
-                // Read decommitment values
+                // Read decommitment values count
                 let values_len = Felt::from_bytes_be_slice(stack.borrow_front());
                 stack.pop_front();
                 self.decommitment_values_count = values_len.to_biguint().try_into().unwrap();
 
-                // Process decommitment values and convert to Montgomery form
-                for i in 0..self.decommitment_values_count {
+                // Limit to capacity to avoid out of bounds
+                assert!(
+                    self.decommitment_values_count <= FUNVEC_DECOMMITMENT_VALUES,
+                    "Too many decommitment values: {} > {}",
+                    self.decommitment_values_count,
+                    FUNVEC_DECOMMITMENT_VALUES
+                );
+
+                // Initialize batch processing
+                self.current_decommitment_index = 0;
+                self.step = TableDecommitStep::ProcessDecommitmentBatch;
+                vec![]
+            }
+
+            TableDecommitStep::ProcessDecommitmentBatch => {
+                let remaining_values =
+                    self.decommitment_values_count - self.current_decommitment_index;
+                let batch_size = std::cmp::min(BATCH_SIZE, remaining_values);
+
+                // Process decommitment values and convert to Montgomery form in batches
+                for i in 0..batch_size {
                     let value = Felt::from_bytes_be_slice(stack.borrow_front());
                     stack.pop_front();
                     let verify_variables: &mut VerifyVariables = stack.get_verify_variables_mut();
-                    verify_variables.decommitment_values[i] = value;
+                    let idx = self.current_decommitment_index + i;
+                    verify_variables.decommitment_values[idx] = value;
                     // This convertion is not necessary as we do it in transform.rs and we have montommery values in proof field
-                    verify_variables.montgomery_values[i] = value * MONTGOMERY_R;
+                    verify_variables.montgomery_values[idx] = value * MONTGOMERY_R;
                 }
 
-                self.step = TableDecommitStep::InitProcessWitness;
+                self.current_decommitment_index += batch_size;
+
+                // Check if we've processed all decommitment values
+                if self.current_decommitment_index >= self.decommitment_values_count {
+                    self.step = TableDecommitStep::InitProcessWitness;
+                }
+                // If not, stay in ProcessDecommitmentBatch for next transaction
+
                 vec![]
             }
 

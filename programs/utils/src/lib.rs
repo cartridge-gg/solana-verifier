@@ -17,7 +17,7 @@ pub const N_CONSTRAINTS: usize = 194;
 pub const CONSTRAINT_DEGREE: usize = 2;
 pub const NUM_COLUMNS_FIRST: u32 = 6;
 pub const NUM_COLUMNS_SECOND: u32 = 2;
-pub const CACHE_SIZE: usize = 147480;
+pub const CACHE_SIZE: usize = 163864;
 /// Trait for safely casting between account data and Rust types
 pub trait AccountCast: Sized {
     /// Cast a slice to an immutable reference of Self
