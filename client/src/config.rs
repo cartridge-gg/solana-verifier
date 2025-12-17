@@ -41,6 +41,14 @@ pub struct Config {
     /// Buffer chunk size for program deployment
     #[clap(long, default_value = "900")]
     pub buffer_chunk_size: usize,
+
+    /// Path to the proof JSON file
+    #[clap(
+        long,
+        default_value = "example_proof/saya.json",
+        help = "Path to the proof JSON file (e.g., example_proof/fibonacci_proof.json)"
+    )]
+    pub proof: String,
 }
 
 impl Config {
