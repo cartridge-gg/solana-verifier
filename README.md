@@ -6,6 +6,11 @@
 
 The `verify` example demonstrates the complete verification flow with all 4 verifiers. You can specify which proof file to verify using the `--proof` argument.
 
+### Verify Example Onchain (default proof param is example_proof/saya.json)
+```
+cargo run --bin client verify --rpc-url <YOUR_RPC> --payer-keypair <YOUR_KEY> --proof <YOUR_PROOF>
+```
+
 #### Basic Usage
 
 Run with default proof (saya.json):
@@ -17,19 +22,20 @@ cargo run --example verify
 
 Run with a specific proof file:
 ```bash
-cargo run --example verify -- --proof example_proof/fibonnaci_stone6_keccak_160_lsb.json
+cargo run --example verify -- --proof example_proof/fibonnaci_proof.json
 ```
 
 Or use the short form:
 ```bash
-cargo run --example verify -- -p example_proof/fibonnaci_stone6_keccak_160_lsb.json
+cargo run --example verify -- -p example_proof/fibonnaci_proof.json
 ```
 
 #### Available Proof Files
 
 The following proof files are available in the `example_proof/` directory:
 - `saya.json` (default)
-- `fibonnaci_stone6_keccak_160_lsb.json`
+- `fibonnaci_proof.json`
+- `factorial_proof.json`
 
 
 #### What the Example Does

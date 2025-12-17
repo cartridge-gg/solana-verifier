@@ -327,6 +327,7 @@ async fn async_main(proof_path: String, config: Config) -> client::Result<()> {
     info!("  Program Hash: {:?}", result_program_hash);
     info!("  Output Hash:  {:?}", result_output_hash);
 
+    // For saya proof
     // // Verify expected values
     // assert_eq!(
     //     result_program_hash,
