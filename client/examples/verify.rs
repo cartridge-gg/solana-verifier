@@ -37,16 +37,13 @@ const MAX_CHUNK_SIZE: usize = 3000;
 #[command(name = "verify")]
 #[command(about = "Verify a STARK proof on Solana")]
 struct Args {
-    /// Path to the proof JSON file
-    #[arg(short, long, default_value = "example_proof/saya.json")]
-    proof: String,
-
     #[command(flatten)]
     config: Config,
 }
 
 fn main() {
-    let args = Args::parse();
+    let Args { config } = Args::parse();
+    let proof_path = config.proof.clone();
 
     let result = std::thread::Builder::new()
         .stack_size(32 * 1024 * 1024)
@@ -57,7 +54,7 @@ fn main() {
                 .build()
                 .unwrap();
 
-            rt.block_on(async_main(args.proof, args.config))
+            rt.block_on(async_main(proof_path, config))
         })
         .unwrap()
         .join()
